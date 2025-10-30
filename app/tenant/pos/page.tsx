@@ -510,7 +510,7 @@ export default function POSPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">₹ {product.price}</p>
+                      <p className="font-bold">₹ {product.price.toFixed(2)}</p>
                       <Badge variant="outline" className="text-xs">
                         {product.barcode}
                       </Badge>
@@ -615,12 +615,12 @@ export default function POSPage() {
                                 setEditPrice(item.price.toString())
                               }}
                             >
-                              ₹ {item.price} each
+                              ₹ {item.price.toFixed(2)} each
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-sm">₹ {item.total}</p>
+                          <p className="font-medium text-sm">₹ {item.total.toFixed(2)}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1059,7 +1059,10 @@ export default function POSPage() {
                     }
                     
                     try {
-                      const pdfLink = `${window.location.origin}/api/bill-pdf/${completedSale._id || completedSale.id}`
+                      const billFormat = settings.billFormat || 'professional'
+                      const pdfLink = billFormat === 'simple' 
+                        ? `${window.location.origin}/api/receipt-simple/${completedSale._id || completedSale.id}`
+                        : `${window.location.origin}/api/receipt/${completedSale._id || completedSale.id}`
                       
                       const customMessage = settings.whatsappMessage || 'Thank you for shopping with us! Visit us again soon.'
                       const billMessage = `*${(settings.storeName || 'STORE').toUpperCase()}*

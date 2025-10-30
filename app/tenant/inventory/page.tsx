@@ -1257,8 +1257,8 @@ export default function InventoryPage() {
                         <TableCell className="text-center">
                           {getStockStatus(item)}
                         </TableCell>
-                        <TableCell className="text-center">₹ {item.costPrice || 0}</TableCell>
-                        <TableCell className="text-center">₹ {item.price || 0}</TableCell>
+                        <TableCell className="text-center">₹ {(item.costPrice || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-center">₹ {(item.price || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center space-x-2">
                             <Button 

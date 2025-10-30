@@ -24,7 +24,8 @@ export default function SettingsPage() {
     billCounter: 1,
     whatsappMessage: '',
     deletePassword: '',
-    discountMode: false
+    discountMode: false,
+    billFormat: 'professional'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -180,6 +181,21 @@ export default function SettingsPage() {
                 placeholder="Custom message to add after 'Thank you for your business!' in WhatsApp"
                 className="w-full p-2 border rounded-md h-16 text-sm"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billFormat">Bill Format for WhatsApp</Label>
+              <select
+                id="billFormat"
+                value={settings.billFormat}
+                onChange={(e) => setSettings({...settings, billFormat: e.target.value})}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="professional">Professional Invoice Format</option>
+                <option value="simple">Simple Receipt Format</option>
+              </select>
+              <p className="text-sm text-muted-foreground">
+                Choose the bill format to send via WhatsApp. Professional format includes table layout, Simple format is basic receipt style.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="deletePassword">Delete Password</Label>

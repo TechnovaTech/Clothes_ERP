@@ -21,6 +21,7 @@ interface Bill {
   items: any[]
   subtotal: number
   discount: number
+  discountAmount: number
   tax: number
   total: number
   paymentMethod: string
@@ -148,8 +149,11 @@ export default function BillsPage() {
     const storeAddress = settings.address || bill.address || 'Store Address'
     const storePhone = settings.phone || bill.phone || '9427300816'
 
-    // Create PDF download link
-    const pdfLink = `${window.location.origin}/api/bill-pdf/${(bill as any)._id || bill.id}`
+    // Create receipt link based on settings
+    const billFormat = settings.billFormat || 'professional'
+    const receiptLink = billFormat === 'simple' 
+      ? `${window.location.origin}/api/receipt-simple/${(bill as any)._id || bill.id}`
+      : `${window.location.origin}/api/receipt/${(bill as any)._id || bill.id}`
 
     const billMessage = `*${storeName.toUpperCase()}*
 
@@ -167,8 +171,8 @@ ${bill.items.map(item => `• ${item.name} x${item.quantity} = Rs${(item.total |
 *TOTAL AMOUNT: Rs${(bill.total || 0).toFixed(2)}*
 *Payment Method:* ${bill.paymentMethod}
 
-*Download Your Bill:*
-${pdfLink}
+*View Your Receipt:*
+${receiptLink}
 
 thanks for shopping
 
@@ -591,6 +595,10 @@ startxref
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span>₹ {(selectedBill.subtotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Discount:</span>
+                    <span>₹ {(selectedBill.discountAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
