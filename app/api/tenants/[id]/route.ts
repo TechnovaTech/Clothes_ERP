@@ -54,17 +54,28 @@ export async function DELETE(
 ) {
   try {
     const tenantsCollection = await getTenantsCollection()
-    
-    const result = await tenantsCollection.deleteOne({
-      _id: new ObjectId(params.id)
-    })
+    let tenant
+    try {
+      tenant = await tenantsCollection.findOne({ _id: new ObjectId(params.id) })
+    } catch {
+      tenant = await tenantsCollection.findOne({ _id: params.id })
+    }
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    }
+
+    await cleanupTenantData(params.id, (tenant as any).name)
+
+    let result
+    try {
+      result = await tenantsCollection.deleteOne({ _id: new ObjectId(params.id) })
+    } catch {
+      result = await tenantsCollection.deleteOne({ _id: params.id })
+    }
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
-
-    // Clean up all tenant-specific data
-    await cleanupTenantData(params.id)
 
     return NextResponse.json({ message: 'Tenant deleted successfully' })
   } catch (error) {
