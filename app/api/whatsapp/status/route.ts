@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const response = await fetch('http://localhost:3004/status');
+    const whatsappUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:1112';
+    const response = await fetch(`${whatsappUrl}/status`);
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
@@ -12,7 +13,8 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const response = await fetch('http://localhost:3004/qr');
+    const whatsappUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:1112';
+    const response = await fetch(`${whatsappUrl}/qr`);
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {

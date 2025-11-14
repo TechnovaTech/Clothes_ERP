@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    const response = await fetch('http://localhost:3004/logout', {
+    const whatsappUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:1112';
+    const response = await fetch(`${whatsappUrl}/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.WHATSAPP_API_KEY || 'default-key'
+        'x-api-key': process.env.WHATSAPP_API_KEY || 'whatsapp-secret-2024'
       }
     });
     const data = await response.json();

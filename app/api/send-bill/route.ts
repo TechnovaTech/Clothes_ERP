@@ -11,11 +11,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch('http://localhost:3004/send-message', {
+    const whatsappUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:1112';
+    const response = await fetch(`${whatsappUrl}/send-message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.WHATSAPP_API_KEY || 'default-key'
+        'x-api-key': process.env.WHATSAPP_API_KEY || 'whatsapp-secret-2024'
       },
       body: JSON.stringify({ phone, message })
     });
