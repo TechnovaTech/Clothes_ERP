@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function POST(request: Request) {
   try {
@@ -24,8 +24,7 @@ export async function POST(request: Request) {
     }
 
     const dataLines = lines.slice(1)
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
 
     let imported = 0
     for (const line of dataLines) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -13,8 +13,7 @@ export async function POST(request: NextRequest) {
 
     const { password } = await request.json()
     
-    const db = await connectDB()
-    const settingsCollection = db.collection(`settings_${session.user.tenantId}`)
+    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     const settings = await settingsCollection.findOne({})
     
     const storedPassword = settings?.fieldSettingsPassword || 'vivekVOra32*'

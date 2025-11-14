@@ -1,13 +1,13 @@
-import { connectDB } from './database'
+import { connectTenantDB } from './database'
 
 // Get tenant-specific database collection
-export async function getTenantCollection(tenantId: string, collectionName: string) {
-  const db = await connectDB()
-  return db.collection(`tenant_${tenantId}_${collectionName}`)
+export async function getTenantCollection(tenantId: string, collectionName: string, tenantName?: string) {
+  const db = await connectTenantDB(tenantId, tenantName)
+  return db.collection(collectionName)
 }
 
 // Initialize tenant data structure
-export async function initializeTenantData(tenantId: string) {
+export async function initializeTenantData(tenantId: string, tenantName?: string) {
   const collections = [
     'customers',
     'inventory',
@@ -15,11 +15,13 @@ export async function initializeTenantData(tenantId: string) {
     'sales',
     'employees',
     'reports',
-    'settings'
+    'settings',
+    'expenses',
+    'fields'
   ]
 
   for (const collection of collections) {
-    const tenantCollection = await getTenantCollection(tenantId, collection)
+    const tenantCollection = await getTenantCollection(tenantId, collection, tenantName)
     
     // Create initial settings for tenant
     if (collection === 'settings') {
@@ -37,13 +39,6 @@ export async function initializeTenantData(tenantId: string) {
 
 // Clean up tenant data when tenant is deleted
 export async function cleanupTenantData(tenantId: string) {
-  const db = await connectDB()
-  const collections = await db.listCollections().toArray()
-  
-  // Find and drop all collections that belong to this tenant
-  for (const collection of collections) {
-    if (collection.name.startsWith(`tenant_${tenantId}_`)) {
-      await db.collection(collection.name).drop()
-    }
-  }
+  const db = await connectTenantDB(tenantId)
+  await db.dropDatabase()
 }

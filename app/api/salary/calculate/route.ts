@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -15,9 +15,8 @@ export async function GET(request: NextRequest) {
     const month = parseInt(searchParams.get('month') || '1')
     const year = parseInt(searchParams.get('year') || '2024')
 
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
-    const leavesCollection = db.collection(`tenant_${session.user.tenantId}_leaves`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
+    const leavesCollection = await getTenantCollection(session.user.tenantId, 'leaves')
     
     const employees = await employeesCollection.find({}).toArray()
     

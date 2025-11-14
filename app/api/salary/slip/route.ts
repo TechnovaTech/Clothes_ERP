@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -20,9 +20,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Employee ID required' }, { status: 400 })
     }
 
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
-    const settingsCollection = db.collection(`settings_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
+    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     
     const employee = await employeesCollection.findOne({ employeeId })
     const settings = await settingsCollection.findOne({})
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`
     const endDate = new Date(year, month, 0).toISOString().split('T')[0]
     
-    const leavesCollection = db.collection(`tenant_${session.user.tenantId}_leaves`)
+    const leavesCollection = await getTenantCollection(session.user.tenantId, 'leaves')
     const empId = employee.employeeId || employee._id.toString()
     
     const leaves = await leavesCollection.find({

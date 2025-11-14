@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
@@ -13,8 +13,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const body = await request.json()
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
     
     await employeesCollection.updateOne(
       { _id: new ObjectId(params.id) },
@@ -41,8 +40,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
     
     await employeesCollection.deleteOne({
       _id: new ObjectId(params.id)

@@ -51,29 +51,45 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const leavesCollection = await getTenantCollection(session.user.tenantId, 'leaves')
-    
-    const leave = {
-      ...body,
-      tenantId: session.user.tenantId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: 'Approved'
+
+    const employeeId = (body.employeeId ?? '').toString()
+    const employeeName = (body.employeeName ?? '').toString()
+    const leaveType = (body.leaveType ?? '').toString()
+    const startDate = (body.startDate ?? '').toString()
+    const endDate = (body.endDate ?? '').toString()
+    const reason = (body.reason ?? '').toString()
+
+    if (!employeeId || !employeeName || !leaveType || !startDate || !endDate) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
-    
-    const result = await leavesCollection.insertOne(leave)
-    
-    return NextResponse.json({ 
-      message: 'Leave request created successfully',
-      leaveId: result.insertedId 
-    })
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const daysCalc = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    const days = Number.isFinite(Number(body.days)) ? Number(body.days) : daysCalc
+
+    const doc = {
+      employeeId,
+      employeeName,
+      leaveType,
+      startDate,
+      endDate,
+      days,
+      reason,
+      status: (body.status ?? 'Pending').toString(),
+      tenantId: session.user.tenantId,
+      createdAt: new Date()
+    }
+
+    const result = await leavesCollection.insertOne(doc)
+    return NextResponse.json({ insertedId: result.insertedId.toString() })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create leave request' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create leave' }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,8 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { bills } = await request.json()
-    const db = await connectDB()
-    const salesCollection = db.collection(`sales_${session.user.tenantId}`)
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
 
     const billsToInsert = bills.map((bill: any) => ({
       ...bill,

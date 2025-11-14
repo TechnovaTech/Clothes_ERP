@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -14,13 +14,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('Connecting to database...')
-    const db = await connectDB()
-    console.log('Database connected, fetching tenant fields...')
-    
-    const tenantFields = await db.collection('tenant_fields').findOne({ 
-      tenantId: session.user.tenantId 
-    })
+    const fieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
+    const tenantFields = await fieldsCollection.findOne({})
     
     console.log('Tenant fields found:', tenantFields ? 'Yes' : 'No')
     
@@ -47,11 +42,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Request body:', body)
     
-    const db = await connectDB()
-    console.log('Database connected')
-    
+    const fieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
     const tenantFieldConfig = {
-      tenantId: session.user.tenantId,
       businessType: body.businessType || 'default',
       fields: body.fields || [],
       updatedAt: new Date()
@@ -59,8 +51,8 @@ export async function POST(request: NextRequest) {
     
     console.log('Saving config:', tenantFieldConfig)
 
-    const result = await db.collection('tenant_fields').updateOne(
-      { tenantId: session.user.tenantId },
+    const result = await fieldsCollection.updateOne(
+      {},
       { $set: tenantFieldConfig },
       { upsert: true }
     )

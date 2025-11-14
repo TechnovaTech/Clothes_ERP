@@ -31,3 +31,36 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete leave record' }, { status: 500 })
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const leavesCollection = await getTenantCollection(session.user.tenantId, 'leaves')
+    const body = await request.json()
+    const status = (body.status ?? '').toString()
+    const allowed = ['Pending', 'Approved', 'Rejected']
+    if (!allowed.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    const result = await leavesCollection.updateOne(
+      { _id: new ObjectId(params.id), tenantId: session.user.tenantId },
+      { $set: { status } }
+    )
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'Leave record not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update leave status' }, { status: 500 })
+  }
+}

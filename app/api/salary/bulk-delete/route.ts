@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -12,8 +12,7 @@ export async function DELETE(request: NextRequest) {
 
     const { employeeIds } = await request.json()
     
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
     
     await employeesCollection.deleteMany(
       { employeeId: { $in: employeeIds } }

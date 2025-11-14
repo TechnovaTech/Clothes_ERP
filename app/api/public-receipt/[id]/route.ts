@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { connectDB, connectTenantDB } from '@/lib/database'
 import { ObjectId } from 'mongodb'
 
 export async function GET(
@@ -14,18 +14,18 @@ export async function GET(
     }
 
     const db = await connectDB()
-    
-    // Search across all tenant sales collections to find the bill
-    const collections = await db.listCollections({ name: /^sales_/ }).toArray()
+    const tenants = await db.collection('tenants').find({ status: 'active' }).toArray()
     let bill = null
     let tenantId = null
     
-    for (const collection of collections) {
-      const salesCollection = db.collection(collection.name)
+    for (const tenant of tenants) {
+      const tId = tenant._id.toString()
+      const tenantDb = await connectTenantDB(tId)
+      const salesCollection = tenantDb.collection('sales')
       const foundBill = await salesCollection.findOne({ _id: new ObjectId(billId) })
       if (foundBill) {
         bill = foundBill
-        tenantId = collection.name.replace('sales_', '')
+        tenantId = tId
         break
       }
     }
@@ -35,8 +35,8 @@ export async function GET(
     }
 
     // Fetch store settings for this tenant
-    const settingsCollection = db.collection(`settings_${tenantId}`)
-    const settings = await settingsCollection.findOne({}) || {}
+    const tenantDb = await connectTenantDB(tenantId)
+    const settings = await tenantDb.collection('settings').findOne({}) || {}
 
     // Generate receipt HTML
     const storeName = (settings as any).storeName || bill.storeName || 'Fashion Store'
