@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateBarcode } from '@/lib/barcode-utils'
@@ -20,12 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    console.log('Connecting to database...')
-    const db = await connectDB()
-    const collectionName = `products_${session.user.tenantId}`
-    console.log('Using collection:', collectionName)
-    
-    const inventoryCollection = db.collection(collectionName)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     const total = await inventoryCollection.countDocuments({})
     const inventory = await inventoryCollection.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray()
     console.log('Found items:', inventory.length)
@@ -64,8 +59,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Product creation request:', body)
     
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     
     // Use provided barcode or generate one
     const mainBarcode = body.barcode || generateBarcode('FS')
@@ -79,8 +73,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Get tenant field configuration
-    const tenantFieldsCollection = db.collection('tenant_fields')
-    const tenantConfig = await tenantFieldsCollection.findOne({ tenantId: session.user.tenantId })
+    const tenantFieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
+    const tenantConfig = await tenantFieldsCollection.findOne({})
     
     // Base item structure
     const item: any = {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -11,14 +12,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
     const tenantId = session.user.tenantId
-    
-    // Get tenant settings
-    const settings = await db.collection(`settings_${tenantId}`).findOne({})
+    const settingsCollection = await getTenantCollection(tenantId, 'settings')
+    const inventoryCollection = await getTenantCollection(tenantId, 'inventory')
+    const settings = await settingsCollection.findOne({})
     
     // Get low stock products
-    const productsCollection = db.collection(`products_${tenantId}`)
+    const productsCollection = inventoryCollection
     const lowStockProducts = await productsCollection.find({
       $or: [
         { $expr: { $lte: ['$stock', { $ifNull: ['$minStock', 10] }] } },
@@ -41,6 +41,7 @@ export async function GET() {
       `\n\nTotal items: ${lowStockProducts.length}\nDate: ${new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })}`
     
     // Log the alert
+    const db = await connectDB()
     await db.collection('alert_logs').insertOne({
       tenantId,
       tenantName: settings?.storeName || 'Store',
@@ -73,11 +74,10 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
     const tenantId = session.user.tenantId
-    
-    // Get tenant settings
-    const settings = await db.collection(`settings_${tenantId}`).findOne({})
+    const settingsCollection = await getTenantCollection(tenantId, 'settings')
+    const inventoryCollection = await getTenantCollection(tenantId, 'inventory')
+    const settings = await settingsCollection.findOne({})
     
     if (!settings?.phone) {
       return NextResponse.json({ 
@@ -86,7 +86,7 @@ export async function POST() {
     }
     
     // Get low stock products
-    const productsCollection = db.collection(`products_${tenantId}`)
+    const productsCollection = inventoryCollection
     const lowStockProducts = await productsCollection.find({
       $or: [
         { $expr: { $lte: ['$stock', { $ifNull: ['$minStock', 10] }] } },
@@ -118,6 +118,7 @@ export async function POST() {
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(alertMessage)}`
     
     // Log the alert
+    const db = await connectDB()
     await db.collection('alert_logs').insertOne({
       tenantId,
       tenantName: settings.storeName,

@@ -46,8 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json({ error: 'No items found in purchase order' }, { status: 400 })
       }
       
-      const db = await connectDB()
-      const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+      const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
       
       for (const item of purchase.items) {
         const quantityToAdd = Number(item.quantity) || 0
@@ -57,16 +56,18 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         let existingItem = null
         
         // Try to find existing item by SKU first (most reliable)
-        if (item.sku?.trim()) {
+        const skuStr = (item.sku ?? '').toString().trim()
+        if (skuStr) {
           existingItem = await inventoryCollection.findOne({ 
-            sku: { $regex: new RegExp(`^${item.sku.trim()}$`, 'i') } 
+            sku: { $regex: new RegExp(`^${skuStr}$`, 'i') } 
           })
         }
         
         // If not found by SKU, try by exact name match
-        if (!existingItem && item.name?.trim()) {
+        const nameStr = (item.name ?? '').toString().trim()
+        if (!existingItem && nameStr) {
           existingItem = await inventoryCollection.findOne({ 
-            name: { $regex: new RegExp(`^${item.name.trim()}$`, 'i') } 
+            name: { $regex: new RegExp(`^${nameStr}$`, 'i') } 
           })
         }
         
@@ -118,6 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ message: 'Purchase order updated successfully' })
   } catch (error) {
+    console.error('Update purchase order error:', error)
     return NextResponse.json({ error: 'Failed to update purchase order' }, { status: 500 })
   }
 }

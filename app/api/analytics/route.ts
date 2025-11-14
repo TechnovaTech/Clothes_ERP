@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
@@ -16,9 +16,8 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const days = parseInt(searchParams.get('days') || '30')
 
-    const db = await connectDB()
-    const salesCollection = db.collection(`sales_${session.user.tenantId}`)
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
 
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
         return await getBestSellers(salesCollection, inventoryCollection, startDate)
       
       case 'monthly-profit':
-        return await getMonthlyNetProfit(salesCollection, inventoryCollection, startDate)
+        return await getMonthlyNetProfit(salesCollection, inventoryCollection, startDate, session.user.tenantId)
       
       default:
         return NextResponse.json({ error: 'Invalid analytics type' }, { status: 400 })
@@ -165,10 +164,8 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
   return NextResponse.json(enrichedResults)
 }
 
-async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: any, startDate: Date) {
-  const db = salesCollection.s.db
-  const tenantId = salesCollection.collectionName.split('_')[1]
-  const expensesCollection = db.collection(`tenant_${tenantId}_expenses`)
+async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: any, startDate: Date, tenantId: string) {
+  const expensesCollection = await getTenantCollection(tenantId, 'expenses')
   
   const pipeline = [
     {

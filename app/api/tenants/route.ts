@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     await usersCollection.insertOne(adminUser)
     
     // Initialize tenant-specific data collections
-    await initializeTenantData(result.insertedId.toString())
+    await initializeTenantData(result.insertedId.toString(), name)
     
     // Handle referral if provided
     if (referralCode) {

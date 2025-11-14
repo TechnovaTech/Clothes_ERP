@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
@@ -28,8 +29,7 @@ export async function GET() {
       })
     }
 
-    const db = await connectDB()
-    const settingsCollection = db.collection(`settings_${session.user.tenantId}`)
+    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     const settings = await settingsCollection.findOne({})
     
     return NextResponse.json(settings || { 
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const db = await connectDB()
-    const settingsCollection = db.collection(`settings_${session.user.tenantId}`)
+    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     
     // Update settings
     const result = await settingsCollection.updateOne(

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { connectDB, connectTenantDB } from '@/lib/database'
 
 async function sendWhatsAppMessage(phone: string, message: string) {
   try {
@@ -79,8 +79,9 @@ export async function GET() {
     for (const tenant of tenants) {
       const tenantId = tenant._id.toString()
       
-      // Get tenant settings
-      const settings = await db.collection(`settings_${tenantId}`).findOne({})
+      // Get tenant settings from tenant DB
+      const tenantDb = await connectTenantDB(tenantId)
+      const settings = await tenantDb.collection('settings').findOne({})
       if (!settings?.phone) continue
       
       // Check if already sent today
@@ -96,8 +97,8 @@ export async function GET() {
         continue
       }
       
-      // Get low stock products
-      const productsCollection = db.collection(`products_${tenantId}`)
+      // Get low stock products from tenant DB
+      const productsCollection = tenantDb.collection('inventory')
       const lowStockProducts = await productsCollection.find({
         $or: [
           { $expr: { $lte: ['$stock', { $ifNull: ['$minStock', 10] }] } },

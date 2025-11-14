@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getTenantPlanLimits } from '@/lib/plan-limits'
@@ -25,8 +25,7 @@ export async function POST(request: NextRequest) {
     
     // Check current product count and limits
     const limits = await getTenantPlanLimits(session.user.tenantId)
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     const currentCount = await inventoryCollection.countDocuments({})
     
     const items = []

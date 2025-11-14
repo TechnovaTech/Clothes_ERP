@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
 
 export async function GET() {
   try {
@@ -12,12 +11,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
-    const tenantFieldsCollection = db.collection('tenant_fields')
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
+    const tenantFieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
     
     // Get tenant field configuration
-    const tenantConfig = await tenantFieldsCollection.findOne({ tenantId: session.user.tenantId })
+    const tenantConfig = await tenantFieldsCollection.findOne({})
     const enabledFields = tenantConfig?.fields?.filter((f: any) => f.enabled) || []
     
     const inventory = await inventoryCollection.find({}).toArray()

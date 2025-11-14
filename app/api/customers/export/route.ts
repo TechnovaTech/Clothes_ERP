@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function GET() {
   try {
@@ -10,8 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+    const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     const customers = await customersCollection.find({}).sort({ createdAt: -1 }).toArray()
 
     const csv = [

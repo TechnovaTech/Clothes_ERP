@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -11,8 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const dropdownCollection = db.collection(`dropdown_data_${session.user.tenantId}`)
+    const dropdownCollection = await getTenantCollection(session.user.tenantId, 'dropdown_data')
     const dropdownData = await dropdownCollection.findOne({ type: 'master-data' })
     
     if (!dropdownData) {
@@ -49,8 +48,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const db = await connectDB()
-    const dropdownCollection = db.collection(`dropdown_data_${session.user.tenantId}`)
+    const dropdownCollection = await getTenantCollection(session.user.tenantId, 'dropdown_data')
     
     await dropdownCollection.updateOne(
       { type: 'master-data', tenantId: session.user.tenantId },

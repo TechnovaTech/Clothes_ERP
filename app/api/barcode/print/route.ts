@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { ObjectId } from 'mongodb'
 
 export async function POST(request: NextRequest) {
@@ -19,8 +19,7 @@ export async function POST(request: NextRequest) {
     
     // Save barcode to inventory
     try {
-      const db = await connectDB()
-      const collection = db.collection(`tenant_${session.user.tenantId}_inventory`)
+      const collection = await getTenantCollection(session.user.tenantId, 'inventory')
       await collection.updateOne(
         { batchId, qcId },
         { $set: { barcode, updatedAt: new Date() } }
@@ -99,8 +98,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 })
     }
 
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`tenant_${session.user.tenantId}_inventory`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     const product = await inventoryCollection.findOne({ _id: new ObjectId(productId) })
     
     if (!product) {

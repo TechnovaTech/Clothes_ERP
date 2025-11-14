@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { withFeatureAccess } from '@/lib/api-middleware'
@@ -23,8 +23,7 @@ export const PUT = withFeatureAccess('customers')(async function(
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
 
-    const db = await connectDB()
-    const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+    const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
     const result = await customersCollection.updateOne(
       { _id: new ObjectId(params.id) },
@@ -60,8 +59,7 @@ export const DELETE = withFeatureAccess('customers')(async function(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+    const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
     const result = await customersCollection.deleteOne({
       _id: new ObjectId(params.id)

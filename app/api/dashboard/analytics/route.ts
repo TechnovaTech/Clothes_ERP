@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,13 +25,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const db = await connectDB()
     const tenantId = session.user.tenantId
-
-    // Get collections
-    const salesCollection = db.collection(`sales_${tenantId}`)
-    const productsCollection = db.collection(`products_${tenantId}`)
-    const customersCollection = db.collection(`customers_${tenantId}`)
+    const salesCollection = await getTenantCollection(tenantId, 'sales')
+    const productsCollection = await getTenantCollection(tenantId, 'inventory')
+    const customersCollection = await getTenantCollection(tenantId, 'customers')
 
     // Calculate date ranges
     const today = new Date()
@@ -82,8 +79,8 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
 
     // Get tenant field configuration
-    const tenantFieldsCollection = db.collection('tenant_fields')
-    const tenantConfig = await tenantFieldsCollection.findOne({ tenantId })
+    const tenantFieldsCollection = await getTenantCollection(tenantId, 'fields')
+    const tenantConfig = await tenantFieldsCollection.findOne({})
     
     // Get products for stock analysis
     const products = await productsCollection.find({}).toArray()

@@ -32,12 +32,14 @@ async function initSuperAdmin() {
       const result = await tenantsCollection.insertOne(sampleTenant)
       console.log('Sample tenant created:', result.insertedId)
       
-      // Initialize tenant data
+      // Initialize tenant data in separate database
       const tenantId = result.insertedId.toString()
-      const collections = ['customers', 'inventory', 'purchases', 'sales', 'employees', 'reports', 'settings']
+      const safeName = sampleTenant.name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || 'tenant'
+      const tenantDb = client.db(`${dbName}_tenant_${safeName}_${tenantId}`)
+      const collections = ['customers', 'inventory', 'purchases', 'sales', 'employees', 'reports', 'settings', 'expenses', 'fields']
       
       for (const collection of collections) {
-        const tenantCollection = db.collection(`tenant_${tenantId}_${collection}`)
+        const tenantCollection = tenantDb.collection(collection)
         
         if (collection === 'settings') {
           await tenantCollection.insertOne({

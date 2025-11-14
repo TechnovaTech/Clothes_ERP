@@ -370,8 +370,10 @@ export default function POSPage() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
-  const discountAmount = (subtotal * discount) / 100
-  const tax = (subtotal - discountAmount) * (settings.taxRate / 100)
+  const discountPercent = Number(discount) || 0
+  const taxRatePercent = Number(settings.taxRate) || 0
+  const discountAmount = (subtotal * discountPercent) / 100
+  const tax = (subtotal - discountAmount) * (taxRatePercent / 100)
   const total = subtotal - discountAmount + tax
 
   const holdBill = () => {

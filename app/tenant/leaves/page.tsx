@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Calendar, Clock, Users, Filter, Trash2, Download, Upload } from "lucide-react"
+import { Search, Plus, Calendar, Clock, Users, Filter, Trash2, Download, Upload, Check, X } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast } from "@/lib/toast"
@@ -65,6 +65,7 @@ export default function LeavesPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isClearAllOpen, setIsClearAllOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [updatingLeaveId, setUpdatingLeaveId] = useState<string | null>(null)
 
   const fetchEmployees = async () => {
     try {
@@ -162,6 +163,27 @@ export default function LeavesPage() {
     } catch (error) {
       console.error('Failed to delete leave:', error)
       showToast.error('Error deleting leave record')
+    }
+  }
+
+  const updateLeaveStatus = async (id: string, status: string) => {
+    try {
+      setUpdatingLeaveId(id)
+      const response = await fetch(`/api/leaves/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (response.ok) {
+        fetchLeaves(currentPage)
+        showToast.success(`Leave ${status.toLowerCase()} successfully!`)
+      } else {
+        showToast.error('Failed to update leave status')
+      }
+    } catch (error) {
+      showToast.error('Error updating leave status')
+    } finally {
+      setUpdatingLeaveId(null)
     }
   }
 
@@ -565,9 +587,38 @@ export default function LeavesPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => openDeleteDialog(leave)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700"
+                              onClick={() => updateLeaveStatus(leave._id || '', 'Approved')}
+                              disabled={leave.status === 'Approved' || updatingLeaveId === (leave._id || '')}
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-orange-600 hover:text-orange-700"
+                              onClick={() => updateLeaveStatus(leave._id || '', 'Pending')}
+                              disabled={leave.status === 'Pending' || updatingLeaveId === (leave._id || '')}
+                            >
+                              <Clock className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => updateLeaveStatus(leave._id || '', 'Rejected')}
+                              disabled={leave.status === 'Rejected' || updatingLeaveId === (leave._id || '')}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => openDeleteDialog(leave)} disabled={updatingLeaveId === (leave._id || '')}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

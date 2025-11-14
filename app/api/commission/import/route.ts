@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -20,8 +20,7 @@ export async function POST(request: NextRequest) {
     const lines = text.split('\n').filter(line => line.trim())
     const headers = lines[0].split(',')
     
-    const db = await connectDB()
-    const employeesCollection = db.collection(`employees_${session.user.tenantId}`)
+    const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
     
     let imported = 0
     for (let i = 1; i < lines.length; i++) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
@@ -15,10 +15,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, total, paymentMethod, taxRate, storeName, staffMember } = body
 
-    const db = await connectDB()
-    const salesCollection = db.collection(`sales_${session.user.tenantId}`)
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
-    const settingsCollection = db.collection(`settings_${session.user.tenantId}`)
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
+    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     
     // Get store settings
     const storeSettings = await settingsCollection.findOne({}) || { storeName: 'Store', taxRate: 10 }
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
     
     // Update customer total spent and order count
     if (customerName && customerName.trim()) {
-      const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+      const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
       
       // Check if customer exists, if not create with orderCount: 1
       const existingCustomer = await customersCollection.findOne({
@@ -160,8 +159,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
     const search = searchParams.get('search')
     
-    const db = await connectDB()
-    const salesCollection = db.collection(`sales_${session.user.tenantId}`)
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
     
     let query = {}
     if (search) {

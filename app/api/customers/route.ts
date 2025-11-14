@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    const db = await connectDB()
-    const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+    const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     const total = await customersCollection.countDocuments({})
     const customers = await customersCollection.find({}).sort({ orderCount: -1 }).skip(skip).limit(limit).toArray()
     
@@ -54,8 +53,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, phone, email, address } = body
     
-    const db = await connectDB()
-    const customersCollection = db.collection(`customers_${session.user.tenantId}`)
+    const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
     // Check if customer already exists
     const existingCustomer = await customersCollection.findOne({

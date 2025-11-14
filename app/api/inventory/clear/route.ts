@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -11,8 +11,7 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     const result = await inventoryCollection.deleteMany({})
     
     return NextResponse.json({ 

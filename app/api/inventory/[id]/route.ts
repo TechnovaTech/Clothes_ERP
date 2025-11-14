@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/database'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
@@ -18,12 +18,11 @@ export async function PUT(
     const body = await request.json()
     console.log('Update request body:', JSON.stringify(body, null, 2))
     
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     
     // Get tenant field configuration
-    const tenantFieldsCollection = db.collection('tenant_fields')
-    const tenantConfig = await tenantFieldsCollection.findOne({ tenantId: session.user.tenantId })
+    const tenantFieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
+    const tenantConfig = await tenantFieldsCollection.findOne({})
     
     // Base update data
     const updateData: any = {
@@ -112,8 +111,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const db = await connectDB()
-    const inventoryCollection = db.collection(`products_${session.user.tenantId}`)
+    const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     
     const result = await inventoryCollection.deleteOne({
       _id: new ObjectId(params.id)
