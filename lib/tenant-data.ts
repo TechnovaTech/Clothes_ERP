@@ -38,7 +38,7 @@ export async function initializeTenantData(tenantId: string, tenantName?: string
 }
 
 // Clean up tenant data when tenant is deleted
-export async function cleanupTenantData(tenantId: string) {
-  const db = await connectTenantDB(tenantId)
+export async function cleanupTenantData(tenantId: string, tenantName?: string) {
+  const db = await connectTenantDB(tenantId, tenantName)
   await db.dropDatabase()
 }
