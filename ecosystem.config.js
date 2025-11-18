@@ -12,7 +12,7 @@ module.exports = {
     },
     {
       name: 'clothes-erp-whatsapp',
-      script: 'server.js',
+      script: 'simple-server.js',
       cwd: '/var/www/clothes-erp/whatsapp-service',
       env: {
         NODE_ENV: 'production',

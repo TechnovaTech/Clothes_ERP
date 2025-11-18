@@ -26,7 +26,7 @@ const log = (message, data = null) => {
   if (data) console.log(JSON.stringify(data, null, 2));
 };
 
-// Resolve Chrome executable path on Windows if CHROME_PATH not set
+// Resolve Chrome executable path
 const resolveChromePath = () => {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   const platform = os.platform();
@@ -36,6 +36,18 @@ const resolveChromePath = () => {
       'C\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
       process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe` : null
     ].filter(Boolean);
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) return p;
+      } catch (_) {}
+    }
+  } else if (platform === 'linux') {
+    const candidates = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium'
+    ];
     for (const p of candidates) {
       try {
         if (fs.existsSync(p)) return p;
@@ -59,25 +71,42 @@ const initializeClient = () => {
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-extensions',
+      '--disable-plugins',
+      '--disable-default-apps',
+      '--no-default-browser-check',
+      '--disable-hang-monitor',
+      '--disable-popup-blocking',
+      '--disable-prompt-on-repost',
+      '--disable-sync',
+      '--metrics-recording-only',
+      '--no-crash-upload',
+      '--disable-background-networking'
     ]
   };
 
-  // Prefer CHROME_PATH; otherwise try sensible defaults on Windows
+  // Use system Chrome if available
   const chromePath = resolveChromePath();
   if (chromePath) {
     puppeteerConfig.executablePath = chromePath;
     log(`🧭 Using Chrome path: ${chromePath}`);
-  } else if (process.env.CHROME_PATH) {
-    puppeteerConfig.executablePath = process.env.CHROME_PATH;
-    log(`🧭 Using CHROME_PATH from env: ${process.env.CHROME_PATH}`);
   } else {
-    log('ℹ️ No Chrome path provided; letting Puppeteer choose its default');
+    log('ℹ️ No Chrome found; using Puppeteer default');
   }
   
   client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: puppeteerConfig
+    puppeteer: puppeteerConfig,
+    webVersionCache: {
+      type: 'remote',
+      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+    }
   });
 
   client.on('qr', (qr) => {
@@ -97,11 +126,22 @@ const initializeClient = () => {
 
   client.on('auth_failure', (msg) => {
     log('❌ Authentication failure:', msg);
+    // Retry initialization after 10 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 10000);
   });
 
   client.on('disconnected', (reason) => {
     isReady = false;
+    qrString = '';
     log('⚠️ WhatsApp client disconnected:', reason);
+    // Retry initialization after 5 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 5000);
   });
 
   client.on('loading_screen', (percent, message) => {
@@ -109,7 +149,16 @@ const initializeClient = () => {
   });
 
   log('🔄 Starting client initialization...');
-  client.initialize();
+  
+  // Add error handling for initialization
+  client.initialize().catch((error) => {
+    log('❌ Client initialization failed:', error.message);
+    // Retry after 10 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 10000);
+  });
 };
 
 // API Key middleware
