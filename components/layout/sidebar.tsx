@@ -158,7 +158,7 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
       <div className="flex-shrink-0 flex h-16 items-center justify-between px-4 py-4 border-b border-gray-200">
         {!collapsed && (
           <div className="flex items-center space-x-3">
-            <Image src="/logo.png" alt="Retalians Logo" width={40} height={40} className="object-contain" />
+            <Image src="/logo.jpeg" alt="Retalians Logo" width={40} height={40} className="object-contain" />
             <div>
               <h2 className="text-lg font-bold text-gray-800">Retalians</h2>
               <p className="text-xs text-gray-500">
@@ -168,7 +168,7 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
           </div>
         )}
         {collapsed && (
-          <Image src="/logo.png" alt="Retalians Logo" width={32} height={32} className="object-contain" />
+          <Image src="/logo.jpeg" alt="Retalians Logo" width={32} height={32} className="object-contain" />
         )}
         <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto text-gray-500 hover:text-gray-800 hover:bg-gray-100">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
