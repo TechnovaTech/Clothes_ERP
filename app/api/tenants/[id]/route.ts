@@ -4,6 +4,37 @@ import { cleanupTenantData } from '@/lib/tenant-data'
 import { ObjectId } from 'mongodb'
 import bcrypt from 'bcryptjs'
 
+// GET - Get single tenant
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    if (!ObjectId.isValid(params.id)) {
+      return NextResponse.json({ error: 'Invalid tenant ID' }, { status: 400 })
+    }
+
+    const tenantsCollection = await getTenantsCollection()
+    const tenant = await tenantsCollection.findOne({ _id: new ObjectId(params.id) })
+    
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    }
+
+    // Remove password and convert _id to string
+    const { password, _id, ...tenantData } = tenant
+    
+    return NextResponse.json({
+      ...tenantData,
+      _id: _id.toString(),
+      id: _id.toString()
+    })
+  } catch (error) {
+    console.error('Error fetching tenant:', error)
+    return NextResponse.json({ error: 'Failed to fetch tenant' }, { status: 500 })
+  }
+}
+
 // PUT - Update tenant
 export async function PUT(
   request: NextRequest,

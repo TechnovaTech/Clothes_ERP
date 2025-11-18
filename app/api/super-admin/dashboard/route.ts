@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import clientPromise from '@/lib/mongodb'
+import { connectDB } from '@/lib/database'
 
 export async function GET() {
   try {
-    const client = await clientPromise
-    const db = client.db('erp_system')
+    const db = await connectDB()
     
     // Get total tenants
     const totalTenants = await db.collection('tenants').countDocuments()

@@ -496,16 +496,11 @@ export default function PurchasesPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>{t('supplierName')}</Label>
-                        <Select value={formData.supplierName} onValueChange={(value) => setFormData(prev => ({...prev, supplierName: value}))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectSupplier')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {dropdownData.suppliers.map((supplier) => (
-                              <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input 
+                          value={formData.supplierName}
+                          onChange={(e) => setFormData(prev => ({...prev, supplierName: e.target.value}))}
+                          placeholder="Enter supplier name" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>{t('contactPerson')}</Label>
@@ -690,16 +685,11 @@ export default function PurchasesPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Supplier Name</Label>
-                        <Select value={formData.supplierName} onValueChange={(value) => setFormData(prev => ({...prev, supplierName: value}))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select supplier" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {dropdownData.suppliers.map((supplier) => (
-                              <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input 
+                          value={formData.supplierName}
+                          onChange={(e) => setFormData(prev => ({...prev, supplierName: e.target.value}))}
+                          placeholder="Enter supplier name" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Contact Person</Label>

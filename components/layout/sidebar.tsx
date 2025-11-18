@@ -43,6 +43,7 @@ interface SidebarProps {
 const superAdminNavItems = [
   { title: "Dashboard", href: "/super-admin", icon: LayoutDashboard, group: "core" },
   { title: "Tenants", href: "/super-admin/tenants", icon: Building2, group: "core" },
+  { title: "Payments", href: "/super-admin/payments", icon: CreditCard, group: "core" },
   { title: "Business Types", href: "/super-admin/business-types", icon: Package, group: "core" },
   { title: "Field Requests", href: "/super-admin/field-requests", icon: MessageSquare, group: "core" },
   { title: "Plan Management", href: "/super-admin/plans", icon: CreditCard, group: "core" },
