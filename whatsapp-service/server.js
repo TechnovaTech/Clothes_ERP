@@ -26,7 +26,7 @@ const log = (message, data = null) => {
   if (data) console.log(JSON.stringify(data, null, 2));
 };
 
-// Resolve Chrome executable path on Windows if CHROME_PATH not set
+// Resolve Chrome executable path
 const resolveChromePath = () => {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   const platform = os.platform();
@@ -36,6 +36,18 @@ const resolveChromePath = () => {
       'C\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
       process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe` : null
     ].filter(Boolean);
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) return p;
+      } catch (_) {}
+    }
+  } else if (platform === 'linux') {
+    const candidates = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium'
+    ];
     for (const p of candidates) {
       try {
         if (fs.existsSync(p)) return p;
@@ -59,20 +71,19 @@ const initializeClient = () => {
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor'
     ]
   };
 
-  // Prefer CHROME_PATH; otherwise try sensible defaults on Windows
+  // Use system Chrome if available
   const chromePath = resolveChromePath();
   if (chromePath) {
     puppeteerConfig.executablePath = chromePath;
     log(`🧭 Using Chrome path: ${chromePath}`);
-  } else if (process.env.CHROME_PATH) {
-    puppeteerConfig.executablePath = process.env.CHROME_PATH;
-    log(`🧭 Using CHROME_PATH from env: ${process.env.CHROME_PATH}`);
   } else {
-    log('ℹ️ No Chrome path provided; letting Puppeteer choose its default');
+    log('ℹ️ No Chrome found; using Puppeteer default');
   }
   
   client = new Client({
