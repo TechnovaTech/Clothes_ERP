@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/database'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import bcrypt from 'bcryptjs'
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user || session.user.role !== 'super-admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    return NextResponse.json({ 
+      fieldSettingsPassword: 'vivekVOra32*' // Return default for display
+    })
+  } catch (error) {
+    console.error('Super admin settings fetch error:', error)
+    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
+  }
+}
 
 export async function PUT(request: NextRequest) {
   try {
@@ -19,7 +37,22 @@ export async function PUT(request: NextRequest) {
 
     const db = await connectDB()
     
-    // Update field settings password for all tenants
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(fieldSettingsPassword, 12)
+    
+    // Update global settings collection
+    await db.collection('global_settings').updateOne(
+      {},
+      { 
+        $set: { 
+          fieldSettingsPassword: hashedPassword,
+          updatedAt: new Date()
+        }
+      },
+      { upsert: true }
+    )
+    
+    // Also update all tenant settings collections
     const collections = await db.listCollections({ name: /^settings_/ }).toArray()
     
     for (const collection of collections) {
@@ -27,7 +60,7 @@ export async function PUT(request: NextRequest) {
         {},
         { 
           $set: { 
-            fieldSettingsPassword,
+            fieldSettingsPassword: hashedPassword,
             updatedAt: new Date()
           }
         }

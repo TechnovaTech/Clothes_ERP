@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,9 +14,25 @@ import {
 } from "lucide-react"
 
 export default function SuperAdminSettingsPage() {
-  const [fieldSettingsPassword, setFieldSettingsPassword] = useState('vivekVOra32*')
+  const [fieldSettingsPassword, setFieldSettingsPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    fetchCurrentSettings()
+  }, [])
+
+  const fetchCurrentSettings = async () => {
+    try {
+      const response = await fetch('/api/super-admin-settings')
+      if (response.ok) {
+        const data = await response.json()
+        setFieldSettingsPassword(data.fieldSettingsPassword)
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error)
+    }
+  }
 
   const updateFieldSettingsPassword = async () => {
     setLoading(true)
@@ -30,6 +46,7 @@ export default function SuperAdminSettingsPage() {
       if (response.ok) {
         const data = await response.json()
         showToast.success(data.message)
+        setFieldSettingsPassword('') // Clear the field after successful update
       } else {
         showToast.error('Failed to update password')
       }
