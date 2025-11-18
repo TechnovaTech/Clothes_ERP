@@ -12,12 +12,11 @@ module.exports = {
     },
     {
       name: 'clothes-erp-whatsapp',
-      script: './start-with-display.sh',
+      script: 'simple-server.js',
       cwd: '/var/www/clothes-erp/whatsapp-service',
       env: {
         NODE_ENV: 'production',
-        PORT: 1112,
-        DISPLAY: ':99'
+        PORT: 1112
       }
     }
   ]
