@@ -108,11 +108,22 @@ const initializeClient = () => {
 
   client.on('auth_failure', (msg) => {
     log('❌ Authentication failure:', msg);
+    // Retry initialization after 10 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 10000);
   });
 
   client.on('disconnected', (reason) => {
     isReady = false;
+    qrString = '';
     log('⚠️ WhatsApp client disconnected:', reason);
+    // Retry initialization after 5 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 5000);
   });
 
   client.on('loading_screen', (percent, message) => {
@@ -120,7 +131,16 @@ const initializeClient = () => {
   });
 
   log('🔄 Starting client initialization...');
-  client.initialize();
+  
+  // Add error handling for initialization
+  client.initialize().catch((error) => {
+    log('❌ Client initialization failed:', error.message);
+    // Retry after 10 seconds
+    setTimeout(() => {
+      log('🔄 Retrying WhatsApp client initialization...');
+      initializeClient();
+    }, 10000);
+  });
 };
 
 // API Key middleware
