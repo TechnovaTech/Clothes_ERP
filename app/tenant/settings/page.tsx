@@ -6,13 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Settings, Store, Percent, Eye, EyeOff } from "lucide-react"
+import { Settings, Store, Percent, Eye, EyeOff, Image } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
 
+
+
+
 interface BusinessType {
   id: string
+  _id?: string
   name: string
   description: string
 }
@@ -25,6 +29,7 @@ export default function SettingsPage() {
     email: '',
     gst: '',
     taxRate: 0,
+    cessRate: 0,
     gstRate: 18,
     terms: '',
     billPrefix: 'BILL',
@@ -33,7 +38,9 @@ export default function SettingsPage() {
     deletePassword: '',
     discountMode: false,
     billFormat: 'professional',
-    businessType: 'none'
+    businessType: 'none',
+    logo: '',
+    signature: ''
   })
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,6 +130,92 @@ export default function SettingsPage() {
     <MainLayout title={t('settings')}>
       <FeatureGuard feature="settings">
       <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Image className="w-5 h-5" />
+              <span>Logo & Signature</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="logo">Store Logo</Label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    className="cursor-pointer"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = (event) => {
+                          const base64 = event.target?.result as string
+                          setSettings({...settings, logo: base64})
+                          showToast.success('Logo uploaded successfully!')
+                        }
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                  {settings.logo && (
+                    <div className="mt-3 text-center">
+                      <img src={settings.logo} alt="Logo" className="max-h-24 mx-auto border rounded shadow-sm" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => setSettings({...settings, logo: ''})}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="signature">Signature</Label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                  <Input
+                    id="signature"
+                    type="file"
+                    accept="image/*"
+                    className="cursor-pointer"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = (event) => {
+                          const base64 = event.target?.result as string
+                          setSettings({...settings, signature: base64})
+                          showToast.success('Signature uploaded successfully!')
+                        }
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                  {settings.signature && (
+                    <div className="mt-3 text-center">
+                      <img src={settings.signature} alt="Signature" className="max-h-24 mx-auto border rounded shadow-sm" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => setSettings({...settings, signature: ''})}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -298,6 +391,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -307,15 +402,27 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="taxRate">{t('taxRate')}</Label>
-                <Input
-                  id="taxRate"
-                  type="number"
-                  value={settings.taxRate}
-                  onChange={(e) => setSettings({...settings, taxRate: parseFloat(e.target.value) || 0})}
-                  placeholder="0"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="taxRate">{t('taxRate')}</Label>
+                  <Input
+                    id="taxRate"
+                    type="number"
+                    value={settings.taxRate}
+                    onChange={(e) => setSettings({...settings, taxRate: parseFloat(e.target.value) || 0})}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cessRate">CESS Rate (%)</Label>
+                  <Input
+                    id="cessRate"
+                    type="number"
+                    value={settings.cessRate}
+                    onChange={(e) => setSettings({...settings, cessRate: parseFloat(e.target.value) || 0})}
+                    placeholder="0"
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Receipt, Search, Eye, Printer, MessageCircle, Download, X, Upload, FileDown, Trash2 } from "lucide-react"
+import { Receipt, Search, Eye, Printer, MessageCircle, Download, X, Upload, FileDown, Trash2, Plus } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
@@ -53,6 +53,8 @@ export default function BillsPage() {
   const itemsPerPage = 20
   const [selectedBills, setSelectedBills] = useState<string[]>([])
   const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false)
+  const [customerDetails, setCustomerDetails] = useState<any>(null)
+  const [customerFields, setCustomerFields] = useState<any[]>([])
 
   const fetchBills = async (page = 1) => {
     try {
@@ -101,8 +103,41 @@ export default function BillsPage() {
     (bill.customerPhone && bill.customerPhone.includes(searchTerm))
   )
 
-  const viewBill = (bill: Bill) => {
+  const viewBill = async (bill: Bill) => {
     setSelectedBill(bill)
+    
+    // Fetch customer details if customer name exists
+    if (bill.customerName && bill.customerName !== 'Walk-in Customer') {
+      try {
+        const [customerResponse, fieldsResponse] = await Promise.all([
+          fetch('/api/customers'),
+          fetch('/api/customer-fields')
+        ])
+        
+        if (customerResponse.ok && fieldsResponse.ok) {
+          const customers = await customerResponse.json()
+          const fields = await fieldsResponse.json()
+          
+          // Find customer by name or phone
+          const customer = customers.data?.find((c: any) => 
+            c.name === bill.customerName || 
+            (bill.customerPhone && c.phone === bill.customerPhone) ||
+            Object.values(c).some(value => value === bill.customerName)
+          )
+          
+          setCustomerDetails(customer || null)
+          setCustomerFields(fields || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch customer details:', error)
+        setCustomerDetails(null)
+        setCustomerFields([])
+      }
+    } else {
+      setCustomerDetails(null)
+      setCustomerFields([])
+    }
+    
     setIsViewModalOpen(true)
   }
 
@@ -537,87 +572,100 @@ Contact: ${storePhone}`
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-center w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedBills.length === filteredBills.length && filteredBills.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedBills(filteredBills.map(b => (b as any)._id || b.id))
-                        } else {
-                          setSelectedBills([])
-                        }
-                      }}
-                      className="cursor-pointer"
-                    />
-                  </TableHead>
-                  <TableHead className="text-center w-16">Sr. No.</TableHead>
-                  <TableHead className="text-center">{t('billNo')}</TableHead>
-                  <TableHead className="text-center">{t('customer')}</TableHead>
-                  <TableHead className="text-center">{t('items')}</TableHead>
-                  <TableHead className="text-center">{t('total')}</TableHead>
-                  <TableHead className="text-center">{t('payment')}</TableHead>
-                  <TableHead className="text-center">{t('date')}</TableHead>
-                  <TableHead className="text-center">{t('actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBills.map((bill, index) => {
-                  const billId = (bill as any)._id || bill.id
-                  return (
-                  <TableRow key={bill.id}>
-                    <TableCell className="text-center">
+            {filteredBills.length === 0 ? (
+              <div className="text-center py-12">
+                <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">No bills found</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {bills.length === 0 ? 'No bills have been generated yet' : 'Try adjusting your search filters'}
+                </p>
+                <Button onClick={() => window.location.href = '/tenant/pos'}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Bill
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center w-12">
                       <input
                         type="checkbox"
-                        checked={selectedBills.includes(billId)}
+                        checked={selectedBills.length === filteredBills.length && filteredBills.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedBills([...selectedBills, billId])
+                            setSelectedBills(filteredBills.map(b => (b as any)._id || b.id))
                           } else {
-                            setSelectedBills(selectedBills.filter(id => id !== billId))
+                            setSelectedBills([])
                           }
                         }}
                         className="cursor-pointer"
                       />
-                    </TableCell>
-                    <TableCell className="text-center font-medium">
-                      {((currentPage - 1) * itemsPerPage) + index + 1}
-                    </TableCell>
-                    <TableCell className="font-medium text-center">{bill.billNo}</TableCell>
-                    <TableCell className="text-center">
-                      <div>
-                        <div>{bill.customerName}</div>
-                        {bill.customerPhone && (
-                          <div className="text-sm text-muted-foreground">{bill.customerPhone}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{bill.items.length} {t('items')}</TableCell>
-                    <TableCell className="text-center">₹  {(bill.total || 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">{bill.paymentMethod}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {new Date(bill.createdAt).toLocaleDateString('en-IN')}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => viewBill(bill)}>
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            // Generate PDF directly in browser
-                            const itemsText = bill.items.map((item: any) => 
-                              `${item.name} x${item.quantity} @ Rs${(item.price || 0).toFixed(2)} = Rs${(item.total || 0).toFixed(2)}`
-                            ).join('\n')
-                            
-                            const doc = `%PDF-1.4
+                    </TableHead>
+                    <TableHead className="text-center w-16">Sr. No.</TableHead>
+                    <TableHead className="text-center">{t('billNo')}</TableHead>
+                    <TableHead className="text-center">{t('customer')}</TableHead>
+                    <TableHead className="text-center">{t('items')}</TableHead>
+                    <TableHead className="text-center">{t('total')}</TableHead>
+                    <TableHead className="text-center">{t('payment')}</TableHead>
+                    <TableHead className="text-center">{t('date')}</TableHead>
+                    <TableHead className="text-center">{t('actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBills.map((bill, index) => {
+                    const billId = (bill as any)._id || bill.id
+                    return (
+                    <TableRow key={bill.id}>
+                      <TableCell className="text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedBills.includes(billId)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBills([...selectedBills, billId])
+                            } else {
+                              setSelectedBills(selectedBills.filter(id => id !== billId))
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center font-medium">
+                        {((currentPage - 1) * itemsPerPage) + index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-center">{bill.billNo}</TableCell>
+                      <TableCell className="text-center">
+                        <div>
+                          <div>{bill.customerName}</div>
+                          {bill.customerPhone && (
+                            <div className="text-sm text-muted-foreground">{bill.customerPhone}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">{bill.items.length} {t('items')}</TableCell>
+                      <TableCell className="text-center">₹  {(bill.total || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">{bill.paymentMethod}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {new Date(bill.createdAt).toLocaleDateString('en-IN')}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => viewBill(bill)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              // Generate PDF directly in browser
+                              const itemsText = bill.items.map((item: any) => 
+                                `${item.name} x${item.quantity} @ Rs${(item.price || 0).toFixed(2)} = Rs${(item.total || 0).toFixed(2)}`
+                              ).join('\n')
+                              
+                              const doc = `%PDF-1.4
 1 0 obj
 <<
 /Type /Catalog
@@ -731,47 +779,48 @@ trailer
 startxref
 625
 %%EOF`
-                            
-                            const blob = new Blob([doc], { type: 'application/pdf' })
-                            const url = URL.createObjectURL(blob)
-                            const a = document.createElement('a')
-                            a.href = url
-                            a.download = `Bill-${bill.billNo}.pdf`
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                            URL.revokeObjectURL(url)
-                          }}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        {bill.customerPhone && (
+                              
+                              const blob = new Blob([doc], { type: 'application/pdf' })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `Bill-${bill.billNo}.pdf`
+                              document.body.appendChild(a)
+                              a.click()
+                              document.body.removeChild(a)
+                              URL.revokeObjectURL(url)
+                            }}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          {bill.customerPhone && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => sendBillViaWhatsApp(bill)}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
-                            size="sm" 
-                            onClick={() => sendBillViaWhatsApp(bill)}
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => {
+                              setBillToDelete(bill)
+                              setIsPasswordModalOpen(true)
+                            }}
                           >
-                            <MessageCircle className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </Button>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => {
-                            setBillToDelete(bill)
-                            setIsPasswordModalOpen(true)
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
             
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
@@ -961,66 +1010,143 @@ startxref
 
         {/* View Bill Modal */}
         <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-none max-h-[90vh] flex flex-col" style={{width: '90vw'}}>
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>{t('billDetails')} - {selectedBill?.billNo}</DialogTitle>
             </DialogHeader>
             {selectedBill && (
-              <div className="py-4">
-                <div className="text-center mb-4">
-                  <h3 className="font-bold text-lg">{selectedBill.storeName}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedBill.address}</p>
-                  <p className="text-sm">{t('phone')}: {selectedBill.phone}</p>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between">
-                    <span>{t('billNo')}:</span>
-                    <span className="font-medium">{selectedBill.billNo}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('customer')}:</span>
-                    <span>{selectedBill.customerName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('date')}:</span>
-                    <span>{new Date(selectedBill.createdAt).toLocaleDateString('en-IN')}</span>
+              <div className="flex-1 overflow-y-auto py-4 space-y-6 scrollbar-hide">
+                {/* Company Details */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-bold text-lg text-center mb-2">{settings.storeName || selectedBill.storeName}</h3>
+                  <div className="text-center space-y-1 text-sm">
+                    <p>{settings.address || selectedBill.address}</p>
+                    <p>{t('phone')}: {settings.phone || selectedBill.phone}</p>
+                    <p>{t('email')}: {settings.email || selectedBill.email}</p>
+                    {(settings.gst || selectedBill.gst) && <p>GST: {settings.gst || selectedBill.gst}</p>}
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">{t('items')}:</h4>
-                  {selectedBill.items.map((item, index) => (
-                    <div key={index} className="flex justify-between text-sm mb-1">
-                      <span>{item.name} x{item.quantity}</span>
-                      <span>₹ {(item.total || 0).toFixed(2)}</span>
+                {/* Bill Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{t('billNo')}:</span>
+                      <span>{selectedBill.billNo}</span>
                     </div>
-                  ))}
+                    <div className="flex justify-between">
+                      <span className="font-medium">{t('date')}:</span>
+                      <span>{new Date(selectedBill.createdAt).toLocaleDateString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">{t('time')}:</span>
+                      <span>{new Date(selectedBill.createdAt).toLocaleTimeString('en-IN')}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Cashier:</span>
+                      <span>{selectedBill.cashier || 'Admin'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Payment:</span>
+                      <span className="capitalize">{selectedBill.paymentMethod}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="border-t pt-4 space-y-1">
+                {/* Customer Details */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-bold mb-3">Customer Details</h4>
+                  {customerDetails ? (
+                    <div className="space-y-2">
+                      {customerFields.map((field) => {
+                        const value = customerDetails[field.name]
+                        if (!value) return null
+                        return (
+                          <div key={field.name} className="flex justify-between text-sm">
+                            <span className="font-medium">{field.label}:</span>
+                            <span>{value}</span>
+                          </div>
+                        )
+                      })}
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">Customer Since:</span>
+                        <span>{new Date(customerDetails.createdAt).toLocaleDateString('en-IN')}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">Name:</span>
+                        <span>{selectedBill.customerName}</span>
+                      </div>
+                      {selectedBill.customerPhone && (
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">Phone:</span>
+                          <span>{selectedBill.customerPhone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Items */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-bold mb-3">{t('items')} ({selectedBill.items.length})</h4>
+                  <div className="space-y-2">
+                    {selectedBill.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                        <div className="flex-1">
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="font-medium">₹{(item.total || 0).toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between">
                     <span>{t('subtotal')}:</span>
-                    <span>₹ {(selectedBill.subtotal || 0).toFixed(2)}</span>
+                    <span>₹{(selectedBill.subtotal || 0).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>{t('discount')}:</span>
-                    <span>₹ {(selectedBill.discountAmount || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('tax')}:</span>
-                    <span>₹ {(selectedBill.tax || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>{t('total')}:</span>
-                    <span>₹ {(selectedBill.total || 0).toFixed(2)}</span>
+                  {selectedBill.discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>{t('discount')}:</span>
+                      <span>-₹{(selectedBill.discountAmount || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBill.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span>{t('tax')}:</span>
+                      <span>₹{(selectedBill.tax || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>{t('total')}:</span>
+                      <span>₹{(selectedBill.total || 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-center mt-4">
+                {/* Terms */}
+                {(settings.terms || selectedBill.terms) && (
+                  <div className="text-xs text-muted-foreground p-3 bg-gray-50 rounded">
+                    <div className="font-medium mb-1">Terms & Conditions:</div>
+                    <div>{settings.terms || selectedBill.terms}</div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex space-x-2">
                   <Button 
                     onClick={() => {
-                      // Generate PDF directly in browser
                       const doc = `%PDF-1.4
 1 0 obj
 <<
@@ -1059,12 +1185,12 @@ stream
 BT
 /F1 18 Tf
 200 750 Td
-(${(selectedBill.storeName || 'STORE').toUpperCase()}) Tj
+(${(settings.storeName || selectedBill.storeName || 'STORE').toUpperCase()}) Tj
 /F1 10 Tf
 -150 -25 Td
-(${selectedBill.address || 'Store Address'}) Tj
+(${settings.address || selectedBill.address || 'Store Address'}) Tj
 50 -15 Td
-(Phone: ${selectedBill.phone || '9427300816'}) Tj
+(Phone: ${settings.phone || selectedBill.phone || '9427300816'}) Tj
 -50 -35 Td
 (================================================) Tj
 /F1 12 Tf
@@ -1146,11 +1272,21 @@ startxref
                       document.body.removeChild(a)
                       URL.revokeObjectURL(url)
                     }}
-                    className="w-full"
+                    className="flex-1"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     {t('downloadPDF')}
                   </Button>
+                  {selectedBill.customerPhone && (
+                    <Button 
+                      onClick={() => sendBillViaWhatsApp(selectedBill)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Send WhatsApp
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

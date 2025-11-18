@@ -298,68 +298,82 @@ export default function SalaryPage() {
               </Select>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedSalaries.length === filteredSalaryData.length && filteredSalaryData.length > 0}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedSalaries(filteredSalaryData.map(s => s.employeeId))
-                          } else {
-                            setSelectedSalaries([])
-                          }
-                        }}
-                      />
-                    </TableHead>
-                    <TableHead className="text-center w-16">Sr. No.</TableHead>
-                    <TableHead className="text-center">{t('employee')}</TableHead>
-                    <TableHead className="text-center">{t('baseSalary')}</TableHead>
-                    <TableHead className="text-center">{t('workingDays')}</TableHead>
-                    <TableHead className="text-center">{t('leaveDays')}</TableHead>
-                    <TableHead className="text-center">{t('effectiveSalary')}</TableHead>
-                    <TableHead className="text-center">{t('actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSalaryData.map((salary, index) => (
-                    <TableRow key={salary.employeeId}>
-                      <TableCell>
+            {filteredSalaryData.length === 0 ? (
+              <div className="text-center py-12">
+                <Calculator className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">No salary data found</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {salaryData.length === 0 ? 'No employees found for salary calculation' : 'Try adjusting your search or filters'}
+                </p>
+                <Button onClick={() => window.location.href = '/tenant/hr'}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Employees
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedSalaries.includes(salary.employeeId)}
+                          checked={selectedSalaries.length === filteredSalaryData.length && filteredSalaryData.length > 0}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedSalaries([...selectedSalaries, salary.employeeId])
+                              setSelectedSalaries(filteredSalaryData.map(s => s.employeeId))
                             } else {
-                              setSelectedSalaries(selectedSalaries.filter(id => id !== salary.employeeId))
+                              setSelectedSalaries([])
                             }
                           }}
                         />
-                      </TableCell>
-                      <TableCell className="text-center">{index + 1}</TableCell>
-                      <TableCell className="text-center">
-                        <div>
-                          <div className="font-medium">{salary.employeeName}</div>
-                          <div className="text-sm text-muted-foreground">{salary.employeeId}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">₹ {salary.baseSalary.toLocaleString()}</TableCell>
-                      <TableCell className="text-center">{salary.workingDays}</TableCell>
-                      <TableCell className="text-center">{salary.leaveDays}</TableCell>
-                      <TableCell className="text-center font-medium">₹ {salary.effectiveSalary.toLocaleString()}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" onClick={() => downloadSalarySlip(salary.employeeId)}>
-                          <Download className="w-4 h-4 mr-2" />
-                          {t('downloadSlip')}
-                        </Button>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead className="text-center w-16">Sr. No.</TableHead>
+                      <TableHead className="text-center">{t('employee')}</TableHead>
+                      <TableHead className="text-center">{t('baseSalary')}</TableHead>
+                      <TableHead className="text-center">{t('workingDays')}</TableHead>
+                      <TableHead className="text-center">{t('leaveDays')}</TableHead>
+                      <TableHead className="text-center">{t('effectiveSalary')}</TableHead>
+                      <TableHead className="text-center">{t('actions')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSalaryData.map((salary, index) => (
+                      <TableRow key={salary.employeeId}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedSalaries.includes(salary.employeeId)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedSalaries([...selectedSalaries, salary.employeeId])
+                              } else {
+                                setSelectedSalaries(selectedSalaries.filter(id => id !== salary.employeeId))
+                              }
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">{index + 1}</TableCell>
+                        <TableCell className="text-center">
+                          <div>
+                            <div className="font-medium">{salary.employeeName}</div>
+                            <div className="text-sm text-muted-foreground">{salary.employeeId}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">₹ {salary.baseSalary.toLocaleString()}</TableCell>
+                        <TableCell className="text-center">{salary.workingDays}</TableCell>
+                        <TableCell className="text-center">{salary.leaveDays}</TableCell>
+                        <TableCell className="text-center font-medium">₹ {salary.effectiveSalary.toLocaleString()}</TableCell>
+                        <TableCell className="text-center">
+                          <Button variant="outline" size="sm" onClick={() => downloadSalarySlip(salary.employeeId)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            {t('downloadSlip')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 

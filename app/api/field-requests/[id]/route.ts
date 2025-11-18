@@ -43,26 +43,23 @@ export async function PATCH(
       }
     )
     
-    // If approved, add field to business type template
-    if (body.status === 'approved' && fieldRequest.businessType && fieldRequest.businessType !== 'none') {
-      let businessTypeQuery
-      try {
-        businessTypeQuery = { _id: new ObjectId(fieldRequest.businessType) }
-      } catch {
-        businessTypeQuery = { _id: fieldRequest.businessType }
-      }
-      
+    // If approved, add field to all business types as template
+    if (body.status === 'approved' && fieldRequest.field) {
       const newField = {
-        name: fieldRequest.fieldName,
-        type: fieldRequest.fieldType,
+        name: fieldRequest.field.name,
+        label: fieldRequest.field.label,
+        type: fieldRequest.field.type,
         required: false,
-        options: fieldRequest.fieldType === 'select' ? [] : undefined
+        enabled: true
       }
       
-      await db.collection('business_types').updateOne(
-        businessTypeQuery,
+      // Add to all business types based on field type
+      const fieldKey = fieldRequest.fieldType === 'customer' ? 'customerFields' : 'fields'
+      
+      await db.collection('business_types').updateMany(
+        {},
         { 
-          $push: { fields: newField },
+          $push: { [fieldKey]: newField },
           $set: { updatedAt: new Date() }
         }
       )

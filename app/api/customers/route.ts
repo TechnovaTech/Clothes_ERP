@@ -51,15 +51,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, email, address } = body
-    
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
-    // Check if customer already exists
+    // Check if customer already exists by phone or name+phone
     const existingCustomer = await customersCollection.findOne({
       $or: [
-        { phone: phone },
-        { name: name, phone: phone }
+        { phone: body.phone },
+        { name: body.name, phone: body.phone }
       ]
     })
     
@@ -70,12 +68,9 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    // Create new customer
+    // Create new customer with dynamic fields
     const customer = {
-      name,
-      phone: phone || null,
-      email: email || null,
-      address: address || null,
+      ...body, // Include all dynamic fields
       orderCount: body.orderCount || 0,
       totalSpent: 0,
       lastOrderDate: body.orderCount > 0 ? new Date() : null,

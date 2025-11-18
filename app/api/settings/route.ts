@@ -18,6 +18,7 @@ export async function GET() {
         email: '',
         gst: '',
         taxRate: 0,
+        cessRate: 0,
         terms: '',
         billPrefix: 'BILL',
         billCounter: 1,
@@ -39,6 +40,7 @@ export async function GET() {
       email: '',
       gst: '',
       taxRate: 0,
+      cessRate: 0,
       terms: '',
       billPrefix: 'BILL',
       billCounter: 1,
@@ -46,7 +48,9 @@ export async function GET() {
       deletePassword: 'admin123',
       fieldSettingsPassword: 'vivekVOra32*',
       discountMode: false,
-      billFormat: 'professional'
+      billFormat: 'professional',
+      logo: '',
+      signature: ''
     })
   } catch (error) {
     console.error('Settings fetch error:', error)
@@ -58,6 +62,7 @@ export async function GET() {
       email: '',
       gst: '',
       taxRate: 0,
+      cessRate: 0,
       terms: '',
       billPrefix: 'BILL',
       billCounter: 1,
@@ -65,7 +70,9 @@ export async function GET() {
       deletePassword: 'admin123',
       fieldSettingsPassword: 'vivekVOra32*',
       discountMode: false,
-      billFormat: 'professional'
+      billFormat: 'professional',
+      logo: '',
+      signature: ''
     })
   }
 }
@@ -93,6 +100,7 @@ export async function PUT(request: NextRequest) {
           email: body.email || '',
           gst: body.gst || '',
           taxRate: parseFloat(body.taxRate) || 0,
+          cessRate: parseFloat(body.cessRate) || 0,
           terms: body.terms || '',
           billPrefix: body.billPrefix || 'BILL',
           billCounter: parseInt(body.billCounter) || 1,
@@ -101,6 +109,8 @@ export async function PUT(request: NextRequest) {
           fieldSettingsPassword: body.fieldSettingsPassword || 'vivekVOra32*',
           discountMode: body.discountMode === true || body.discountMode === 'true',
           billFormat: body.billFormat || 'professional',
+          logo: body.logo || '',
+          signature: body.signature || '',
           updatedAt: new Date()
         }
       },

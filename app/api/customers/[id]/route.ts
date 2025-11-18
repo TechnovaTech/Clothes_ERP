@@ -17,25 +17,27 @@ export const PUT = withFeatureAccess('customers')(async function(
     }
 
     const body = await request.json()
-    const { name, phone, email, address } = body
     
-    if (!name?.trim()) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    // Basic validation - check if at least one field has data
+    const hasData = Object.values(body).some(value => 
+      value && typeof value === 'string' && value.trim() !== ''
+    )
+    
+    if (!hasData) {
+      return NextResponse.json({ error: 'At least one field is required' }, { status: 400 })
     }
 
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
+    // Update with all dynamic fields
+    const updateData = {
+      ...body,
+      updatedAt: new Date()
+    }
+    
     const result = await customersCollection.updateOne(
       { _id: new ObjectId(params.id) },
-      { 
-        $set: { 
-          name: name.trim(),
-          phone: phone || null,
-          email: email || null,
-          address: address || null,
-          updatedAt: new Date()
-        }
-      }
+      { $set: updateData }
     )
     
     if (result.matchedCount === 0) {

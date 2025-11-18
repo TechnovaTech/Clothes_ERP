@@ -17,10 +17,8 @@ export async function POST(request: NextRequest) {
     const fieldRequest = {
       tenantId: session.user.tenantId,
       tenantName: session.user.storeName || 'Unknown Store',
-      fieldName: body.fieldName,
-      fieldType: body.fieldType,
-      description: body.description || '',
-      businessType: body.businessType,
+      fieldType: body.fieldType, // 'customer' or 'product'
+      field: body.field, // { name, label, type, reason }
       status: 'pending',
       createdAt: new Date()
     }

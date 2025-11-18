@@ -18,11 +18,20 @@ interface Field {
   options?: string[]
 }
 
+interface CustomerField {
+  name: string
+  label: string
+  type: 'text' | 'email' | 'phone' | 'number' | 'date' | 'textarea'
+  required: boolean
+  enabled: boolean
+}
+
 interface BusinessType {
   id: string
   name: string
   description: string
   fields: Field[]
+  customerFields: CustomerField[]
 }
 
 export default function BusinessTypesPage() {
@@ -33,7 +42,8 @@ export default function BusinessTypesPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    fields: [] as Field[]
+    fields: [] as Field[],
+    customerFields: [] as CustomerField[]
   })
 
   const fetchBusinessTypes = async () => {
@@ -90,7 +100,7 @@ export default function BusinessTypesPage() {
   }
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', fields: [] })
+    setFormData({ name: '', description: '', fields: [], customerFields: [] })
     setEditingType(null)
   }
 
@@ -99,7 +109,8 @@ export default function BusinessTypesPage() {
     setFormData({
       name: businessType.name,
       description: businessType.description,
-      fields: [...businessType.fields]
+      fields: [...businessType.fields],
+      customerFields: [...(businessType.customerFields || [])]
     })
     setIsEditDialogOpen(true)
   }
@@ -189,7 +200,7 @@ export default function BusinessTypesPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <Label className="text-lg font-medium">Custom Fields</Label>
+                  <Label className="text-lg font-medium">Product Fields</Label>
                   <Button variant="outline" onClick={addField}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Field
@@ -271,11 +282,127 @@ export default function BusinessTypesPage() {
                 </div>
               </div>
 
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <Label className="text-lg font-medium">Customer Fields</Label>
+                  <Button variant="outline" onClick={() => {
+                    setFormData({
+                      ...formData,
+                      customerFields: [...formData.customerFields, { name: '', label: '', type: 'text', required: false, enabled: true }]
+                    })
+                  }}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Customer Field
+                  </Button>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto space-y-3 pr-2 border rounded-lg p-4 bg-blue-50">
+                  {formData.customerFields.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No customer fields added yet</p>
+                      <p className="text-xs">Default fields: Name, Phone, Email, Address</p>
+                    </div>
+                  ) : (
+                    formData.customerFields.map((field, index) => (
+                      <div key={index} className="bg-white border border-blue-200 p-4 rounded-lg shadow-sm">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-gray-900">Customer Field {index + 1}</h4>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setFormData({
+                              ...formData,
+                              customerFields: formData.customerFields.filter((_, i) => i !== index)
+                            })
+                          }} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Field Name</Label>
+                            <Input
+                              value={field.name}
+                              onChange={(e) => {
+                                const updated = [...formData.customerFields]
+                                updated[index] = { ...updated[index], name: e.target.value }
+                                setFormData({ ...formData, customerFields: updated })
+                              }}
+                              placeholder="e.g., company, age"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Field Label</Label>
+                            <Input
+                              value={field.label}
+                              onChange={(e) => {
+                                const updated = [...formData.customerFields]
+                                updated[index] = { ...updated[index], label: e.target.value }
+                                setFormData({ ...formData, customerFields: updated })
+                              }}
+                              placeholder="e.g., Company Name, Age"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Field Type</Label>
+                            <select
+                              value={field.type}
+                              onChange={(e) => {
+                                const updated = [...formData.customerFields]
+                                updated[index] = { ...updated[index], type: e.target.value as any }
+                                setFormData({ ...formData, customerFields: updated })
+                              }}
+                              className="mt-1 w-full px-3 py-2 border rounded"
+                            >
+                              <option value="text">Text</option>
+                              <option value="email">Email</option>
+                              <option value="phone">Phone</option>
+                              <option value="number">Number</option>
+                              <option value="date">Date</option>
+                              <option value="textarea">Textarea</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 mt-3">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={field.required}
+                              onChange={(e) => {
+                                const updated = [...formData.customerFields]
+                                updated[index] = { ...updated[index], required: e.target.checked }
+                                setFormData({ ...formData, customerFields: updated })
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label className="text-sm font-medium text-gray-700">Required</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={field.enabled}
+                              onChange={(e) => {
+                                const updated = [...formData.customerFields]
+                                updated[index] = { ...updated[index], enabled: e.target.checked }
+                                setFormData({ ...formData, customerFields: updated })
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label className="text-sm font-medium text-gray-700">Enabled</Label>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
               </div>
             </div>
             <div className="flex justify-between items-center pt-4 border-t bg-gray-50 px-6 py-4 -mx-6 -mb-6">
               <div className="text-sm text-muted-foreground">
-                {formData.fields.length} custom field{formData.fields.length !== 1 ? 's' : ''} added
+                {formData.fields.length} product field{formData.fields.length !== 1 ? 's' : ''}, {formData.customerFields.length} customer field{formData.customerFields.length !== 1 ? 's' : ''}
               </div>
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -323,9 +450,12 @@ export default function BusinessTypesPage() {
                     </div>
                     <h3 className="font-semibold text-lg mb-2">{type.name}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
-                    <div className="flex items-center text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="bg-gray-100 px-2 py-1 rounded">
-                        {type.fields.length} custom fields
+                        {type.fields.length} product fields
+                      </span>
+                      <span className="bg-blue-100 px-2 py-1 rounded">
+                        {type.customerFields?.length || 0} customer fields
                       </span>
                     </div>
                   </CardContent>
@@ -364,7 +494,7 @@ export default function BusinessTypesPage() {
 
             <div>
               <div className="flex justify-between items-center mb-4">
-                <Label className="text-lg font-medium">Custom Fields</Label>
+                <Label className="text-lg font-medium">Product Fields</Label>
                 <Button variant="outline" onClick={addField}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Field
@@ -446,11 +576,127 @@ export default function BusinessTypesPage() {
               </div>
             </div>
 
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <Label className="text-lg font-medium">Customer Fields</Label>
+                <Button variant="outline" onClick={() => {
+                  setFormData({
+                    ...formData,
+                    customerFields: [...formData.customerFields, { name: '', label: '', type: 'text', required: false, enabled: true }]
+                  })
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Customer Field
+                </Button>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto space-y-3 pr-2 border rounded-lg p-4 bg-blue-50">
+                {formData.customerFields.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No customer fields added yet</p>
+                    <p className="text-xs">Default fields: Name, Phone, Email, Address</p>
+                  </div>
+                ) : (
+                  formData.customerFields.map((field, index) => (
+                    <div key={index} className="bg-white border border-blue-200 p-4 rounded-lg shadow-sm">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-medium text-gray-900">Customer Field {index + 1}</h4>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          setFormData({
+                            ...formData,
+                            customerFields: formData.customerFields.filter((_, i) => i !== index)
+                          })
+                        }} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Field Name</Label>
+                          <Input
+                            value={field.name}
+                            onChange={(e) => {
+                              const updated = [...formData.customerFields]
+                              updated[index] = { ...updated[index], name: e.target.value }
+                              setFormData({ ...formData, customerFields: updated })
+                            }}
+                            placeholder="e.g., company, age"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Field Label</Label>
+                          <Input
+                            value={field.label}
+                            onChange={(e) => {
+                              const updated = [...formData.customerFields]
+                              updated[index] = { ...updated[index], label: e.target.value }
+                              setFormData({ ...formData, customerFields: updated })
+                            }}
+                            placeholder="e.g., Company Name, Age"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Field Type</Label>
+                          <select
+                            value={field.type}
+                            onChange={(e) => {
+                              const updated = [...formData.customerFields]
+                              updated[index] = { ...updated[index], type: e.target.value as any }
+                              setFormData({ ...formData, customerFields: updated })
+                            }}
+                            className="mt-1 w-full px-3 py-2 border rounded"
+                          >
+                            <option value="text">Text</option>
+                            <option value="email">Email</option>
+                            <option value="phone">Phone</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <option value="textarea">Textarea</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4 mt-3">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) => {
+                              const updated = [...formData.customerFields]
+                              updated[index] = { ...updated[index], required: e.target.checked }
+                              setFormData({ ...formData, customerFields: updated })
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <Label className="text-sm font-medium text-gray-700">Required</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={field.enabled}
+                            onChange={(e) => {
+                              const updated = [...formData.customerFields]
+                              updated[index] = { ...updated[index], enabled: e.target.checked }
+                              setFormData({ ...formData, customerFields: updated })
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <Label className="text-sm font-medium text-gray-700">Enabled</Label>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
             </div>
           </div>
           <div className="flex justify-between items-center pt-4 border-t bg-gray-50 px-6 py-4 -mx-6 -mb-6">
             <div className="text-sm text-muted-foreground">
-              {formData.fields.length} custom field{formData.fields.length !== 1 ? 's' : ''} configured
+              {formData.fields.length} product field{formData.fields.length !== 1 ? 's' : ''}, {formData.customerFields.length} customer field{formData.customerFields.length !== 1 ? 's' : ''}
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>

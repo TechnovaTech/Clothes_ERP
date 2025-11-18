@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Search,
   ShoppingCart,
@@ -74,7 +75,8 @@ export default function POSPage() {
   const [tenantFields, setTenantFields] = useState<any[]>([])
   const [settings, setSettings] = useState({ 
     storeName: 'Store', 
-    taxRate: 10, 
+    taxRate: 10,
+    cessRate: 0, 
     currency: 'INR',
     address: '',
     phone: '',
@@ -108,6 +110,8 @@ export default function POSPage() {
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [whatsappStatus, setWhatsappStatus] = useState({ ready: false, hasQR: false })
   const [qrCode, setQrCode] = useState('')
+  const [includeTax, setIncludeTax] = useState(true)
+  const [includeCess, setIncludeCess] = useState(true)
 
   // Fetch settings
   const fetchSettings = async () => {
@@ -372,9 +376,11 @@ export default function POSPage() {
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
   const discountPercent = Number(discount) || 0
   const taxRatePercent = Number(settings.taxRate) || 0
+  const cessRatePercent = Number(settings.cessRate) || 0
   const discountAmount = (subtotal * discountPercent) / 100
-  const tax = (subtotal - discountAmount) * (taxRatePercent / 100)
-  const total = subtotal - discountAmount + tax
+  const tax = includeTax ? (subtotal - discountAmount) * (taxRatePercent / 100) : 0
+  const cess = includeCess ? (subtotal - discountAmount) * (cessRatePercent / 100) : 0
+  const total = subtotal - discountAmount + tax + cess
 
   const holdBill = () => {
     if (cart.length > 0) {
@@ -736,6 +742,29 @@ export default function POSPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="includeTax"
+                    checked={includeTax}
+                    onCheckedChange={(checked) => setIncludeTax(checked as boolean)}
+                  />
+                  <Label htmlFor="includeTax" className="text-sm font-medium">
+                    Include Tax ({settings.taxRate}%)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="includeCess"
+                    checked={includeCess}
+                    onCheckedChange={(checked) => setIncludeCess(checked as boolean)}
+                  />
+                  <Label htmlFor="includeCess" className="text-sm font-medium">
+                    Include CESS ({settings.cessRate}%)
+                  </Label>
+                </div>
+              </div>
+
               <Separator />
 
               <div className="space-y-2">
@@ -749,10 +778,16 @@ export default function POSPage() {
                     <span>-₹ {discountAmount.toFixed(2)}</span>
                   </div>
                 )}
-                {settings.taxRate > 0 && (
+                {includeTax && settings.taxRate > 0 && (
                   <div className="flex justify-between text-sm">
                     <span>{t('tax')}:</span>
                     <span>₹ {tax.toFixed(2)}</span>
+                  </div>
+                )}
+                {includeCess && settings.cessRate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>CESS:</span>
+                    <span>₹ {cess.toFixed(2)}</span>
                   </div>
                 )}
                 <Separator />
@@ -812,13 +847,38 @@ export default function POSPage() {
                             // Create/update customer first
                             if (customerName.trim()) {
                               try {
+                                // Get customer fields to map correctly
+                                const fieldsResponse = await fetch('/api/customer-fields')
+                                let customerData: any = {}
+                                
+                                if (fieldsResponse.ok) {
+                                  const fields = await fieldsResponse.json()
+                                  // Map name to the first name-like field
+                                  const nameField = fields.find((f: any) => 
+                                    f.name.toLowerCase().includes('name') && 
+                                    !f.name.toLowerCase().includes('id')
+                                  )
+                                  // Map phone to the first phone-like field
+                                  const phoneField = fields.find((f: any) => 
+                                    f.name.toLowerCase().includes('phone') || 
+                                    f.name.toLowerCase().includes('contact') ||
+                                    f.name.toLowerCase().includes('mobile')
+                                  )
+                                  
+                                  if (nameField) customerData[nameField.name] = customerName.trim()
+                                  if (phoneField && customerPhone?.trim()) customerData[phoneField.name] = customerPhone.trim()
+                                } else {
+                                  // Fallback to static fields
+                                  customerData = {
+                                    name: customerName.trim(),
+                                    phone: customerPhone?.trim() || null
+                                  }
+                                }
+                                
                                 const customerResponse = await fetch('/api/customers', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    name: customerName.trim(),
-                                    phone: customerPhone?.trim() || null
-                                  })
+                                  body: JSON.stringify(customerData)
                                 })
                                 if (!customerResponse.ok) {
                                   console.error('Failed to create/update customer')
@@ -842,11 +902,15 @@ export default function POSPage() {
                               discount,
                               discountAmount,
                               tax,
+                              cess,
                               total,
                               paymentMethod: selectedPaymentMethod,
-                              taxRate: settings.taxRate,
+                              taxRate: includeTax ? settings.taxRate : 0,
+                              cessRate: includeCess ? settings.cessRate : 0,
                               storeName: settings.storeName,
-                              staffMember: selectedStaff || 'admin'
+                              staffMember: selectedStaff || 'admin',
+                              includeTax,
+                              includeCess
                             }
                             
                             const response = await fetch('/api/pos/sales', {
@@ -968,10 +1032,16 @@ export default function POSPage() {
                       <span>-₹{(completedSale.discountAmount || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  {(completedSale.taxRate || settings.taxRate) > 0 && (
+                  {(completedSale.includeTax !== false && (completedSale.taxRate || settings.taxRate) > 0) && (
                     <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px'}}>
                       <span>{t('tax')}:</span>
                       <span>₹{(completedSale.tax || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {(completedSale.includeCess !== false && (completedSale.cessRate || settings.cessRate) > 0) && (
+                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px'}}>
+                      <span>CESS:</span>
+                      <span>₹{(completedSale.cess || 0).toFixed(2)}</span>
                     </div>
                   )}
 
@@ -1019,13 +1089,19 @@ export default function POSPage() {
                     const printContent = document.getElementById('bill-receipt')?.innerHTML
                     const printWindow = window.open('', '_blank')
                     if (printWindow && printContent) {
-                      // Remove tax line from print content if tax rate is 0
+                      // Remove tax and cess lines from print content if not included
                       let modifiedPrintContent = printContent
-                      if ((completedSale.taxRate || settings.taxRate) === 0) {
-                        // Remove the tax line that contains "Tax (" from the print content
-                        modifiedPrintContent = printContent
-                          ?.replace(/<div[^>]*>\s*<span>Tax \([^<]*<\/span>\s*<span>[^<]*<\/span>\s*<\/div>/gi, '')
-                          ?.replace(/Tax \([^\n]*\n?/gi, '')
+                      if (completedSale.includeTax === false || (completedSale.taxRate || settings.taxRate) === 0) {
+                        // Remove the tax line that contains "Tax" from the print content
+                        modifiedPrintContent = modifiedPrintContent
+                          ?.replace(/<div[^>]*>\s*<span>Tax[^<]*<\/span>\s*<span>[^<]*<\/span>\s*<\/div>/gi, '')
+                          ?.replace(/Tax[^\n]*\n?/gi, '')
+                      }
+                      if (completedSale.includeCess === false || (completedSale.cessRate || settings.cessRate) === 0) {
+                        // Remove the CESS line that contains "CESS" from the print content
+                        modifiedPrintContent = modifiedPrintContent
+                          ?.replace(/<div[^>]*>\s*<span>CESS[^<]*<\/span>\s*<span>[^<]*<\/span>\s*<\/div>/gi, '')
+                          ?.replace(/CESS[^\n]*\n?/gi, '')
                       }
                       
                       printWindow.document.write(`

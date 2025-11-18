@@ -11,10 +11,13 @@ import { showToast } from "@/lib/toast"
 interface FieldRequest {
   id: string
   tenantName: string
-  fieldName: string
-  fieldType: string
-  description: string
-  businessType: string
+  fieldType: 'customer' | 'product'
+  field: {
+    name: string
+    label: string
+    type: string
+    reason: string
+  }
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string
 }
@@ -48,7 +51,7 @@ export default function FieldRequestsPage() {
       if (response.ok) {
         fetchRequests()
         if (status === 'approved') {
-          showToast.success('Request approved! Field added to business type template.')
+          showToast.success('Request approved! Field added to all business type templates.')
         } else {
           showToast.success('Request rejected successfully!')
         }
@@ -83,8 +86,10 @@ export default function FieldRequestsPage() {
               <TableRow>
                 <TableHead>Tenant</TableHead>
                 <TableHead>Field Name</TableHead>
-                <TableHead>Field Type</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>Field Label</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
@@ -94,9 +99,15 @@ export default function FieldRequestsPage() {
               {requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>{request.tenantName}</TableCell>
-                  <TableCell>{request.fieldName}</TableCell>
-                  <TableCell>{request.fieldType}</TableCell>
-                  <TableCell>{request.description || 'No description'}</TableCell>
+                  <TableCell>{request.field?.name || 'N/A'}</TableCell>
+                  <TableCell>{request.field?.label || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge variant={request.fieldType === 'customer' ? 'default' : 'secondary'}>
+                      {request.fieldType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{request.field?.type || 'N/A'}</TableCell>
+                  <TableCell>{request.field?.reason || 'No reason provided'}</TableCell>
                   <TableCell>
                     <Badge variant={
                       request.status === 'approved' ? 'default' :

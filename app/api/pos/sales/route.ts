@@ -13,14 +13,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, total, paymentMethod, taxRate, storeName, staffMember } = body
+    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, taxRate, cessRate, storeName, staffMember, includeTax, includeCess } = body
 
     const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
     const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
     const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
     
     // Get store settings
-    const storeSettings = await settingsCollection.findOne({}) || { storeName: 'Store', taxRate: 10 }
+    const storeSettings = await settingsCollection.findOne({}) || { storeName: 'Store', taxRate: 10, cessRate: 0 }
     
     // Generate sequential bill number
     const currentCounter = storeSettings.billCounter || 1
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       discount: parseFloat(discount) || 0,
       discountAmount: parseFloat(discountAmount) || 0,
       tax: parseFloat(tax) || 0,
+      cess: parseFloat(cess) || 0,
       total: parseFloat(total) || 0,
       paymentMethod: paymentMethod || 'cash',
       storeName: storeName || storeSettings.storeName || 'Store',
@@ -51,11 +52,14 @@ export async function POST(request: NextRequest) {
       email: storeSettings.email || '',
       gst: storeSettings.gst || '',
       taxRate: taxRate || storeSettings.taxRate || 10,
+      cessRate: cessRate || storeSettings.cessRate || 0,
       terms: storeSettings.terms || '',
       billPrefix: storeSettings.billPrefix || 'BILL',
       tenantId: session.user.tenantId,
       cashier: session.user.name || 'Admin',
       staffMember: staffMember || 'admin',
+      includeTax: includeTax !== undefined ? includeTax : true,
+      includeCess: includeCess !== undefined ? includeCess : true,
       createdAt: new Date(),
       updatedAt: new Date()
     }

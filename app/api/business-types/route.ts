@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       name: body.name,
       description: body.description,
       fields: body.fields,
+      customerFields: body.customerFields || [],
       createdAt: new Date(),
       updatedAt: new Date()
     }

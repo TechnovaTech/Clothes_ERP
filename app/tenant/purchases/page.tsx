@@ -937,8 +937,21 @@ export default function PurchasesPage() {
               </div>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
+            {filteredPurchases.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">No purchase orders found</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {purchases.length === 0 ? 'Start by creating your first purchase order' : 'Try adjusting your search or filters'}
+                </p>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Purchase Order
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -1051,6 +1064,7 @@ export default function PurchasesPage() {
                 </TableBody>
               </Table>
             </div>
+            )}
             
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">

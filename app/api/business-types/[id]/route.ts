@@ -51,6 +51,7 @@ export async function PUT(
       name: body.name,
       description: body.description,
       fields: body.fields,
+      customerFields: body.customerFields || [],
       updatedAt: new Date()
     }
     

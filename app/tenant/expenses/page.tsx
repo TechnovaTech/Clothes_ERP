@@ -288,36 +288,50 @@ export default function ExpensesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {monthlyData.map((month) => (
-                      <div key={month.month} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <div>
-                            <h3 className="font-semibold">{month.month}</h3>
-                            <p className="text-sm text-muted-foreground">{month.count} {t('expenses')}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-red-600">₹{month.total.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">{t('avg')}: ₹{Math.round(month.total / month.count).toLocaleString()}</div>
-                          </div>
-                        </div>
-                        <div className="grid gap-2">
-                          {month.expenses.slice(0, 3).map((expense) => (
-                            <div key={expense.id} className="flex justify-between items-center text-sm">
-                              <div className="flex items-center space-x-2">
-                                <Badge variant="outline" className="text-xs">{expense.category}</Badge>
-                                <span>{expense.title}</span>
-                              </div>
-                              <span className="font-medium">₹{expense.amount.toLocaleString()}</span>
+                  {monthlyData.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No monthly data found</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Start by adding your first expense to see monthly analysis
+                      </p>
+                      <Button onClick={() => setDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {monthlyData.map((month) => (
+                        <div key={month.month} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <div>
+                              <h3 className="font-semibold">{month.month}</h3>
+                              <p className="text-sm text-muted-foreground">{month.count} {t('expenses')}</p>
                             </div>
-                          ))}
-                          {month.expenses.length > 3 && (
-                            <div className="text-xs text-muted-foreground">+{month.expenses.length - 3} {t('moreExpenses')}</div>
-                          )}
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-red-600">₹{month.total.toLocaleString()}</div>
+                              <div className="text-sm text-muted-foreground">{t('avg')}: ₹{Math.round(month.total / month.count).toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="grid gap-2">
+                            {month.expenses.slice(0, 3).map((expense) => (
+                              <div key={expense.id} className="flex justify-between items-center text-sm">
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant="outline" className="text-xs">{expense.category}</Badge>
+                                  <span>{expense.title}</span>
+                                </div>
+                                <span className="font-medium">₹{expense.amount.toLocaleString()}</span>
+                              </div>
+                            ))}
+                            {month.expenses.length > 3 && (
+                              <div className="text-xs text-muted-foreground">+{month.expenses.length - 3} {t('moreExpenses')}</div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -331,24 +345,38 @@ export default function ExpensesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {topCategories.map(([category, amount]) => (
-                      <div key={category} className="flex justify-between items-center p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">{category}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {Array.isArray(expenses) ? expenses.filter(e => e.category === category).length : 0} {t('expenses')}
+                  {topCategories.length === 0 ? (
+                    <div className="text-center py-12">
+                      <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No category data found</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Add expenses to see category-wise breakdown
+                      </p>
+                      <Button onClick={() => setDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {topCategories.map(([category, amount]) => (
+                        <div key={category} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <div className="font-medium">{category}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {Array.isArray(expenses) ? expenses.filter(e => e.category === category).length : 0} {t('expenses')}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-red-600">₹{amount.toLocaleString()}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {((amount / totalExpenses) * 100).toFixed(1)}% {t('ofTotal')}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-red-600">₹{amount.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {((amount / totalExpenses) * 100).toFixed(1)}% {t('ofTotal')}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -362,36 +390,44 @@ export default function ExpensesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('title')}</TableHead>
-                        <TableHead>{t('category')}</TableHead>
-                        <TableHead>{t('amount')}</TableHead>
-                        <TableHead>{t('date')}</TableHead>
-                        <TableHead>{t('description')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Array.isArray(expenses) ? expenses.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell className="font-medium">{expense.title}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{expense.category}</Badge>
-                          </TableCell>
-                          <TableCell className="text-red-600 font-medium">₹{expense.amount.toLocaleString()}</TableCell>
-                          <TableCell>{new Date(expense.date).toLocaleDateString('en-IN')}</TableCell>
-                          <TableCell className="max-w-xs truncate">{expense.description || '-'}</TableCell>
-                        </TableRow>
-                      )) : (
+                  {!Array.isArray(expenses) || expenses.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No expenses found</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Start tracking your business expenses by adding your first expense record
+                      </p>
+                      <Button onClick={() => setDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Expense
+                      </Button>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            {t('noExpensesFound')}
-                          </TableCell>
+                          <TableHead>{t('title')}</TableHead>
+                          <TableHead>{t('category')}</TableHead>
+                          <TableHead>{t('amount')}</TableHead>
+                          <TableHead>{t('date')}</TableHead>
+                          <TableHead>{t('description')}</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {expenses.map((expense) => (
+                          <TableRow key={expense.id}>
+                            <TableCell className="font-medium">{expense.title}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{expense.category}</Badge>
+                            </TableCell>
+                            <TableCell className="text-red-600 font-medium">₹{expense.amount.toLocaleString()}</TableCell>
+                            <TableCell>{new Date(expense.date).toLocaleDateString('en-IN')}</TableCell>
+                            <TableCell className="max-w-xs truncate">{expense.description || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
