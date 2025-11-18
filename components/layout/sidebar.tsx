@@ -169,7 +169,7 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
           </div>
         )}
         {collapsed && (
-          <Image src="/logo.jpeg" alt="Retalians Logo" width={32} height={32} className="object-contain" />
+          <Image src="/logo.png" alt="Retalians Logo" width={32} height={32} className="object-contain" />
         )}
         <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto text-gray-500 hover:text-gray-800 hover:bg-gray-100">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
