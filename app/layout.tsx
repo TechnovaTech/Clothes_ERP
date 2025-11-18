@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: 'Retalians',
   description: 'Retalians ERP Management System',
   icons: {
-    icon: '/logo.png',
+    icon: '/Logo.png',
   },
 }
 

@@ -31,9 +31,9 @@ const authenticateAPI = (req, res, next) => {
 // Routes
 app.get('/qr', async (req, res) => {
   log('📥 QR code requested');
-  res.status(503).json({ 
-    error: 'WhatsApp service temporarily unavailable. Please use manual WhatsApp sharing.',
-    message: 'Service is being configured for this server environment.'
+  res.status(400).json({ 
+    error: 'QR code not available',
+    message: 'WhatsApp service temporarily unavailable. Please use manual WhatsApp sharing.'
   });
 });
 
