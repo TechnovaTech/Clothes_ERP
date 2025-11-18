@@ -2,10 +2,12 @@ const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const cors = require('cors');
+const os = require('os');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 1112;
 const API_KEY = process.env.API_KEY || 'default-key';
 
 app.use(cors());
@@ -24,16 +26,58 @@ const log = (message, data = null) => {
   if (data) console.log(JSON.stringify(data, null, 2));
 };
 
+// Resolve Chrome executable path on Windows if CHROME_PATH not set
+const resolveChromePath = () => {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  const platform = os.platform();
+  if (platform === 'win32') {
+    const candidates = [
+      'C\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+      'C\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+      process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe` : null
+    ].filter(Boolean);
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) return p;
+      } catch (_) {}
+    }
+  }
+  return undefined;
+};
+
 // Initialize WhatsApp client
 const initializeClient = () => {
   log('🚀 Initializing WhatsApp client...');
   
+  const puppeteerConfig = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ]
+  };
+
+  // Prefer CHROME_PATH; otherwise try sensible defaults on Windows
+  const chromePath = resolveChromePath();
+  if (chromePath) {
+    puppeteerConfig.executablePath = chromePath;
+    log(`🧭 Using Chrome path: ${chromePath}`);
+  } else if (process.env.CHROME_PATH) {
+    puppeteerConfig.executablePath = process.env.CHROME_PATH;
+    log(`🧭 Using CHROME_PATH from env: ${process.env.CHROME_PATH}`);
+  } else {
+    log('ℹ️ No Chrome path provided; letting Puppeteer choose its default');
+  }
+  
   client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: {
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+    puppeteer: puppeteerConfig
   });
 
   client.on('qr', (qr) => {
