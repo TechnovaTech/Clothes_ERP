@@ -277,10 +277,10 @@ export default function FieldSettingsPage() {
                 <div className="flex justify-between items-center">
                   <CardTitle>Customer Fields Configuration</CardTitle>
                   <div className="flex space-x-2">
-                    <Button variant="outline" onClick={addCustomerField}>
+                    {/* <Button variant="outline" onClick={addCustomerField}>
                       <Plus className="w-4 h-4 mr-2" />
                       Add Field
-                    </Button>
+                    </Button> */}
                     <Button variant="outline" onClick={() => {
                       setRequestType('customer')
                       setIsRequestDialogOpen(true)
@@ -390,10 +390,10 @@ export default function FieldSettingsPage() {
                 <div className="flex justify-between items-center">
                   <CardTitle>Product Fields Configuration</CardTitle>
                   <div className="flex space-x-2">
-                    <Button variant="outline" onClick={addProductField}>
+                    {/* <Button variant="outline" onClick={addProductField}>
                       <Plus className="w-4 h-4 mr-2" />
                       Add Field
-                    </Button>
+                    </Button> */}
                     <Button variant="outline" onClick={() => {
                       setRequestType('product')
                       setIsRequestDialogOpen(true)

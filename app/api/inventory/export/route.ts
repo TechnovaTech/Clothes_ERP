@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getTenantsCollection, connectDB } from '@/lib/database'
+import { ObjectId } from 'mongodb'
 
 export async function GET() {
   try {
@@ -12,11 +14,20 @@ export async function GET() {
     }
 
     const inventoryCollection = await getTenantCollection(session.user.tenantId, 'inventory')
-    const tenantFieldsCollection = await getTenantCollection(session.user.tenantId, 'fields')
     
     // Get tenant field configuration
-    const tenantConfig = await tenantFieldsCollection.findOne({})
-    const enabledFields = tenantConfig?.fields?.filter((f: any) => f.enabled) || []
+    const tenantsCollection = await getTenantsCollection()
+    const tenant = await tenantsCollection.findOne({ _id: new ObjectId(session.user.tenantId) })
+    
+    let enabledFields: any[] = []
+    if (tenant?.businessType) {
+      const db = await connectDB()
+      const businessType = await db.collection('business_types').findOne({ _id: new ObjectId(tenant.businessType) })
+      // Only get dynamic fields (exclude static ones)
+      enabledFields = businessType?.fields?.filter((f: any) => 
+        f.enabled && !['name', 'price', 'description', 'category'].includes(f.name)
+      ) || []
+    }
     
     const inventory = await inventoryCollection.find({}).toArray()
     
@@ -29,10 +40,10 @@ export async function GET() {
       })
     }
     
-    // Use only enabled tenant fields (same as shown in table)
+    // Use only dynamic fields (no static fields)
     const headers = enabledFields.length > 0 
       ? enabledFields.map((field: any) => field.name)
-      : ['name', 'sku', 'category', 'price', 'stock'] // fallback
+      : [] // no fallback to static fields
     
     const csvRows = [headers.join(',')]
     

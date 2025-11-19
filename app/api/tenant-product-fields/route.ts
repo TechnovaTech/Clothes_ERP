@@ -4,12 +4,15 @@ import { authOptions } from '@/lib/auth'
 import { getTenantsCollection, connectDB } from '@/lib/database'
 import { ObjectId } from 'mongodb'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const { searchParams } = new URL(request.url)
+    const includeAll = searchParams.get('includeAll') === 'true'
 
     // Get tenant's business type
     const tenantsCollection = await getTenantsCollection()
@@ -27,12 +30,16 @@ export async function GET() {
       return NextResponse.json([])
     }
     
-    // Only return dynamic fields (excluding static ones) for field settings page
-    const dynamicFields = businessType.fields.filter(field => 
-      !['name', 'price', 'description', 'category'].includes(field.name)
-    )
-    
-    return NextResponse.json(dynamicFields)
+    if (includeAll) {
+      // Return all fields for inventory form
+      return NextResponse.json(businessType.fields)
+    } else {
+      // Only return dynamic fields (excluding static ones) for field settings page
+      const dynamicFields = businessType.fields.filter(field => 
+        !['name', 'price', 'description', 'category'].includes(field.name)
+      )
+      return NextResponse.json(dynamicFields)
+    }
   } catch (error) {
     console.error('Failed to fetch product fields:', error)
     return NextResponse.json({ error: 'Failed to fetch fields' }, { status: 500 })

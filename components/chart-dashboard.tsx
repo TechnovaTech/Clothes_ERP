@@ -30,6 +30,8 @@ import {
   BarChart3
 } from "lucide-react"
 import { AlertLogs } from "@/components/alert-logs"
+import { QuickAccessCard } from "@/components/quick-access-card"
+import { SummaryCards } from "@/components/summary-cards"
 
 interface DashboardData {
   todaySales: number
@@ -164,48 +166,60 @@ export function ChartDashboard() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <SummaryCards />
+
       {/* Key Metrics */}
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+        <Card className="bg-white border-l-4 border-l-green-500 shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">{t('totalSales')}</CardTitle>
-            <DollarSign className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-sm font-medium text-gray-700">{t('totalSales')}</CardTitle>
+            <div className="p-2 bg-green-100 rounded-full">
+              <DollarSign className="h-5 w-5 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-700">{formatCurrency(data.todaySales)}</div>
-            <div className="flex items-center text-xs text-green-600 mt-2">
+            <div className="text-3xl font-bold text-green-600">{formatCurrency(data.todaySales)}</div>
+            <div className="flex items-center text-xs text-gray-600 mt-2">
               {data.salesTrend >= 0 ? (
                 <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
               ) : (
                 <TrendingUp className="h-4 w-4 text-red-500 mr-1 rotate-180" />
               )}
-              {Math.abs(data.salesTrend).toFixed(1)}% {language === 'en' ? 'from yesterday' : language === 'gu' ? 'ગઈકાલથી' : 'कल से'}
+              <span className="font-medium">{Math.abs(data.salesTrend).toFixed(1)}%</span> {language === 'en' ? 'from yesterday' : language === 'gu' ? 'ગઈકાલથી' : 'कल से'}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-white border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">{t('inventory')}</CardTitle>
-            <Package className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-gray-700">{t('inventory')}</CardTitle>
+            <div className="p-2 bg-blue-100 rounded-full">
+              <Package className="h-5 w-5 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-700">{formatCurrency(data.stockValue)}</div>
-            <div className="text-xs text-blue-600 mt-2">{language === 'en' ? 'Total inventory worth' : language === 'gu' ? 'કુલ ઇન્વેન્ટરી મૂલ્ય' : 'कुल इन्वेंटरी मूल्य'}</div>
+            <div className="text-3xl font-bold text-blue-600">{formatCurrency(data.stockValue)}</div>
+            <div className="text-xs text-gray-600 mt-2">{language === 'en' ? 'Total inventory worth' : language === 'gu' ? 'કુલ ઇન્વેન્ટરી મૂલ્ય' : 'कुल इन्वेंटरी मूल्य'}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+        <Card className="bg-white border-l-4 border-l-red-500 shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-800">{t('lowStock')}</CardTitle>
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <CardTitle className="text-sm font-medium text-gray-700">{t('lowStock')}</CardTitle>
+            <div className="p-2 bg-red-100 rounded-full">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-700">{data.lowStockItems.length}</div>
-            <div className="text-xs text-red-600 mt-2">{language === 'en' ? 'Items need restocking' : language === 'gu' ? 'આઇટમ્સને રિસ્ટોકિંગની જરૂર છે' : 'आइटम्स को पुनः स्टॉक करने की जरूरत'}</div>
+            <div className="text-3xl font-bold text-red-600">{data.lowStockItems.length}</div>
+            <div className="text-xs text-gray-600 mt-2">{language === 'en' ? 'Items need restocking' : language === 'gu' ? 'આઇટમ્સને રિસ્ટોકિંગની જરૂર છે' : 'आइटम्स को पुनः स्टॉक करने की जरूरत'}</div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Access Section */}
+      <QuickAccessCard />
 
       {/* Top Customers Section */}
       <Card>
@@ -222,7 +236,7 @@ export function ChartDashboard() {
                 <div key={`customer-${index}-${customer.name}`} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <div className="font-medium">{customer.name}</div>
-                    <div className="text-sm text-muted-foreground">{customer.totalPurchases} {t('language') === 'en' ? 'purchases' : t('language') === 'gu' ? 'ખરીદી' : 'खरीदारीयां'}</div>
+                    <div className="text-sm text-muted-foreground">{customer.totalPurchases} {language === 'en' ? 'purchases' : language === 'gu' ? 'ખરીદી' : 'खरीदारीयां'}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-bold">{formatCurrency(customer.totalSpent)}</div>
@@ -305,12 +319,12 @@ export function ChartDashboard() {
                     </div>
                     <div>
                       <div className="font-medium text-sm">{product.name}</div>
-                      <div className="text-xs text-muted-foreground">{product.quantity} {t('language') === 'en' ? 'units sold' : t('language') === 'gu' ? 'યુનિટ વેચાયા' : 'यूनिट बिके'}</div>
+                      <div className="text-xs text-muted-foreground">{product.quantity} {language === 'en' ? 'units sold' : language === 'gu' ? 'યુનિટ વેચાયા' : 'यूनिट बिके'}</div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-bold">{formatCurrency(product.revenue)}</div>
-                    <div className="text-xs text-muted-foreground">{t('language') === 'en' ? 'Revenue' : t('language') === 'gu' ? 'આવક' : 'आमदनी'}</div>
+                    <div className="text-xs text-muted-foreground">{language === 'en' ? 'Revenue' : language === 'gu' ? 'આવક' : 'आमदनी'}</div>
                   </div>
                 </div>
               ))}
@@ -332,10 +346,10 @@ export function ChartDashboard() {
                 <div key={`stock-${index}-${item.name}`} className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium text-sm truncate">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">{t('language') === 'en' ? 'Min:' : t('language') === 'gu' ? 'ન્યૂનતમ:' : 'कम से कम:'} {item.minStock || 10}</div>
+                    <div className="text-xs text-muted-foreground">{language === 'en' ? 'Min:' : language === 'gu' ? 'ન્યૂનતમ:' : 'कम से कम:'} {item.minStock || 10}</div>
                   </div>
                   <Badge variant="destructive" className="text-xs">
-                    {item.stock} {t('language') === 'en' ? 'left' : t('language') === 'gu' ? 'બાકી' : 'बचा'}
+                    {item.stock} {language === 'en' ? 'left' : language === 'gu' ? 'બાકી' : 'बचा'}
                   </Badge>
                 </div>
               ))}

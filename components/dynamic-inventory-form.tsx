@@ -77,13 +77,13 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
   const fetchTenantFields = async () => {
     try {
       const [fieldsResponse, dropdownResponse] = await Promise.all([
-        fetch('/api/tenant-fields'),
+        fetch('/api/tenant-product-fields'),
         fetch('/api/dropdown-data')
       ])
       
       if (fieldsResponse.ok) {
         const data = await fieldsResponse.json()
-        setFields(data.fields?.filter((f: Field) => f.enabled) || [])
+        setFields(data?.filter((f: Field) => f.enabled) || [])
       } else {
         console.error('Failed to fetch tenant fields, status:', fieldsResponse.status)
         setFields([])

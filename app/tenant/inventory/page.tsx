@@ -201,10 +201,10 @@ export default function InventoryPage() {
 
   const fetchTenantFields = async () => {
     try {
-      const response = await fetch('/api/tenant-fields')
+      const response = await fetch('/api/tenant-product-fields')
       if (response.ok) {
         const data = await response.json()
-        return data.fields?.filter((f: any) => f.enabled) || []
+        return data?.filter((f: any) => f.enabled) || []
       }
     } catch (error) {
       console.warn('Tenant fields API unavailable:', error)
@@ -919,22 +919,10 @@ export default function InventoryPage() {
                         />
                       </TableHead>
                       <TableHead className="text-center w-16">Sr. No.</TableHead>
-                      {tenantFields.length > 0 ? (
-                        <>
-                          {tenantFields.map((field) => (
-                            <TableHead key={field.name} className="text-center">{field.name}</TableHead>
-                          ))}
-                          <TableHead className="text-center">{t('stock')}</TableHead>
-                        </>
-                      ) : (
-                        <>
-                          <TableHead className="text-center">{t('name')}</TableHead>
-                          <TableHead className="text-center">{t('sku')}</TableHead>
-                          <TableHead className="text-center">{t('category')}</TableHead>
-                          <TableHead className="text-center">{t('stock')}</TableHead>
-                          <TableHead className="text-center">{t('price')}</TableHead>
-                        </>
-                      )}
+                      {tenantFields.map((field) => (
+                        <TableHead key={field.name} className="text-center">{field.name}</TableHead>
+                      ))}
+                      <TableHead className="text-center">{t('stock')}</TableHead>
                       <TableHead className="text-center">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -958,69 +946,42 @@ export default function InventoryPage() {
                         <TableCell className="text-center font-medium">
                           {((currentPage - 1) * itemsPerPage) + index + 1}
                         </TableCell>
-                        {tenantFields.length > 0 ? (
-                          <>
-                            {tenantFields.map((field) => {
-                              const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
-                              let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()]
+                        {tenantFields.map((field) => {
+                          const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
+                          let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()]
+                          
+                          if (field.name.toLowerCase().includes('name') && !value) {
+                            value = item.name
+                          }
+                          
+                          const isBarcode = field.name.toLowerCase() === 'barcode' || field.type === 'barcode'
+                          
+                          return (
+                            <TableCell key={field.name} className="text-center">
+                              {isBarcode && value ? (
+                                <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
+                              ) : (
+                                Array.isArray(value) ? value.join(', ') : (value || 'N/A')
+                              )}
+                            </TableCell>
+                          )
+                        })}
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center">
+                            {(() => {
+                              const stock = Number(item.stock) || 0
+                              const minStock = Number(item.minStock) || 0
                               
-                              if (field.name.toLowerCase().includes('name') && !value) {
-                                value = item.name
+                              if (stock === 0) {
+                                return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+                              } else if (stock <= minStock && minStock > 0) {
+                                return <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">Low Stock</Badge>
+                              } else {
+                                return <Badge variant="secondary" className="text-xs">In Stock</Badge>
                               }
-                              
-                              const isBarcode = field.name.toLowerCase() === 'barcode' || field.type === 'barcode'
-                              
-                              return (
-                                <TableCell key={field.name} className="text-center">
-                                  {isBarcode && value ? (
-                                    <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
-                                  ) : (
-                                    Array.isArray(value) ? value.join(', ') : (value || 'N/A')
-                                  )}
-                                </TableCell>
-                              )
-                            })}
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center">
-                                {(() => {
-                                  const stock = Number(item.stock) || 0
-                                  const minStock = Number(item.minStock) || 0
-                                  
-                                  if (stock === 0) {
-                                    return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
-                                  } else if (stock <= minStock && minStock > 0) {
-                                    return <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">Low Stock</Badge>
-                                  } else {
-                                    return <Badge variant="secondary" className="text-xs">In Stock</Badge>
-                                  }
-                                })()}
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="text-center">{item.name || t('unnamedProduct')}</TableCell>
-                            <TableCell className="text-center">{item.sku || t('noSKU')}</TableCell>
-                            <TableCell className="text-center">{item.category || t('noCategory')}</TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center">
-                                {(() => {
-                                  const stock = Number(item.stock) || 0
-                                  const minStock = Number(item.minStock) || 0
-                                  
-                                  if (stock === 0) {
-                                    return <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
-                                  } else if (stock <= minStock && minStock > 0) {
-                                    return <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">Low Stock</Badge>
-                                  } else {
-                                    return <Badge variant="secondary" className="text-xs">In Stock</Badge>
-                                  }
-                                })()}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">₹{(item.price || 0).toFixed(2)}</TableCell>
-                          </>
-                        )}
+                            })()}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center space-x-2">
                             <Button 

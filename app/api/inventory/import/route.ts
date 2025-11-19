@@ -3,6 +3,8 @@ import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getTenantPlanLimits } from '@/lib/plan-limits'
+import { getTenantsCollection, connectDB } from '@/lib/database'
+import { ObjectId } from 'mongodb'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,9 +21,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    // Get tenant field configuration
+    const tenantsCollection = await getTenantsCollection()
+    const tenant = await tenantsCollection.findOne({ _id: new ObjectId(session.user.tenantId) })
+    
+    let enabledFields: any[] = []
+    if (tenant?.businessType) {
+      const db = await connectDB()
+      const businessType = await db.collection('business_types').findOne({ _id: new ObjectId(tenant.businessType) })
+      enabledFields = businessType?.fields?.filter((f: any) => f.enabled) || []
+    }
+
     const text = await file.text()
     const lines = text.split('\n')
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
+    
+    // Validate headers match configured fields
+    const fieldNames = enabledFields.map(f => f.name)
+    const invalidHeaders = headers.filter(h => !fieldNames.includes(h))
+    if (invalidHeaders.length > 0) {
+      return NextResponse.json({ 
+        error: `Invalid columns: ${invalidHeaders.join(', ')}. Expected: ${fieldNames.join(', ')}` 
+      }, { status: 400 })
+    }
     
     // Check current product count and limits
     const limits = await getTenantPlanLimits(session.user.tenantId)

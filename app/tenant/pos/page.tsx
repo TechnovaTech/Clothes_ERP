@@ -554,7 +554,7 @@ export default function POSPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">₹ {((product as any).Price || (product as any).price || product.price || 0).toFixed(2)}</p>
+                          <p className="font-bold">₹ {(Number((product as any).Price || (product as any).price || product.price) || 0).toFixed(2)}</p>
                           <Badge variant="outline" className="text-xs">
                             {(product as any).Barcode || (product as any).barcode || product.barcode || t('noBarcode')}
                           </Badge>
@@ -660,7 +660,7 @@ export default function POSPage() {
                                 setEditPrice(item.price.toString())
                               }}
                             >
-                              ₹ {item.price.toFixed(2)} {t('each')}
+                              ₹ {(Number(item.price) || 0).toFixed(2)} {t('each')}
                             </p>
                           )}
                         </div>
@@ -1199,30 +1199,60 @@ export default function POSPage() {
                         pdfLink = `${window.location.origin}/api/public-receipt/${completedSale._id || completedSale.id}`
                       }
                       
-                      const billMessage = `*${(settings.storeName || 'STORE').toUpperCase()}*
+                      const addressLines = settings.address ? settings.address.split(',').map(line => line.trim()) : []
+                      const logoDisplay = settings.logo || '🏪'
+                      
+                      const billMessage = `
+┌─────────────────────────────────────────┐
+│ *${(settings.storeName || 'STORE').toUpperCase().padEnd(25)}*     ${logoDisplay} │
+├─────────────────────────────────────────┤
+${addressLines.map(line => `│ 📍 ${line.padEnd(35)} │`).join('\n')}
+${settings.phone ? `│ 📞 ${settings.phone.padEnd(35)} │` : ''}
+${settings.email ? `│ 📧 ${settings.email.padEnd(35)} │` : ''}
+${settings.gst ? `│ 🏛️ GST: ${settings.gst.padEnd(31)} │` : ''}
+└─────────────────────────────────────────┘
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*📋 INVOICE DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *Bill No:* ${completedSale.billNo}
-*Customer:* ${completedSale.customerName}
 *Date:* ${completedSale.date.toLocaleDateString('en-IN')}
 *Time:* ${completedSale.date.toLocaleTimeString('en-IN', {hour12: true})}
+*Cashier:* ${completedSale.staffMember || 'Admin'}
 
-*ITEMS PURCHASED:*
-${completedSale.items.map((item: any) => `• ${item.name} x${item.quantity} = Rs${item.total.toFixed(2)}`).join('\n')}
+*👤 CUSTOMER DETAILS*
+*Name:* ${completedSale.customerName || 'Walk-in Customer'}
+${completedSale.customerPhone ? `*Phone:* ${completedSale.customerPhone}` : ''}
 
-*Subtotal:* Rs${(completedSale.subtotal || 0).toFixed(2)}
-*Discount:* Rs${(completedSale.discountAmount || 0).toFixed(2)}
-*Tax:* Rs${(completedSale.tax || 0).toFixed(2)}
-*TOTAL AMOUNT: Rs${completedSale.total.toFixed(2)}*
-*Payment Method:* ${completedSale.paymentMethod || 'Cash'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*🛒 ITEMS PURCHASED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\`\`\`
+| Item                | Qty | Rate   | Amount |
+|---------------------|-----|--------|--------|
+${completedSale.items.map((item: any) => {
+  const name = item.name.length > 18 ? item.name.substring(0, 18) + '..' : item.name.padEnd(19)
+  const qty = item.quantity.toString().padStart(3)
+  const rate = `₹${item.price.toFixed(2)}`.padStart(6)
+  const amount = `₹${item.total.toFixed(2)}`.padStart(6)
+  return `| ${name} | ${qty} | ${rate} | ${amount} |`
+}).join('\n')}
+\`\`\`
 
-*Download Your Bill:*
-${pdfLink}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*💰 PAYMENT SUMMARY*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*Subtotal:* ₹${(completedSale.subtotal || 0).toFixed(2)}
+${completedSale.discount > 0 ? `*Discount (${completedSale.discount}%):* -₹${(completedSale.discountAmount || 0).toFixed(2)}\n` : ''}${(completedSale.tax || 0) > 0 ? `*Tax:* ₹${(completedSale.tax || 0).toFixed(2)}\n` : ''}*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
+*🎯 TOTAL: ₹${completedSale.total.toFixed(2)}*
+*💳 Payment:* ${completedSale.paymentMethod === 'cash' ? '💵 Cash' : '💳 Online'}
 
-Thanks for shopping!
-Come again!
+📄 *Download Bill:* ${pdfLink}
 
-${settings.address || 'Store Address'}
-Contact: ${settings.phone || '9427300816'}`
+🙏 *Thank you for shopping!*
+✨ *Visit again soon!*
+
+💬 *Support:* ${settings.phone || '9427300816'}`
 
                       // Send via WhatsApp microservice
                       const response = await fetch('/api/send-bill', {
