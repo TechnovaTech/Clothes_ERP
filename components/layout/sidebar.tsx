@@ -57,7 +57,7 @@ const superAdminNavItems = [
 
 const getRetailNavItems = (t: (key: any) => string) => [
   // Core Operations
-  { title: t("dashboard"), href: "/tenant", icon: LayoutDashboard, feature: "dashboard" as FeatureKey, group: "core" },
+  { title: t("dashboard"), href: "/tenant", icon: LayoutDashboard, feature: "dashboard" as FeatureKey, group: "Dashboard" },
   
   // Sales
   { title: t("inventory"), href: "/tenant/inventory", icon: Package, feature: "inventory" as FeatureKey, group: "sales" },
