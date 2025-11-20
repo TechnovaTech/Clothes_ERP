@@ -80,7 +80,7 @@ async function getDailySales(salesCollection: any, startDate: Date) {
   const results = await salesCollection.aggregate(pipeline).toArray()
   
   // Ensure today's data exists even if 0
-  const todayData = results.find(r => r._id === today)
+  const todayData = results.find((r: any) => r._id === today)
   if (!todayData) {
     results.push({
       _id: today,
@@ -188,7 +188,7 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
 
   const results = await salesCollection.aggregate(pipeline).toArray()
   
-  const enrichedResults = results.map(item => ({
+  const enrichedResults = results.map((item: any) => ({
     ...item,
     profit: item.totalRevenue * 0.3 // Assume 30% profit margin
   }))
