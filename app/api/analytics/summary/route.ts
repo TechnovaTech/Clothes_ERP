@@ -40,11 +40,11 @@ export const GET = withFeatureAccess('reports')(async function(request: NextRequ
     }).toArray()
 
     // Calculate current period metrics
-    const totalRevenue = currentPeriodSales.reduce((sum, sale) => sum + (sale.total || 0), 0)
+    const totalRevenue = Number(currentPeriodSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
     const totalTransactions = currentPeriodSales.length
 
     // Calculate previous period metrics
-    const previousRevenue = previousPeriodSales.reduce((sum, sale) => sum + (sale.total || 0), 0)
+    const previousRevenue = Number(previousPeriodSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
 
     // Calculate profit for current period
     let totalProfit = 0
@@ -63,16 +63,16 @@ export const GET = withFeatureAccess('reports')(async function(request: NextRequ
         }
         
         const product = productSales.get(key)
-        product.quantity += item.quantity
-        product.revenue += (item.price * item.quantity)
+        product.quantity += Number(item.quantity) || 0
+        product.revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0)
       }
     }
 
     // Get cost prices for profit calculation
-    const productIds = Array.from(productSales.keys())
-    const products = await inventoryCollection.find({
+    const productIds = Array.from(productSales.keys()).filter(id => ObjectId.isValid(id))
+    const products = productIds.length > 0 ? await inventoryCollection.find({
       _id: { $in: productIds.map(id => new ObjectId(id)) }
-    }).toArray()
+    }).toArray() : []
 
     const productCosts = products.reduce((acc: any, product: any) => {
       acc[product._id.toString()] = product.costPrice || 0
@@ -80,24 +80,29 @@ export const GET = withFeatureAccess('reports')(async function(request: NextRequ
     }, {})
 
     // Get expenses for the current period
-    const currentExpenses = await expensesCollection.find({
-      date: { $gte: startDate }
-    }).toArray()
-    
-    const totalExpenses = currentExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0)
+    let currentExpenses = []
+    let totalExpenses = 0
+    try {
+      currentExpenses = await expensesCollection.find({
+        date: { $gte: startDate }
+      }).toArray()
+      totalExpenses = Number(currentExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0))
+    } catch (error) {
+      console.log('Expenses collection not found or error:', error)
+    }
 
     // Calculate total profit and top products
     const topProducts = []
     for (const [productId, productData] of productSales) {
-      const costPrice = productCosts[productId] || 0
-      const profit = productData.revenue - (costPrice * productData.quantity)
+      const costPrice = Number(productCosts[productId]) || 0
+      const profit = Number(productData.revenue) - (costPrice * Number(productData.quantity))
       totalProfit += profit
 
       topProducts.push({
         name: productData.name,
-        quantity: productData.quantity,
-        revenue: productData.revenue,
-        profit
+        quantity: Number(productData.quantity),
+        revenue: Number(productData.revenue),
+        profit: Number(profit)
       })
     }
     
@@ -115,21 +120,26 @@ export const GET = withFeatureAccess('reports')(async function(request: NextRequ
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
     // Get previous period expenses
-    const previousExpenses = await expensesCollection.find({
-      date: { 
-        $gte: previousStartDate,
-        $lt: startDate
-      }
-    }).toArray()
-    
-    const previousTotalExpenses = previousExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0)
+    let previousExpenses = []
+    let previousTotalExpenses = 0
+    try {
+      previousExpenses = await expensesCollection.find({
+        date: { 
+          $gte: previousStartDate,
+          $lt: startDate
+        }
+      }).toArray()
+      previousTotalExpenses = Number(previousExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0))
+    } catch (error) {
+      console.log('Previous expenses error:', error)
+    }
 
     // Calculate previous period profit for growth comparison
     let previousProfit = 0
     for (const sale of previousPeriodSales) {
       for (const item of sale.items || []) {
-        const costPrice = productCosts[item.id] || 0
-        previousProfit += (item.price * item.quantity) - (costPrice * item.quantity)
+        const costPrice = Number(productCosts[item.id]) || 0
+        previousProfit += ((Number(item.price) || 0) * (Number(item.quantity) || 0)) - (costPrice * (Number(item.quantity) || 0))
       }
     }
     
@@ -141,15 +151,15 @@ export const GET = withFeatureAccess('reports')(async function(request: NextRequ
       : 0
 
     const summary = {
-      totalRevenue,
-      totalProfit,
-      totalExpenses,
-      totalTransactions,
-      profitMargin,
+      totalRevenue: Number(totalRevenue),
+      totalProfit: Number(totalProfit),
+      totalExpenses: Number(totalExpenses),
+      totalTransactions: Number(totalTransactions),
+      profitMargin: Number(profitMargin),
       topProducts: topProducts.slice(0, 10),
       recentTrends: {
-        salesGrowth,
-        profitGrowth
+        salesGrowth: Number(salesGrowth),
+        profitGrowth: Number(profitGrowth)
       },
       period: {
         days,

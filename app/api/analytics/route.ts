@@ -50,7 +50,18 @@ async function getDailySales(salesCollection: any, startDate: Date) {
   const pipeline = [
     {
       $addFields: {
-        dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+        createdAtDate: {
+          $cond: {
+            if: { $eq: [{ $type: "$createdAt" }, "date"] },
+            then: "$createdAt",
+            else: { $toDate: "$createdAt" }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAtDate" } }
       }
     },
     {
@@ -87,11 +98,22 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
   
   const pipeline = [
     {
-      $unwind: "$items"
+      $unwind: { path: "$items", preserveNullAndEmptyArrays: true }
     },
     {
       $addFields: {
-        dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+        createdAtDate: {
+          $cond: {
+            if: { $eq: [{ $type: "$createdAt" }, "date"] },
+            then: "$createdAt",
+            else: { $toDate: "$createdAt" }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAtDate" } }
       }
     },
     {
@@ -135,7 +157,7 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
 async function getBestSellers(salesCollection: any, inventoryCollection: any, startDate: Date) {
   const pipeline = [
     {
-      $unwind: "$items"
+      $unwind: { path: "$items", preserveNullAndEmptyArrays: true }
     },
     {
       $group: {
@@ -165,14 +187,26 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
 }
 
 async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: any, startDate: Date, tenantId: string) {
-  const expensesCollection = await getTenantCollection(tenantId, 'expenses')
-  
-  const pipeline = [
-    {
-      $addFields: {
-        monthStr: { $dateToString: { format: "%Y-%m", date: "$createdAt" } }
-      }
-    },
+  try {
+    const expensesCollection = await getTenantCollection(tenantId, 'expenses')
+    
+    const pipeline = [
+      {
+        $addFields: {
+          createdAtDate: {
+            $cond: {
+              if: { $eq: [{ $type: "$createdAt" }, "date"] },
+              then: "$createdAt",
+              else: { $toDate: "$createdAt" }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          monthStr: { $dateToString: { format: "%Y-%m", date: "$createdAtDate" } }
+        }
+      },
     {
       $group: {
         _id: "$monthStr",
@@ -187,13 +221,24 @@ async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: an
 
   const salesData = await salesCollection.aggregate(pipeline).toArray()
   
-  // Get monthly expenses
-  const expensesPipeline = [
-    {
-      $addFields: {
-        monthStr: { $dateToString: { format: "%Y-%m", date: "$date" } }
-      }
-    },
+    // Get monthly expenses
+    const expensesPipeline = [
+      {
+        $addFields: {
+          dateField: {
+            $cond: {
+              if: { $eq: [{ $type: "$date" }, "date"] },
+              then: "$date",
+              else: { $toDate: "$date" }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          monthStr: { $dateToString: { format: "%Y-%m", date: "$dateField" } }
+        }
+      },
     {
       $group: {
         _id: "$monthStr",
@@ -202,7 +247,7 @@ async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: an
     }
   ]
   
-  const expensesData = await expensesCollection.aggregate(expensesPipeline).toArray()
+    const expensesData = await expensesCollection.aggregate(expensesPipeline).toArray().catch(() => [])
   const expensesByMonth = expensesData.reduce((acc: any, expense: any) => {
     acc[expense._id] = expense.totalExpenses
     return acc
@@ -225,5 +270,9 @@ async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: an
     }
   })
 
-  return NextResponse.json(monthlyNetProfit)
+    return NextResponse.json(monthlyNetProfit)
+  } catch (error) {
+    console.error('Monthly profit error:', error)
+    return NextResponse.json([])
+  }
 }

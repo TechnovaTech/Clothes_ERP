@@ -99,6 +99,12 @@ export function ChartDashboard() {
       if (response.ok) {
         const analyticsData = await response.json()
         
+        // Validate data exists
+        if (!analyticsData || typeof analyticsData.todaySales === 'undefined') {
+          console.error('Invalid analytics data received')
+          return
+        }
+        
         // Generate weekly data based on real today's data
         const weeklyData = [
           { day: 'Mon', sales: 0, orders: 0 },
@@ -107,17 +113,17 @@ export function ChartDashboard() {
           { day: 'Thu', sales: 0, orders: 0 },
           { day: 'Fri', sales: 0, orders: 0 },
           { day: 'Sat', sales: 0, orders: 0 },
-          { day: 'Sun', sales: analyticsData.todaySales, orders: analyticsData.additionalMetrics?.todayOrders || 0 }
+          { day: 'Sun', sales: analyticsData.todaySales || 0, orders: analyticsData.additionalMetrics?.todayOrders || 0 }
         ]
 
         setData({
-          todaySales: analyticsData.todaySales,
-          topProducts: analyticsData.topProducts,
-          stockValue: analyticsData.stockValue,
-          lowStockItems: analyticsData.lowStockItems,
-          topCustomer: analyticsData.topCustomer,
+          todaySales: analyticsData.todaySales || 0,
+          topProducts: analyticsData.topProducts || [],
+          stockValue: analyticsData.stockValue || 0,
+          lowStockItems: analyticsData.lowStockItems || [],
+          topCustomer: analyticsData.topCustomer || { name: "No data", totalPurchases: 0, totalSpent: 0 },
           topCustomers: analyticsData.topCustomers || [],
-          salesTrend: analyticsData.salesTrend,
+          salesTrend: analyticsData.salesTrend || 0,
           weeklyData
         })
         setLastUpdated(new Date())
