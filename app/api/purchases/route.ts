@@ -57,7 +57,7 @@ export const POST = withFeatureAccess('purchases')(async function(request: NextR
     const settings = await settingsCollection.findOne({}) || { taxRate: 0 }
     const taxRate = (settings.taxRate || 0) / 100
     
-    const subtotal = body.items.reduce((sum: number, item: any) => sum + (item.total || 0), 0)
+    const subtotal = body.items.reduce((sum: number, item: any) => sum + (parseFloat(item.total) || 0), 0)
     const tax = subtotal * taxRate
     const total = subtotal + tax
     

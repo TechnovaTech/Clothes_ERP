@@ -34,7 +34,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (body.supplierContactNo) updateData.supplierContactNo = body.supplierContactNo
     if (body.orderDate) updateData.orderDate = body.orderDate
     if (body.notes) updateData.notes = body.notes
-    if (body.items) updateData.items = body.items
+    if (body.items) {
+      updateData.items = body.items
+      // Recalculate totals when items are updated
+      const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
+      const settings = await settingsCollection.findOne({}) || { taxRate: 0 }
+      const taxRate = (settings.taxRate || 0) / 100
+      
+      const subtotal = body.items.reduce((sum: number, item: any) => sum + (parseFloat(item.total) || 0), 0)
+      const tax = subtotal * taxRate
+      const total = subtotal + tax
+      
+      updateData.subtotal = subtotal
+      updateData.tax = tax
+      updateData.total = total
+    }
     if (body.status) updateData.status = body.status
     
     // If status is being changed to 'completed', update inventory stock
