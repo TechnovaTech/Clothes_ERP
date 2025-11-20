@@ -67,41 +67,34 @@ export async function POST(request: NextRequest) {
     // Update inventory stock and validate
     for (const item of items) {
       try {
-        // Validate ObjectId
         if (!ObjectId.isValid(item.id)) {
           console.error(`Invalid product ID: ${item.id} for ${item.name}`)
-          continue // Skip invalid IDs instead of failing the entire sale
+          continue
         }
         
         const inventoryItem = await inventoryCollection.findOne({ _id: new ObjectId(item.id) })
         
         if (!inventoryItem) {
-          console.warn(`Product ${item.name} (${item.id}) not found in inventory, skipping stock update`)
-          continue // Skip missing products instead of failing
+          console.warn(`Product ${item.name} (${item.id}) not found in inventory`)
+          continue
         }
         
-        const currentStock = Number(inventoryItem.stock) || 0
-        const quantitySold = parseInt(item.quantity) || 0 // Use parseInt to ensure integer
+        const currentStock = Number(inventoryItem.stock || inventoryItem.Stock || 0)
+        const quantitySold = parseInt(item.quantity) || 0
         
-        console.log(`Stock Update: ${item.name} - Current: ${currentStock}, Selling: ${quantitySold}, Raw Quantity: ${item.quantity}`)
+        console.log(`[STOCK UPDATE] Product: ${item.name}, ID: ${item.id}, Current: ${currentStock}, Selling: ${quantitySold}`)
         
-        if (currentStock < quantitySold) {
-          console.warn(`Insufficient stock for ${item.name}. Available: ${currentStock}, Requested: ${quantitySold}`)
-          // Allow negative stock instead of blocking sale
-        }
-        
-        await inventoryCollection.updateOne(
+        const updateResult = await inventoryCollection.updateOne(
           { _id: new ObjectId(item.id) },
           { 
-            $inc: { stock: -quantitySold },
+            $inc: { stock: -quantitySold, Stock: -quantitySold },
             $set: { updatedAt: new Date() }
           }
         )
         
-        console.log(`Stock updated for ${item.name}: ${currentStock} -> ${currentStock - quantitySold}`)
+        console.log(`[STOCK UPDATED] ${item.name}: ${currentStock} -> ${currentStock - quantitySold}, Modified: ${updateResult.modifiedCount}`)
       } catch (err) {
-        console.error(`Inventory update error for ${item.name}:`, err)
-        // Continue with sale even if inventory update fails
+        console.error(`[STOCK ERROR] ${item.name}:`, err)
       }
     }
 
