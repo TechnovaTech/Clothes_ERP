@@ -94,46 +94,47 @@ async function getDailySales(salesCollection: any, startDate: Date) {
 }
 
 async function getDailyProfit(salesCollection: any, inventoryCollection: any, startDate: Date) {
-  const today = new Date().toISOString().split('T')[0]
-  
-  const pipeline = [
-    {
-      $match: {
-        items: { $exists: true, $type: "array", $ne: [] }
-      }
-    },
-    {
-      $unwind: "$items"
-    },
-    {
-      $addFields: {
-        createdAtDate: {
-          $cond: {
-            if: { $eq: [{ $type: "$createdAt" }, "date"] },
-            then: "$createdAt",
-            else: { $toDate: "$createdAt" }
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    const pipeline = [
+      {
+        $match: {
+          items: { $exists: true, $type: "array", $ne: [] }
+        }
+      },
+      {
+        $unwind: "$items"
+      },
+      {
+        $addFields: {
+          createdAtDate: {
+            $cond: {
+              if: { $eq: [{ $type: "$createdAt" }, "date"] },
+              then: "$createdAt",
+              else: { $toDate: "$createdAt" }
+            }
           }
         }
+      },
+      {
+        $addFields: {
+          dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAtDate" } }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: "$dateStr",
+            productId: "$items.id"
+          },
+          totalQuantity: { $sum: "$items.quantity" },
+          totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+        }
       }
-    },
-    {
-      $addFields: {
-        dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAtDate" } }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          date: "$dateStr",
-          productId: "$items.id"
-        },
-        totalQuantity: { $sum: "$items.quantity" },
-        totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
-      }
-    }
-  ]
+    ]
 
-  const salesData = await salesCollection.aggregate(pipeline).toArray()
+    const salesData = await salesCollection.aggregate(pipeline).toArray()
   
   const dailyProfits: any = {}
   
@@ -155,45 +156,54 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
     dailyProfits[today] = { date: today, totalProfit: 0, totalRevenue: 0, totalCost: 0 }
   }
 
-  const results = Object.values(dailyProfits).sort((a: any, b: any) => a.date.localeCompare(b.date))
-  return NextResponse.json(results)
+    const results = Object.values(dailyProfits).sort((a: any, b: any) => a.date.localeCompare(b.date))
+    return NextResponse.json(results)
+  } catch (error) {
+    console.error('Daily profit error:', error)
+    return NextResponse.json([])
+  }
 }
 
 async function getBestSellers(salesCollection: any, inventoryCollection: any, startDate: Date) {
-  const pipeline = [
-    {
-      $match: {
-        items: { $exists: true, $type: "array", $ne: [] }
+  try {
+    const pipeline = [
+      {
+        $match: {
+          items: { $exists: true, $type: "array", $ne: [] }
+        }
+      },
+      {
+        $unwind: "$items"
+      },
+      {
+        $group: {
+          _id: "$items.id",
+          productName: { $first: "$items.name" },
+          totalQuantity: { $sum: "$items.quantity" },
+          totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+          totalTransactions: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalQuantity: -1 }
+      },
+      {
+        $limit: 10
       }
-    },
-    {
-      $unwind: "$items"
-    },
-    {
-      $group: {
-        _id: "$items.id",
-        productName: { $first: "$items.name" },
-        totalQuantity: { $sum: "$items.quantity" },
-        totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
-        totalTransactions: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { totalQuantity: -1 }
-    },
-    {
-      $limit: 10
-    }
-  ]
+    ]
 
-  const results = await salesCollection.aggregate(pipeline).toArray()
-  
-  const enrichedResults = results.map((item: any) => ({
-    ...item,
-    profit: item.totalRevenue * 0.3 // Assume 30% profit margin
-  }))
+    const results = await salesCollection.aggregate(pipeline).toArray()
+    
+    const enrichedResults = results.map((item: any) => ({
+      ...item,
+      profit: item.totalRevenue * 0.3 // Assume 30% profit margin
+    }))
 
-  return NextResponse.json(enrichedResults)
+    return NextResponse.json(enrichedResults)
+  } catch (error) {
+    console.error('Best sellers error:', error)
+    return NextResponse.json([])
+  }
 }
 
 async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: any, startDate: Date, tenantId: string) {
