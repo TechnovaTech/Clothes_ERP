@@ -97,49 +97,58 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
   try {
     const today = new Date().toISOString().split('T')[0]
     
-    const pipeline = [
-      {
-        $addFields: {
-          createdAtDate: {
-            $cond: {
-              if: { $eq: [{ $type: "$createdAt" }, "date"] },
-              then: "$createdAt",
-              else: { $toDate: "$createdAt" }
-            }
-          }
-        }
-      },
-      {
-        $addFields: {
-          dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$createdAtDate" } }
-        }
-      },
-      {
-        $group: {
-          _id: "$dateStr",
-          totalRevenue: { $sum: "$total" }
-        }
-      },
-      {
-        $sort: { _id: 1 }
-      }
-    ]
-
-    const salesData = await salesCollection.aggregate(pipeline).toArray()
-  
-    const results = salesData.map((day: any) => {
-      const revenue = day.totalRevenue || 0
-      const profit = revenue * 0.3
-      const cost = revenue - profit
+    // Get all sales with items
+    const sales = await salesCollection.find({}).toArray()
+    const dailyData: any = {}
+    
+    // Get all inventory items for cost price lookup
+    const inventory = await inventoryCollection.find({}).toArray()
+    const inventoryMap = inventory.reduce((acc: any, item: any) => {
+      acc[item._id?.toString()] = item
+      return acc
+    }, {})
+    
+    sales.forEach((sale: any) => {
+      const saleDate = new Date(sale.createdAt).toISOString().split('T')[0]
       
-      return {
-        date: day._id,
-        totalProfit: profit,
-        totalRevenue: revenue,
-        totalCost: cost
+      if (!dailyData[saleDate]) {
+        dailyData[saleDate] = {
+          totalRevenue: 0,
+          totalCost: 0,
+          totalProfit: 0
+        }
+      }
+      
+      dailyData[saleDate].totalRevenue += sale.total || 0
+      
+      // Calculate actual cost and profit from items
+      if (sale.items && Array.isArray(sale.items)) {
+        sale.items.forEach((item: any) => {
+          const product = inventoryMap[item.id] || inventoryMap[item._id]
+          if (product) {
+            // Get cost price from dynamic fields
+            const costPrice = product['Cost Price'] || product['cost price'] || product.costPrice || product['costprice'] || 0
+            const sellingPrice = item.price || 0
+            const quantity = item.quantity || 0
+            
+            const itemCost = costPrice * quantity
+            const itemRevenue = sellingPrice * quantity
+            const itemProfit = itemRevenue - itemCost
+            
+            dailyData[saleDate].totalCost += itemCost
+            dailyData[saleDate].totalProfit += itemProfit
+          }
+        })
       }
     })
-  
+    
+    const results = Object.keys(dailyData).map(date => ({
+      date,
+      totalProfit: dailyData[date].totalProfit,
+      totalRevenue: dailyData[date].totalRevenue,
+      totalCost: dailyData[date].totalCost
+    }))
+    
     // Ensure today's data exists
     if (!results.find((r: any) => r.date === today)) {
       results.push({ date: today, totalProfit: 0, totalRevenue: 0, totalCost: 0 })
@@ -157,6 +166,13 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
     const sales = await salesCollection.find({}).toArray()
     const productStats: any = {}
     
+    // Get all inventory items for cost price lookup
+    const inventory = await inventoryCollection.find({}).toArray()
+    const inventoryMap = inventory.reduce((acc: any, item: any) => {
+      acc[item._id?.toString()] = item
+      return acc
+    }, {})
+    
     sales.forEach((sale: any) => {
       if (sale.items && Array.isArray(sale.items)) {
         sale.items.forEach((item: any) => {
@@ -167,11 +183,19 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
               productName: item.name || 'Unknown',
               totalQuantity: 0,
               totalRevenue: 0,
+              totalCost: 0,
               totalTransactions: 0
             }
           }
-          productStats[id].totalQuantity += item.quantity || 0
-          productStats[id].totalRevenue += (item.price || 0) * (item.quantity || 0)
+          
+          const quantity = item.quantity || 0
+          const sellingPrice = item.price || 0
+          const product = inventoryMap[id]
+          const costPrice = product ? (product['Cost Price'] || product['cost price'] || product.costPrice || product['costprice'] || 0) : 0
+          
+          productStats[id].totalQuantity += quantity
+          productStats[id].totalRevenue += sellingPrice * quantity
+          productStats[id].totalCost += costPrice * quantity
           productStats[id].totalTransactions += 1
         })
       }
@@ -182,7 +206,7 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
       .slice(0, 10)
       .map((item: any) => ({
         ...item,
-        profit: item.totalRevenue * 0.3
+        profit: item.totalRevenue - item.totalCost // Actual profit = Revenue - Cost
       }))
 
     return NextResponse.json(results)
@@ -196,37 +220,51 @@ async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: an
   try {
     const expensesCollection = await getTenantCollection(tenantId, 'expenses')
     
-    const pipeline = [
-      {
-        $addFields: {
-          createdAtDate: {
-            $cond: {
-              if: { $eq: [{ $type: "$createdAt" }, "date"] },
-              then: "$createdAt",
-              else: { $toDate: "$createdAt" }
-            }
-          }
+    // Get all sales with items
+    const sales = await salesCollection.find({}).toArray()
+    const monthlyData: any = {}
+    
+    // Get all inventory items for cost price lookup
+    const inventory = await inventoryCollection.find({}).toArray()
+    const inventoryMap = inventory.reduce((acc: any, item: any) => {
+      acc[item._id?.toString()] = item
+      return acc
+    }, {})
+    
+    sales.forEach((sale: any) => {
+      const saleMonth = new Date(sale.createdAt).toISOString().substring(0, 7) // YYYY-MM
+      
+      if (!monthlyData[saleMonth]) {
+        monthlyData[saleMonth] = {
+          totalRevenue: 0,
+          totalCost: 0,
+          totalProfit: 0
         }
-      },
-      {
-        $addFields: {
-          monthStr: { $dateToString: { format: "%Y-%m", date: "$createdAtDate" } }
-        }
-      },
-    {
-      $group: {
-        _id: "$monthStr",
-        totalRevenue: { $sum: "$total" },
-        totalTransactions: { $sum: 1 }
       }
-    },
-    {
-      $sort: { _id: -1 }
-    }
-  ]
-
-  const salesData = await salesCollection.aggregate(pipeline).toArray()
-  
+      
+      monthlyData[saleMonth].totalRevenue += sale.total || 0
+      
+      // Calculate actual cost and profit from items
+      if (sale.items && Array.isArray(sale.items)) {
+        sale.items.forEach((item: any) => {
+          const product = inventoryMap[item.id] || inventoryMap[item._id]
+          if (product) {
+            // Get cost price from dynamic fields
+            const costPrice = product['Cost Price'] || product['cost price'] || product.costPrice || product['costprice'] || 0
+            const sellingPrice = item.price || 0
+            const quantity = item.quantity || 0
+            
+            const itemCost = costPrice * quantity
+            const itemRevenue = sellingPrice * quantity
+            const itemProfit = itemRevenue - itemCost
+            
+            monthlyData[saleMonth].totalCost += itemCost
+            monthlyData[saleMonth].totalProfit += itemProfit
+          }
+        })
+      }
+    })
+    
     // Get monthly expenses
     const expensesPipeline = [
       {
@@ -245,36 +283,36 @@ async function getMonthlyNetProfit(salesCollection: any, inventoryCollection: an
           monthStr: { $dateToString: { format: "%Y-%m", date: "$dateField" } }
         }
       },
-    {
-      $group: {
-        _id: "$monthStr",
-        totalExpenses: { $sum: "$amount" }
+      {
+        $group: {
+          _id: "$monthStr",
+          totalExpenses: { $sum: "$amount" }
+        }
       }
-    }
-  ]
-  
+    ]
+    
     const expensesData = await expensesCollection.aggregate(expensesPipeline).toArray().catch(() => [])
-  const expensesByMonth = expensesData.reduce((acc: any, expense: any) => {
-    acc[expense._id] = expense.totalExpenses
-    return acc
-  }, {})
-  
-  const monthlyNetProfit = salesData.map((monthData: any) => {
-    const grossProfit = monthData.totalRevenue * 0.3
-    const expenses = expensesByMonth[monthData._id] || 0
-    const netProfit = grossProfit - expenses
+    const expensesByMonth = expensesData.reduce((acc: any, expense: any) => {
+      acc[expense._id] = expense.totalExpenses
+      return acc
+    }, {})
+    
+    const monthlyNetProfit = Object.keys(monthlyData).map((month: string) => {
+      const data = monthlyData[month]
+      const expenses = expensesByMonth[month] || 0
+      const netProfit = data.totalProfit - expenses // Gross Profit - Expenses = Net Profit
 
-    return {
-      month: monthData._id,
-      monthName: new Date(monthData._id + '-01').toLocaleDateString('en-IN', { year: 'numeric', month: 'long' }),
-      revenue: monthData.totalRevenue,
-      grossProfit: grossProfit,
-      cost: monthData.totalRevenue - grossProfit,
-      expenses: expenses,
-      netProfit: netProfit,
-      profitMargin: monthData.totalRevenue > 0 ? (netProfit / monthData.totalRevenue) * 100 : 0
-    }
-  })
+      return {
+        month: month,
+        monthName: new Date(month + '-01').toLocaleDateString('en-IN', { year: 'numeric', month: 'long' }),
+        revenue: data.totalRevenue,
+        grossProfit: data.totalProfit, // This is actually gross profit (selling price - cost price)
+        cost: data.totalCost,
+        expenses: expenses,
+        netProfit: netProfit,
+        profitMargin: data.totalRevenue > 0 ? (netProfit / data.totalRevenue) * 100 : 0
+      }
+    }).sort((a, b) => b.month.localeCompare(a.month))
 
     return NextResponse.json(monthlyNetProfit)
   } catch (error) {
