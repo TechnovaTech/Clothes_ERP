@@ -340,7 +340,7 @@ export default function PurchasesPage() {
 
   const totalPurchases = purchases.length
   const pendingOrders = purchases.filter(p => p.status === 'pending').length
-  const totalSpent = purchases.reduce((sum, p) => sum + (p.total || 0), 0)
+  const totalSpent = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0)
   const activeSuppliers = new Set(purchases.map(p => p.supplierName)).size
 
   if (loading) {
@@ -1018,7 +1018,7 @@ export default function PurchasesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{new Date(purchase.orderDate).toLocaleDateString('en-IN')}</TableCell>
-                      <TableCell className="text-center">₹ {(purchase.total || 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-center">₹ {(parseFloat(purchase.total) || 0).toLocaleString()}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant={
                           purchase.status === 'pending' ? 'secondary' :
