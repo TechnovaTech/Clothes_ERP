@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
 
     // Update inventory stock
     console.log('=== STOCK UPDATE START ===')
-    console.log('Items to update:', items?.map((i: any) => ({ id: i.id, name: i.name, qty: i.quantity })))
+    console.log('Tenant:', session.user.tenantId)
+    console.log('Items:', JSON.stringify(items?.map((i: any) => ({ id: i.id, name: i.name, qty: i.quantity }))))
     
     if (!items || items.length === 0) {
       console.log('⚠️ No items to update')
@@ -83,38 +84,52 @@ export async function POST(request: NextRequest) {
             continue
           }
           
-          if (!ObjectId.isValid(item.id)) {
-            console.error(`❌ Invalid ID format: ${item.id}`)
+          const quantitySold = parseInt(item.quantity) || 0
+          console.log(`\n📦 Processing: ${item.name}, ID: ${item.id}, Qty: ${quantitySold}`)
+          
+          let productId
+          try {
+            productId = new ObjectId(item.id)
+          } catch (e) {
+            console.error(`❌ Invalid ObjectId: ${item.id}`)
             continue
           }
           
-          const productId = new ObjectId(item.id)
-          const quantitySold = parseInt(item.quantity) || 0
+          // First, check if product exists
+          const existingProduct = await inventoryCollection.findOne({ _id: productId })
+          if (!existingProduct) {
+            console.error(`❌ Product not found in inventory`)
+            continue
+          }
           
-          console.log(`\n📦 Updating: ${item.name}`)
-          console.log(`   ID: ${item.id}`)
-          console.log(`   Quantity: ${quantitySold}`)
+          console.log(`✓ Found product, current stock: ${existingProduct.stock}`)
           
+          // Update stock - try multiple field names
           const updateResult = await inventoryCollection.updateOne(
             { _id: productId },
             { 
-              $inc: { stock: -quantitySold },
+              $inc: { 
+                stock: -quantitySold,
+                Stock: -quantitySold
+              },
               $set: { updatedAt: new Date() }
             }
           )
           
-          console.log(`   Result: matched=${updateResult.matchedCount}, modified=${updateResult.modifiedCount}`)
+          console.log(`✓ Update: matched=${updateResult.matchedCount}, modified=${updateResult.modifiedCount}`)
           
-          if (updateResult.matchedCount === 0) {
-            console.error(`   ❌ Product not found in inventory`)
-          } else if (updateResult.modifiedCount === 0) {
-            console.warn(`   ⚠️ No changes made (stock field might not exist)`)
+          // Verify the update
+          const verifiedProduct = await inventoryCollection.findOne({ _id: productId })
+          console.log(`✓ New stock: ${verifiedProduct?.stock}, Expected: ${existingProduct.stock - quantitySold}`)
+          
+          if (updateResult.modifiedCount > 0) {
+            console.log(`✅ SUCCESS: Stock reduced from ${existingProduct.stock} to ${verifiedProduct?.stock}`)
           } else {
-            console.log(`   ✅ Stock updated successfully`)
+            console.error(`❌ FAILED: Stock not updated`)
           }
           
         } catch (err) {
-          console.error(`❌ Error updating ${item.name}:`, err instanceof Error ? err.message : 'Unknown error')
+          console.error(`❌ Error: ${item.name}:`, err instanceof Error ? err.message : String(err))
         }
       }
     }
