@@ -589,7 +589,7 @@ export default function POSPage() {
                       }}
                     >
                       <span>{bill.id}</span>
-                      <span>₹ {bill.total.toFixed(2)}</span>
+                      <span>₹ {Number(bill.total || 0).toFixed(2)}</span>
                     </Button>
                   ))}
                 </div>
