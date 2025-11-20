@@ -45,9 +45,12 @@ export async function GET(request: NextRequest) {
       let leaveDays = 0
       if (leaves && leaves.length > 0) {
         leaves.forEach(leave => {
-          if (leave.startDate && leave.endDate) {
-            const leaveStartDate = new Date(leave.startDate)
-            const leaveEndDate = new Date(leave.endDate)
+          const leaveStart = leave.startDate || leave.fromDate
+          const leaveEnd = leave.endDate || leave.toDate
+          
+          if (leaveStart && leaveEnd) {
+            const leaveStartDate = new Date(leaveStart)
+            const leaveEndDate = new Date(leaveEnd)
             const monthStart = new Date(startDate)
             const monthEnd = new Date(endDate)
             
