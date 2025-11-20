@@ -99,14 +99,6 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
     
     const pipeline = [
       {
-        $match: {
-          items: { $exists: true }
-        }
-      },
-      {
-        $unwind: { path: "$items", preserveNullAndEmptyArrays: false }
-      },
-      {
         $addFields: {
           createdAtDate: {
             $cond: {
@@ -124,40 +116,36 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
       },
       {
         $group: {
-          _id: {
-            date: "$dateStr",
-            productId: "$items.id"
-          },
-          totalQuantity: { $sum: "$items.quantity" },
-          totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+          _id: "$dateStr",
+          totalRevenue: { $sum: "$total" }
         }
+      },
+      {
+        $sort: { _id: 1 }
       }
     ]
 
     const salesData = await salesCollection.aggregate(pipeline).toArray()
   
-  const dailyProfits: any = {}
+    const results = salesData.map((day: any) => {
+      const revenue = day.totalRevenue || 0
+      const profit = revenue * 0.3
+      const cost = revenue - profit
+      
+      return {
+        date: day._id,
+        totalProfit: profit,
+        totalRevenue: revenue,
+        totalCost: cost
+      }
+    })
   
-  for (const item of salesData) {
-    const date = item._id.date
-    const profit = item.totalRevenue * 0.3 // Assume 30% profit margin
-    
-    if (!dailyProfits[date]) {
-      dailyProfits[date] = { date, totalProfit: 0, totalRevenue: 0, totalCost: 0 }
+    // Ensure today's data exists
+    if (!results.find((r: any) => r.date === today)) {
+      results.push({ date: today, totalProfit: 0, totalRevenue: 0, totalCost: 0 })
     }
-    
-    dailyProfits[date].totalProfit += profit
-    dailyProfits[date].totalRevenue += item.totalRevenue
-    dailyProfits[date].totalCost += item.totalRevenue - profit
-  }
-  
-  // Ensure today's data exists
-  if (!dailyProfits[today]) {
-    dailyProfits[today] = { date: today, totalProfit: 0, totalRevenue: 0, totalCost: 0 }
-  }
 
-    const results = Object.values(dailyProfits).sort((a: any, b: any) => a.date.localeCompare(b.date))
-    return NextResponse.json(results)
+    return NextResponse.json(results.sort((a: any, b: any) => a.date.localeCompare(b.date)))
   } catch (error) {
     console.error('Daily profit error:', error)
     return NextResponse.json([])
@@ -166,40 +154,38 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
 
 async function getBestSellers(salesCollection: any, inventoryCollection: any, startDate: Date) {
   try {
-    const pipeline = [
-      {
-        $match: {
-          items: { $exists: true }
-        }
-      },
-      {
-        $unwind: { path: "$items", preserveNullAndEmptyArrays: false }
-      },
-      {
-        $group: {
-          _id: "$items.id",
-          productName: { $first: "$items.name" },
-          totalQuantity: { $sum: "$items.quantity" },
-          totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
-          totalTransactions: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { totalQuantity: -1 }
-      },
-      {
-        $limit: 10
-      }
-    ]
-
-    const results = await salesCollection.aggregate(pipeline).toArray()
+    const sales = await salesCollection.find({}).toArray()
+    const productStats: any = {}
     
-    const enrichedResults = results.map((item: any) => ({
-      ...item,
-      profit: item.totalRevenue * 0.3 // Assume 30% profit margin
-    }))
+    sales.forEach((sale: any) => {
+      if (sale.items && Array.isArray(sale.items)) {
+        sale.items.forEach((item: any) => {
+          const id = item.id || item._id
+          if (!productStats[id]) {
+            productStats[id] = {
+              _id: id,
+              productName: item.name || 'Unknown',
+              totalQuantity: 0,
+              totalRevenue: 0,
+              totalTransactions: 0
+            }
+          }
+          productStats[id].totalQuantity += item.quantity || 0
+          productStats[id].totalRevenue += (item.price || 0) * (item.quantity || 0)
+          productStats[id].totalTransactions += 1
+        })
+      }
+    })
+    
+    const results = Object.values(productStats)
+      .sort((a: any, b: any) => b.totalQuantity - a.totalQuantity)
+      .slice(0, 10)
+      .map((item: any) => ({
+        ...item,
+        profit: item.totalRevenue * 0.3
+      }))
 
-    return NextResponse.json(enrichedResults)
+    return NextResponse.json(results)
   } catch (error) {
     console.error('Best sellers error:', error)
     return NextResponse.json([])
