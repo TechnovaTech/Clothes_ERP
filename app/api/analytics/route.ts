@@ -100,11 +100,11 @@ async function getDailyProfit(salesCollection: any, inventoryCollection: any, st
     const pipeline = [
       {
         $match: {
-          items: { $exists: true, $type: "array", $ne: [] }
+          items: { $exists: true }
         }
       },
       {
-        $unwind: "$items"
+        $unwind: { path: "$items", preserveNullAndEmptyArrays: false }
       },
       {
         $addFields: {
@@ -169,11 +169,11 @@ async function getBestSellers(salesCollection: any, inventoryCollection: any, st
     const pipeline = [
       {
         $match: {
-          items: { $exists: true, $type: "array", $ne: [] }
+          items: { $exists: true }
         }
       },
       {
-        $unwind: "$items"
+        $unwind: { path: "$items", preserveNullAndEmptyArrays: false }
       },
       {
         $group: {
