@@ -27,12 +27,8 @@ export async function GET() {
       return NextResponse.json([])
     }
     
-    // Only return dynamic fields (excluding static ones) for field settings page
-    const dynamicFields = businessType.customerFields.filter(field => 
-      !['name', 'phone', 'email', 'address'].includes(field.name)
-    )
-    
-    return NextResponse.json(dynamicFields)
+    // Return all customer fields from business type
+    return NextResponse.json(businessType.customerFields)
   } catch (error) {
     console.error('Failed to fetch customer fields:', error)
     return NextResponse.json({ error: 'Failed to fetch fields' }, { status: 500 })
@@ -56,22 +52,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'No business type assigned' }, { status: 400 })
     }
 
-    // Update business type customer fields
+    // Update business type customer fields - only use provided fields
     const db = await connectDB()
-    const staticFields = [
-      { name: 'name', label: 'Name', type: 'text', required: true, enabled: true },
-      { name: 'phone', label: 'Phone', type: 'phone', required: false, enabled: true },
-      { name: 'email', label: 'Email', type: 'email', required: false, enabled: true },
-      { name: 'address', label: 'Address', type: 'text', required: false, enabled: true }
-    ]
-    
-    const allFields = [...staticFields, ...fields]
     
     await db.collection('business_types').updateOne(
       { _id: new ObjectId(tenant.businessType) },
       { 
         $set: { 
-          customerFields: allFields,
+          customerFields: fields,
           updatedAt: new Date()
         }
       }

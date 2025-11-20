@@ -235,16 +235,10 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
     return (
       <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
         <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Fields Configured</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Fields Available</h3>
         <p className="text-sm text-gray-500 mb-4">
-          Configure inventory fields first in field settings.
+          Contact your administrator to configure product fields.
         </p>
-        <a 
-          href="/tenant/field-settings" 
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Configure Fields
-        </a>
       </div>
     )
   }

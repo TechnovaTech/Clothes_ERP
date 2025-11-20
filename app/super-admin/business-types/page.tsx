@@ -100,7 +100,15 @@ export default function BusinessTypesPage() {
   }
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', fields: [], customerFields: [] })
+    // Auto-add core fields when creating new business type
+    const coreFields = [
+      { name: 'name', type: 'text', required: true },
+      { name: 'costPrice', type: 'number', required: true },
+      { name: 'price', type: 'number', required: true },
+      { name: 'stock', type: 'number', required: true },
+      { name: 'minStock', type: 'number', required: true }
+    ]
+    setFormData({ name: '', description: '', fields: coreFields, customerFields: [] })
     setEditingType(null)
   }
 
@@ -207,12 +215,17 @@ export default function BusinessTypesPage() {
                   </Button>
                 </div>
 
+                <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4">
+                  <p className="text-sm text-green-800 font-medium">✅ Core Fields (Auto-added)</p>
+                  <p className="text-xs text-green-600">Product Name, Cost Price, Price, Stock, Min Stock</p>
+                </div>
+                
                 <div className="max-h-80 overflow-y-auto space-y-3 pr-2 border rounded-lg p-4 bg-gray-50">
-                  {formData.fields.length === 0 ? (
+                  {formData.fields.length === 5 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No custom fields added yet</p>
-                      <p className="text-xs">Click "Add Field" to create your first field</p>
+                      <p>Core fields added automatically</p>
+                      <p className="text-xs">Click "Add Field" to add additional custom fields</p>
                     </div>
                   ) : (
                     formData.fields.map((field, index) => (
@@ -317,7 +330,7 @@ export default function BusinessTypesPage() {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Field Name</Label>
                             <Input
@@ -328,19 +341,6 @@ export default function BusinessTypesPage() {
                                 setFormData({ ...formData, customerFields: updated })
                               }}
                               placeholder="e.g., company, age"
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-700">Field Label</Label>
-                            <Input
-                              value={field.label}
-                              onChange={(e) => {
-                                const updated = [...formData.customerFields]
-                                updated[index] = { ...updated[index], label: e.target.value }
-                                setFormData({ ...formData, customerFields: updated })
-                              }}
-                              placeholder="e.g., Company Name, Age"
                               className="mt-1"
                             />
                           </div>
@@ -611,7 +611,7 @@ export default function BusinessTypesPage() {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Field Name</Label>
                           <Input
@@ -622,19 +622,6 @@ export default function BusinessTypesPage() {
                               setFormData({ ...formData, customerFields: updated })
                             }}
                             placeholder="e.g., company, age"
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">Field Label</Label>
-                          <Input
-                            value={field.label}
-                            onChange={(e) => {
-                              const updated = [...formData.customerFields]
-                              updated[index] = { ...updated[index], label: e.target.value }
-                              setFormData({ ...formData, customerFields: updated })
-                            }}
-                            placeholder="e.g., Company Name, Age"
                             className="mt-1"
                           />
                         </div>

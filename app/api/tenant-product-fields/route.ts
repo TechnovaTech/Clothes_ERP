@@ -34,11 +34,8 @@ export async function GET(request: NextRequest) {
       // Return all fields for inventory form
       return NextResponse.json(businessType.fields)
     } else {
-      // Only return dynamic fields (excluding static ones) for field settings page
-      const dynamicFields = businessType.fields.filter(field => 
-        !['name', 'price', 'description', 'category'].includes(field.name)
-      )
-      return NextResponse.json(dynamicFields)
+      // Return all fields from business type
+      return NextResponse.json(businessType.fields)
     }
   } catch (error) {
     console.error('Failed to fetch product fields:', error)
@@ -66,13 +63,21 @@ export async function PUT(request: NextRequest) {
     // Update business type product fields
     const db = await connectDB()
     const staticFields = [
-      { name: 'name', label: 'Product Name', type: 'text', required: true, enabled: true },
-      { name: 'price', label: 'Price', type: 'number', required: true, enabled: true },
-      { name: 'description', label: 'Description', type: 'textarea', required: false, enabled: true },
-      { name: 'category', label: 'Category', type: 'text', required: false, enabled: true }
+      { name: 'Name', type: 'text', required: true, enabled: true },
+      { name: 'Price', type: 'number', required: true, enabled: true },
+      { name: 'Cost Price', type: 'number', required: true, enabled: true },
+      { name: 'Stock', type: 'number', required: true, enabled: true },
+      { name: 'Min Stock', type: 'number', required: true, enabled: true }
     ]
     
-    const allFields = [...staticFields, ...fields]
+    // Filter out any static field names from dynamic fields to prevent duplicates
+    const staticFieldNames = staticFields.map(f => f.name.toLowerCase().replace(/\s+/g, ''))
+    const filteredDynamicFields = fields.filter(field => {
+      const normalizedFieldName = field.name.toLowerCase().replace(/\s+/g, '')
+      return !staticFieldNames.includes(normalizedFieldName)
+    })
+    
+    const allFields = [...staticFields, ...filteredDynamicFields]
     
     await db.collection('business_types').updateOne(
       { _id: new ObjectId(tenant.businessType) },
