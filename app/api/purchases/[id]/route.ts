@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (body.supplierContactNo) updateData.supplierContactNo = body.supplierContactNo
     if (body.orderDate) updateData.orderDate = body.orderDate
     if (body.notes) updateData.notes = body.notes
-    if (body.items) {
+    if (body.items && Array.isArray(body.items) && body.items.length > 0) {
       updateData.items = body.items
       // Recalculate totals when items are updated (no tax on purchases)
       const subtotal = body.items.reduce((sum: number, item: any) => sum + (parseFloat(item.total) || 0), 0)
