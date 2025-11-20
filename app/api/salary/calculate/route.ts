@@ -20,57 +20,41 @@ export async function GET(request: NextRequest) {
     
     const employees = await employeesCollection.find({}).toArray()
     
-    const salaryData = await Promise.all(employees.map(async (employee) => {
+    // Get all approved leaves at once
+    const allApprovedLeaves = await leavesCollection.find({
+      status: { $in: ['Approved', 'approved'] }
+    }).toArray()
+    
+    const monthStart = new Date(year, month - 1, 1)
+    const monthEnd = new Date(year, month, 0)
+    
+    const salaryData = employees.map((employee) => {
       const empId = employee.employeeId || employee._id.toString()
       
-      console.log('\n=== Employee:', employee.name, 'ID:', empId)
-      
-      // Try multiple queries to find leaves
-      const allLeaves = await leavesCollection.find({}).toArray()
-      console.log('Total leaves in DB:', allLeaves.length)
-      if (allLeaves.length > 0) {
-        console.log('Sample leave structure:', JSON.stringify(allLeaves[0], null, 2))
-      }
-      
-      // Try different field name variations
-      const approvedLeaves = await leavesCollection.find({
-        $or: [
-          { employeeId: empId, status: 'approved' },
-          { employeeId: empId, status: 'Approved' },
-          { employeeId: employee.employeeId, status: 'approved' },
-          { employeeId: employee._id.toString(), status: 'approved' }
-        ]
-      }).toArray()
-      
-      console.log('Approved leaves found:', approvedLeaves.length)
+      // Filter leaves for this employee
+      const employeeLeaves = allApprovedLeaves.filter(leave => 
+        leave.employeeId === empId || 
+        leave.employeeId === employee.employeeId || 
+        leave.employeeId === employee._id.toString()
+      )
       
       let leaveDays = 0
-      const monthStart = new Date(year, month - 1, 1)
-      const monthEnd = new Date(year, month, 0)
       
-      console.log('Month range:', monthStart.toISOString(), 'to', monthEnd.toISOString())
-      
-      approvedLeaves.forEach(leave => {
-        console.log('Processing leave:', leave)
+      employeeLeaves.forEach(leave => {
         const leaveStart = new Date(leave.startDate || leave.fromDate)
         const leaveEnd = new Date(leave.endDate || leave.toDate)
-        
-        console.log('Leave dates:', leaveStart.toISOString(), 'to', leaveEnd.toISOString())
         
         if (leaveStart <= monthEnd && leaveEnd >= monthStart) {
           const overlapStart = leaveStart > monthStart ? leaveStart : monthStart
           const overlapEnd = leaveEnd < monthEnd ? leaveEnd : monthEnd
           const days = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
           leaveDays += days
-          console.log('Leave days added:', days, 'Total now:', leaveDays)
         }
       })
       
       const workingDays = 30 - leaveDays
       const baseSalary = parseFloat(employee.salary) || 0
       const effectiveSalary = Math.round((baseSalary / 30) * workingDays)
-      
-      console.log('Final:', { leaveDays, workingDays, effectiveSalary })
       
       return {
         employeeId: empId,
@@ -80,7 +64,7 @@ export async function GET(request: NextRequest) {
         leaveDays,
         effectiveSalary
       }
-    }))
+    })
     
     return NextResponse.json(salaryData)
   } catch (error) {
