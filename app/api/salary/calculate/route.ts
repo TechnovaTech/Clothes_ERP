@@ -28,10 +28,15 @@ export async function GET(request: NextRequest) {
       console.log('Looking for leaves for employee:', empId, 'in period:', startDate, 'to', endDate)
       
       const leaves = await leavesCollection.find({
-        $or: [
-          { employeeId: empId },
-          { employeeId: employee._id.toString() },
-          { employeeId: employee.employeeId }
+        $and: [
+          {
+            $or: [
+              { employeeId: empId },
+              { employeeId: employee._id.toString() },
+              { employeeId: employee.employeeId }
+            ]
+          },
+          { status: 'approved' }  // Only count approved leaves
         ]
       }).toArray()
       
