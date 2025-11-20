@@ -81,7 +81,9 @@ export async function POST(request: NextRequest) {
         }
         
         const currentStock = Number(inventoryItem.stock) || 0
-        const quantitySold = Number(item.quantity) || 0
+        const quantitySold = parseInt(item.quantity) || 0 // Use parseInt to ensure integer
+        
+        console.log(`Stock Update: ${item.name} - Current: ${currentStock}, Selling: ${quantitySold}, Raw Quantity: ${item.quantity}`)
         
         if (currentStock < quantitySold) {
           console.warn(`Insufficient stock for ${item.name}. Available: ${currentStock}, Requested: ${quantitySold}`)
@@ -95,6 +97,8 @@ export async function POST(request: NextRequest) {
             $set: { updatedAt: new Date() }
           }
         )
+        
+        console.log(`Stock updated for ${item.name}: ${currentStock} -> ${currentStock - quantitySold}`)
       } catch (err) {
         console.error(`Inventory update error for ${item.name}:`, err)
         // Continue with sale even if inventory update fails
