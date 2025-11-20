@@ -285,9 +285,10 @@ export default function PurchasesPage() {
       items: prev.items.map((item, i) => {
         if (i === index) {
           const updatedItem = { ...item, [field]: value }
-          if (field === 'quantity' || field === 'unitPrice') {
-            updatedItem.total = (updatedItem.quantity || 0) * (updatedItem.unitPrice || 0)
-          }
+          // Always recalculate total when quantity or unitPrice changes
+          const qty = field === 'quantity' ? (parseFloat(value) || 0) : (parseFloat(item.quantity) || 0)
+          const price = field === 'unitPrice' ? (parseFloat(value) || 0) : (parseFloat(item.unitPrice) || 0)
+          updatedItem.total = qty * price
           return updatedItem
         }
         return item
