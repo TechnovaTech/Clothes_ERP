@@ -67,32 +67,37 @@ export async function POST(request: NextRequest) {
     // Update inventory stock and validate
     for (const item of items) {
       try {
+        // Validate ObjectId
+        if (!ObjectId.isValid(item.id)) {
+          console.error(`Invalid product ID: ${item.id} for ${item.name}`)
+          continue // Skip invalid IDs instead of failing the entire sale
+        }
+        
         const inventoryItem = await inventoryCollection.findOne({ _id: new ObjectId(item.id) })
         
         if (!inventoryItem) {
-          return NextResponse.json({ 
-            error: `Product ${item.name} not found in inventory` 
-          }, { status: 400 })
+          console.warn(`Product ${item.name} (${item.id}) not found in inventory, skipping stock update`)
+          continue // Skip missing products instead of failing
         }
         
-        if (inventoryItem.stock < item.quantity) {
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${item.name}. Available: ${inventoryItem.stock}` 
-          }, { status: 400 })
+        const currentStock = Number(inventoryItem.stock) || 0
+        const quantitySold = Number(item.quantity) || 0
+        
+        if (currentStock < quantitySold) {
+          console.warn(`Insufficient stock for ${item.name}. Available: ${currentStock}, Requested: ${quantitySold}`)
+          // Allow negative stock instead of blocking sale
         }
         
         await inventoryCollection.updateOne(
           { _id: new ObjectId(item.id) },
           { 
-            $inc: { stock: -item.quantity },
+            $inc: { stock: -quantitySold },
             $set: { updatedAt: new Date() }
           }
         )
       } catch (err) {
-        console.error('Inventory update error:', err)
-        return NextResponse.json({ 
-          error: `Error updating inventory for ${item.name}` 
-        }, { status: 500 })
+        console.error(`Inventory update error for ${item.name}:`, err)
+        // Continue with sale even if inventory update fails
       }
     }
 
