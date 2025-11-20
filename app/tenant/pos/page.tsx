@@ -665,7 +665,7 @@ export default function POSPage() {
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-sm">₹ {item.total.toFixed(2)}</p>
+                          <p className="font-medium text-sm">₹ {Number(item.total || 0).toFixed(2)}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1013,8 +1013,8 @@ export default function POSPage() {
                       <div style={{display: 'flex', fontSize: '8px'}}>
                         <span style={{width: '35%'}}></span>
                         <span style={{width: '15%', textAlign: 'center'}}>{item.quantity}</span>
-                        <span style={{width: '25%', textAlign: 'right', paddingRight: '10px'}}>₹{item.price.toFixed(2)}</span>
-                        <span style={{width: '25%', textAlign: 'right', fontWeight: '500'}}>₹{item.total.toFixed(2)}</span>
+                        <span style={{width: '25%', textAlign: 'right', paddingRight: '10px'}}>₹{Number(item.price || 0).toFixed(2)}</span>
+                        <span style={{width: '25%', textAlign: 'right', fontWeight: '500'}}>₹{Number(item.total || 0).toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
@@ -1233,8 +1233,8 @@ ${completedSale.customerPhone ? `*Phone:* ${completedSale.customerPhone}` : ''}
 ${completedSale.items.map((item: any) => {
   const name = item.name.length > 18 ? item.name.substring(0, 18) + '..' : item.name.padEnd(19)
   const qty = item.quantity.toString().padStart(3)
-  const rate = `₹${item.price.toFixed(2)}`.padStart(6)
-  const amount = `₹${item.total.toFixed(2)}`.padStart(6)
+  const rate = `₹${Number(item.price || 0).toFixed(2)}`.padStart(6)
+  const amount = `₹${Number(item.total || 0).toFixed(2)}`.padStart(6)
   return `| ${name} | ${qty} | ${rate} | ${amount} |`
 }).join('\n')}
 \`\`\`
@@ -1244,7 +1244,7 @@ ${completedSale.items.map((item: any) => {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *Subtotal:* ₹${(completedSale.subtotal || 0).toFixed(2)}
 ${completedSale.discount > 0 ? `*Discount (${completedSale.discount}%):* -₹${(completedSale.discountAmount || 0).toFixed(2)}\n` : ''}${(completedSale.tax || 0) > 0 ? `*Tax:* ₹${(completedSale.tax || 0).toFixed(2)}\n` : ''}*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
-*🎯 TOTAL: ₹${completedSale.total.toFixed(2)}*
+*🎯 TOTAL: ₹${Number(completedSale.total || 0).toFixed(2)}*
 *💳 Payment:* ${completedSale.paymentMethod === 'cash' ? '💵 Cash' : '💳 Online'}
 
 📄 *Download Bill:* ${pdfLink}
