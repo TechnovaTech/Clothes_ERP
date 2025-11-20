@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const month = parseInt(searchParams.get('month') || '1')
-    const year = parseInt(searchParams.get('year') || '2024')
+    const month = parseInt(searchParams.get('month') || new Date().getMonth() + 1)
+    const year = parseInt(searchParams.get('year') || new Date().getFullYear())
 
     const employeesCollection = await getTenantCollection(session.user.tenantId, 'employees')
     const leavesCollection = await getTenantCollection(session.user.tenantId, 'leaves')
@@ -21,60 +21,39 @@ export async function GET(request: NextRequest) {
     const employees = await employeesCollection.find({}).toArray()
     
     const salaryData = await Promise.all(employees.map(async (employee) => {
-      const startDate = `${year}-${month.toString().padStart(2, '0')}-01`
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0]
-      
       const empId = employee.employeeId || employee._id.toString()
-      console.log('Looking for leaves for employee:', empId, 'in period:', startDate, 'to', endDate)
       
-      const leaves = await leavesCollection.find({
-        $and: [
-          {
-            $or: [
-              { employeeId: empId },
-              { employeeId: employee._id.toString() },
-              { employeeId: employee.employeeId }
-            ]
-          },
-          { status: 'approved' }  // Only count approved leaves
-        ]
+      // Get all approved leaves for this employee
+      const approvedLeaves = await leavesCollection.find({
+        employeeId: empId,
+        status: 'approved'
       }).toArray()
       
-      console.log('All leaves found for employee:', employee.employeeId, leaves)
-      
+      // Calculate leave days for the selected month
       let leaveDays = 0
-      if (leaves && leaves.length > 0) {
-        leaves.forEach(leave => {
-          const leaveStart = leave.startDate || leave.fromDate
-          const leaveEnd = leave.endDate || leave.toDate
-          
-          if (leaveStart && leaveEnd) {
-            const leaveStartDate = new Date(leaveStart)
-            const leaveEndDate = new Date(leaveEnd)
-            const monthStart = new Date(startDate)
-            const monthEnd = new Date(endDate)
-            
-            // Check if leave overlaps with the month
-            if (leaveStartDate <= monthEnd && leaveEndDate >= monthStart) {
-              const overlapStart = new Date(Math.max(leaveStartDate.getTime(), monthStart.getTime()))
-              const overlapEnd = new Date(Math.min(leaveEndDate.getTime(), monthEnd.getTime()))
-              const days = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-              leaveDays += Math.max(0, days)
-              console.log('Leave overlap days:', days, 'for leave:', leave)
-            }
-          }
-        })
-      }
+      const monthStart = new Date(year, month - 1, 1)
+      const monthEnd = new Date(year, month, 0)
       
-      console.log('Total leave days calculated:', leaveDays, 'for employee:', employee.employeeId)
+      approvedLeaves.forEach(leave => {
+        const leaveStart = new Date(leave.startDate || leave.fromDate)
+        const leaveEnd = new Date(leave.endDate || leave.toDate)
+        
+        // Check if leave falls in this month
+        if (leaveStart <= monthEnd && leaveEnd >= monthStart) {
+          // Calculate overlap days
+          const overlapStart = leaveStart > monthStart ? leaveStart : monthStart
+          const overlapEnd = leaveEnd < monthEnd ? leaveEnd : monthEnd
+          const days = Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          leaveDays += days
+        }
+      })
       
-      const workingDays = Math.max(0, 30 - leaveDays)
-      const baseSalary = employee.salary || 0
-      const dailySalary = baseSalary / 30
-      const effectiveSalary = Math.round(dailySalary * workingDays)
+      const workingDays = 30 - leaveDays
+      const baseSalary = parseFloat(employee.salary) || 0
+      const effectiveSalary = Math.round((baseSalary / 30) * workingDays)
       
       return {
-        employeeId: employee.employeeId || employee._id.toString(),
+        employeeId: empId,
         employeeName: employee.name || 'Unknown',
         baseSalary,
         workingDays,
