@@ -25,10 +25,14 @@ export async function GET(request: NextRequest) {
     
     if (employeeId) query.employeeId = employeeId
     if (month && year) {
-      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1)
-      const endDate = new Date(parseInt(year), parseInt(month), 0)
-      query.startDate = { $gte: startDate.toISOString().split('T')[0] }
-      query.endDate = { $lte: endDate.toISOString().split('T')[0] }
+      const monthNum = parseInt(month)
+      const yearNum = parseInt(year)
+      if (!isNaN(monthNum) && !isNaN(yearNum)) {
+        const startDate = new Date(yearNum, monthNum - 1, 1)
+        const endDate = new Date(yearNum, monthNum, 0)
+        query.startDate = { $gte: startDate.toISOString().split('T')[0] }
+        query.endDate = { $lte: endDate.toISOString().split('T')[0] }
+      }
     }
     
     const total = await leavesCollection.countDocuments(query)
