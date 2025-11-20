@@ -49,7 +49,8 @@ export default function ExpensesPage() {
     try {
       const response = await fetch('/api/expenses')
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result
         setExpenses(Array.isArray(data) ? data : [])
       } else {
         setExpenses([])
