@@ -36,14 +36,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (body.notes) updateData.notes = body.notes
     if (body.items) {
       updateData.items = body.items
-      // Recalculate totals when items are updated
-      const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
-      const settings = await settingsCollection.findOne({}) || { taxRate: 0 }
-      const taxRate = (settings.taxRate || 0) / 100
-      
+      // Recalculate totals when items are updated (no tax on purchases)
       const subtotal = body.items.reduce((sum: number, item: any) => sum + (parseFloat(item.total) || 0), 0)
-      const tax = subtotal * taxRate
-      const total = subtotal + tax
+      const tax = 0
+      const total = subtotal
       
       updateData.subtotal = subtotal
       updateData.tax = tax
