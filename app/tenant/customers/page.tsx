@@ -48,7 +48,7 @@ interface CustomerField {
 interface Customer {
   id: string
   name: string
-  phone?: string
+  phone?: string // Can contain multiple numbers separated by commas
   orderCount: number
   totalSpent: number
   lastOrderDate: string
@@ -194,6 +194,18 @@ export default function CustomersPage() {
             onChange={(e) => onChange(e.target.value)}
             placeholder={`Enter ${field.label.toLowerCase()}`}
           />
+        )
+      case 'phone':
+        return (
+          <div>
+            <Input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="9876543210, 9123456789"
+            />
+            <p className="text-xs text-muted-foreground mt-1">You can enter multiple phone numbers separated by commas</p>
+          </div>
         )
       default:
         return (

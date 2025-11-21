@@ -15,6 +15,14 @@ export async function GET() {
     const tenantsCollection = await getTenantsCollection()
     const tenant = await tenantsCollection.findOne({ _id: new ObjectId(session.user.tenantId) })
     
+    // Default customer fields with single phone field that accepts multiple numbers
+    const defaultFields = [
+      { name: 'name', label: 'Name', type: 'text', required: true, enabled: true },
+      { name: 'phone', label: 'Phone Numbers', type: 'phone', required: false, enabled: true },
+      { name: 'email', label: 'Email', type: 'email', required: false, enabled: true },
+      { name: 'address', label: 'Address', type: 'textarea', required: false, enabled: true }
+    ]
+    
     let dynamicFields = []
     
     if (tenant?.businessType) {
@@ -23,15 +31,18 @@ export async function GET() {
       const businessType = await db.collection('business_types').findOne({ _id: new ObjectId(tenant.businessType) })
       
       if (businessType?.customerFields) {
-        // Filter out old static fields and only return enabled dynamic fields
-        const staticFieldNames = ['name', 'phone', 'email', 'address']
+        // Only return enabled dynamic fields (exclude default fields)
+        const defaultFieldNames = ['name', 'phone', 'email', 'address']
         dynamicFields = businessType.customerFields.filter((field: any) => 
-          field.enabled && !staticFieldNames.includes(field.name)
+          field.enabled && !defaultFieldNames.includes(field.name)
         )
       }
     }
     
-    return NextResponse.json(dynamicFields)
+    // Combine default fields with dynamic fields
+    const allFields = [...defaultFields, ...dynamicFields]
+    
+    return NextResponse.json(allFields)
   } catch (error) {
     console.error('Failed to fetch customer fields:', error)
     return NextResponse.json({ error: 'Failed to fetch fields' }, { status: 500 })

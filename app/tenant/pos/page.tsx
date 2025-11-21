@@ -858,17 +858,15 @@ export default function POSPage() {
                                     f.name.toLowerCase().includes('name') && 
                                     !f.name.toLowerCase().includes('id')
                                   )
-                                  // Map phone to the first phone-like field
+                                  // Map phone to phone field
                                   const phoneField = fields.find((f: any) => 
-                                    f.name.toLowerCase().includes('phone') || 
-                                    f.name.toLowerCase().includes('contact') ||
-                                    f.name.toLowerCase().includes('mobile')
+                                    f.name.toLowerCase() === 'phone'
                                   )
                                   
                                   if (nameField) customerData[nameField.name] = customerName.trim()
                                   if (phoneField && customerPhone?.trim()) customerData[phoneField.name] = customerPhone.trim()
                                 } else {
-                                  // Fallback to static fields
+                                  // Fallback to phone field structure
                                   customerData = {
                                     name: customerName.trim(),
                                     phone: customerPhone?.trim() || null

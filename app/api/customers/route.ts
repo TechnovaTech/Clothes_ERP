@@ -57,14 +57,21 @@ export async function POST(request: NextRequest) {
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
     // Check if customer already exists by phone or name
-    const query: any = {}
-    if (body.phone) {
-      query.phone = body.phone
-    } else if (body.name) {
-      query.name = body.name
+    const queries: any[] = []
+    
+    if (body.name && body.name.trim()) {
+      queries.push({ name: body.name.trim() })
     }
     
-    const existingCustomer = query.phone || query.name ? await customersCollection.findOne(query) : null
+    // Extract individual phone numbers from comma-separated string
+    if (body.phone && body.phone.trim()) {
+      const phoneNumbers = body.phone.split(',').map(p => p.trim()).filter(Boolean)
+      phoneNumbers.forEach(phone => {
+        queries.push({ phone: { $regex: phone, $options: 'i' } })
+      })
+    }
+    
+    const existingCustomer = queries.length > 0 ? await customersCollection.findOne({ $or: queries }) : null
     console.log('Existing customer check:', existingCustomer ? 'Found' : 'Not found')
     
     if (existingCustomer) {

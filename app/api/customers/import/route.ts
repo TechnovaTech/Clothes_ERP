@@ -77,16 +77,22 @@ export async function POST(request: NextRequest) {
         // Only check for duplicates if name or phone exists
         let existing = null
         if (customer.name || customer.phone) {
-          const query: any = {}
-          if (customer.phone && customer.phone.trim()) {
-            query.phone = customer.phone.trim()
-          }
+          const queries: any[] = []
+          
           if (customer.name && customer.name.trim()) {
-            query.name = customer.name.trim()
+            queries.push({ name: customer.name.trim() })
           }
           
-          if (Object.keys(query).length > 0) {
-            existing = await customersCollection.findOne({ $or: [query] })
+          // Extract individual phone numbers from comma-separated string
+          if (customer.phone && customer.phone.trim()) {
+            const phoneNumbers = customer.phone.split(',').map(p => p.trim()).filter(Boolean)
+            phoneNumbers.forEach(phone => {
+              queries.push({ phone: { $regex: phone, $options: 'i' } })
+            })
+          }
+          
+          if (queries.length > 0) {
+            existing = await customersCollection.findOne({ $or: queries })
           }
         }
         
