@@ -132,7 +132,10 @@ export default function InventoryPage() {
 
   const fetchInventory = async (page = 1) => {
     try {
-      const response = await fetch(`/api/inventory?page=${page}&limit=${itemsPerPage}`)
+      const response = await fetch(`/api/inventory?page=${page}&limit=${itemsPerPage}&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
       if (response.ok) {
         const result = await response.json()
         if (result.pagination) {
@@ -299,7 +302,9 @@ export default function InventoryPage() {
       })
       console.log('Update response status:', response.status)
       if (response.ok) {
+        console.log('Fetching updated inventory...')
         const inventoryData = await fetchInventory(currentPage)
+        console.log('Updated inventory data:', inventoryData)
         setInventory(inventoryData)
         setIsEditDialogOpen(false)
         resetForm()
