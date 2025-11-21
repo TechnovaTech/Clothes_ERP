@@ -289,6 +289,7 @@ export default function InventoryPage() {
         ])
         setInventory(inventoryData)
         setPlanLimits(planLimitsData)
+        await fetchStats()
         setIsAddDialogOpen(false)
         resetForm()
         showToast.success(language === 'en' ? '✅ Product added to inventory successfully!' : language === 'gu' ? '✅ પ્રોડક્ટ સફળતાપૂર્વક ઇન્વેન્ટરીમાં ઉમેરાયું!' : '✅ उत्पाद सफलतापूर्वक इन्वेंटरी में जोड़ा गया!')
