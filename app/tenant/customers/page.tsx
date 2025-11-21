@@ -136,37 +136,40 @@ export default function CustomersPage() {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
-        return
+      } else {
+        // Fallback: calculate from totalItems if stats API not available
+        setStats({
+          totalCustomers: totalItems || 0,
+          activeFields: customerFields.length,
+          requiredFields: customerFields.filter(f => f.required).length
+        })
       }
     } catch (error) {
       console.warn('Customer stats API unavailable, using fallback:', error)
+      // Fallback calculation
+      setStats({
+        totalCustomers: totalItems || 0,
+        activeFields: customerFields.length,
+        requiredFields: customerFields.filter(f => f.required).length
+      })
     }
-    
-    // Fallback calculation - always use current data
-    setStats({
-      totalCustomers: totalItems,
-      activeFields: customerFields.length,
-      requiredFields: customerFields.filter(f => f.required).length
-    })
   }
 
   useEffect(() => {
     const initData = async () => {
       await fetchCustomerFields()
       await fetchCustomers(1)
+      await fetchStats()
     }
     initData()
   }, [])
 
-  // Fetch stats after totalItems and customerFields are available
   useEffect(() => {
-    if (totalItems >= 0 && customerFields.length >= 0) {
-      fetchStats()
+    const fetchData = async () => {
+      await fetchCustomers(currentPage)
+      await fetchStats()
     }
-  }, [totalItems, customerFields])
-
-  useEffect(() => {
-    fetchCustomers(currentPage)
+    fetchData()
   }, [currentPage])
 
   const filteredCustomers = customers.filter((customer) => {

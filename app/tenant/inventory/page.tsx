@@ -160,6 +160,14 @@ export default function InventoryPage() {
   }
 
   const fetchStats = async () => {
+    // Always use totalItems as fallback for live compatibility
+    const fallbackStats = {
+      totalProducts: totalItems,
+      lowStockItems: 0,
+      totalValue: 0,
+      categories: 0
+    }
+    
     try {
       const response = await fetch('/api/inventory/stats', {
         cache: 'no-store',
@@ -171,16 +179,11 @@ export default function InventoryPage() {
         return
       }
     } catch (error) {
-      console.warn('Stats API unavailable, using fallback:', error)
+      console.warn('Stats API unavailable, using totalItems fallback:', error)
     }
     
-    // Fallback calculation - always use current totalItems
-    setStats({
-      totalProducts: totalItems,
-      lowStockItems: 0,
-      totalValue: 0,
-      categories: 0
-    })
+    // Set fallback stats using totalItems
+    setStats(fallbackStats)
   }
 
   const fetchDropdownData = async () => {
@@ -487,6 +490,7 @@ export default function InventoryPage() {
           materials: dropdownDataResult.materials || [],
           brands: dropdownDataResult.brands || []
         })
+        await fetchStats()
       } catch (error) {
         console.error('Error initializing data:', error)
       } finally {
@@ -495,13 +499,6 @@ export default function InventoryPage() {
     }
     initializeData()
   }, [])
-
-  // Fetch stats after totalItems is available
-  useEffect(() => {
-    if (totalItems >= 0) {
-      fetchStats()
-    }
-  }, [totalItems])
 
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch =
@@ -526,6 +523,13 @@ export default function InventoryPage() {
   useEffect(() => {
     fetchInventory(currentPage).then(setInventory)
   }, [currentPage])
+
+  // Update stats when totalItems changes
+  useEffect(() => {
+    if (totalItems >= 0) {
+      fetchStats()
+    }
+  }, [totalItems])
 
   if (loading) {
     return (
