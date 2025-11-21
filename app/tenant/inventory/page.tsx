@@ -160,14 +160,6 @@ export default function InventoryPage() {
   }
 
   const fetchStats = async () => {
-    // Always use totalItems as fallback for live compatibility
-    const fallbackStats = {
-      totalProducts: totalItems,
-      lowStockItems: 0,
-      totalValue: 0,
-      categories: 0
-    }
-    
     try {
       const response = await fetch('/api/inventory/stats', {
         cache: 'no-store',
@@ -176,14 +168,11 @@ export default function InventoryPage() {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
-        return
       }
     } catch (error) {
-      console.warn('Stats API unavailable, using totalItems fallback:', error)
+      console.warn('Stats API unavailable:', error)
+      // Don't set fallback here - it's handled in useEffect
     }
-    
-    // Set fallback stats using totalItems
-    setStats(fallbackStats)
   }
 
   const fetchDropdownData = async () => {
@@ -490,7 +479,15 @@ export default function InventoryPage() {
           materials: dropdownDataResult.materials || [],
           brands: dropdownDataResult.brands || []
         })
-        await fetchStats()
+        // Set initial stats from totalItems immediately
+        setStats({
+          totalProducts: totalItems,
+          lowStockItems: 0,
+          totalValue: 0,
+          categories: 0
+        })
+        // Try to get enhanced stats
+        fetchStats().catch(() => {})
       } catch (error) {
         console.error('Error initializing data:', error)
       } finally {
@@ -524,10 +521,20 @@ export default function InventoryPage() {
     fetchInventory(currentPage).then(setInventory)
   }, [currentPage])
 
-  // Update stats when totalItems changes
+  // Update stats when totalItems changes - use direct fallback for live compatibility
   useEffect(() => {
     if (totalItems >= 0) {
-      fetchStats()
+      // Set stats directly from totalItems for live server compatibility
+      setStats({
+        totalProducts: totalItems,
+        lowStockItems: 0,
+        totalValue: 0,
+        categories: 0
+      })
+      // Try to fetch enhanced stats but don't depend on it
+      fetchStats().catch(() => {
+        // Keep the fallback stats if API fails
+      })
     }
   }, [totalItems])
 
