@@ -161,16 +161,20 @@ export default function InventoryPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/inventory/stats', {
+      console.log('Fetching stats...')
+      const response = await fetch('/api/inventory/stats?t=' + Date.now(), {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' }
       })
       if (response.ok) {
         const data = await response.json()
+        console.log('Stats received:', data)
         setStats(data)
+      } else {
+        console.error('Stats API failed:', response.status)
       }
     } catch (error) {
-      console.warn('Stats API unavailable:', error)
+      console.error('Stats fetch error:', error)
       // Don't set fallback here - it's handled in useEffect
     }
   }
