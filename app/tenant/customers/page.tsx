@@ -429,7 +429,7 @@ export default function CustomersPage() {
                                 {field.type === 'date' ? formatDateToDDMMYYYY(customer[field.name]) : (customer[field.name] || '-')}
                               </div>
                             </TableCell>
-                          ))
+                          ))}
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-2">
                               <Button 
