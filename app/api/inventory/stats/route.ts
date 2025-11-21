@@ -6,8 +6,10 @@ import { authOptions } from '@/lib/auth'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    console.log('Stats API - Session tenantId:', session?.user?.tenantId)
     
     if (!session?.user?.tenantId) {
+      console.log('Stats API - No tenant ID, returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
