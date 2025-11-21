@@ -131,6 +131,12 @@ export default function InventoryPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false)
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    lowStockItems: 0,
+    totalValue: 0,
+    categories: 0
+  })
 
   const fetchInventory = async (page = 1) => {
     try {
@@ -151,6 +157,21 @@ export default function InventoryPage() {
       console.warn('Inventory API unavailable:', error)
     }
     return []
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/inventory/stats', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.warn('Stats API unavailable:', error)
+    }
   }
 
   const fetchDropdownData = async () => {
@@ -262,7 +283,8 @@ export default function InventoryPage() {
       if (response.ok) {
         const [inventoryData, planLimitsData] = await Promise.all([
           fetchInventory(),
-          fetchPlanLimits()
+          fetchPlanLimits(),
+          fetchStats()
         ])
         setInventory(inventoryData)
         setPlanLimits(planLimitsData)
@@ -308,6 +330,7 @@ export default function InventoryPage() {
         const inventoryData = await fetchInventory(currentPage)
         console.log('Updated inventory data:', inventoryData)
         setInventory(inventoryData)
+        await fetchStats()
         setIsEditDialogOpen(false)
         resetForm()
         showToast.success(language === 'en' ? '✅ Product updated successfully!' : language === 'gu' ? '✅ પ્રોડક્ટ સફળતાપૂર્વક અપડેટ થયું!' : '✅ उत्पाद सफलतापूर्वक अपडेट हुआ!')
@@ -336,6 +359,7 @@ export default function InventoryPage() {
       if (response.ok) {
         const inventoryData = await fetchInventory()
         setInventory(inventoryData)
+        await fetchStats()
         setIsDeleteDialogOpen(false)
         setItemToDelete(null)
         showToast.success(language === 'en' ? 'Product deleted successfully!' : language === 'gu' ? 'પ્રોડક્ટ સફળતાપૂર્વક ડિલીટ થયું!' : 'उत्पाद सफलतापूर्वक हटाया गया!')
@@ -440,7 +464,8 @@ export default function InventoryPage() {
           fetchDropdownData(),
           fetchSettings(),
           fetchPlanLimits(),
-          fetchTenantFields()
+          fetchTenantFields(),
+          fetchStats()
         ])
         
         setInventory(inventoryData)
@@ -539,13 +564,7 @@ export default function InventoryPage() {
     )
   }
 
-  const totalProducts = inventory.length
-  const lowStockItems = inventory.filter((item) => item.stock <= item.minStock).length
-  const totalValue = inventory.reduce((sum, item) => {
-    const unitPrice = Number(item.price) || Number(item.costPrice) || 0;
-    const stockQuantity = Number(item.stock) || 0;
-    return sum + (stockQuantity * unitPrice);
-  }, 0)
+  const { totalProducts, lowStockItems, totalValue, categories } = stats
 
   return (
     <MainLayout title={t('inventory')}>
@@ -622,7 +641,7 @@ export default function InventoryPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{new Set(inventory.map((item) => item.category)).size}</div>
+              <div className="text-2xl font-bold">{categories}</div>
             </CardContent>
           </Card>
         </div>
@@ -675,7 +694,8 @@ export default function InventoryPage() {
                         showToast.success(`✅ Successfully imported ${result.count} products!`)
                         const [inventoryData, planLimitsData] = await Promise.all([
                           fetchInventory(),
-                          fetchPlanLimits()
+                          fetchPlanLimits(),
+                          fetchStats()
                         ])
                         setInventory(inventoryData)
                         setPlanLimits(planLimitsData)
@@ -840,6 +860,7 @@ export default function InventoryPage() {
                           setIsBulkDeleteDialogOpen(false)
                           const inventoryData = await fetchInventory()
                           setInventory(inventoryData)
+                          await fetchStats()
                         } catch (error) {
                           showToast.error('Error deleting products')
                         }
@@ -877,6 +898,7 @@ export default function InventoryPage() {
                             const inventoryData = await fetchInventory()
                             setInventory(inventoryData)
                             setSelectedItems([])
+                            await fetchStats()
                           } else {
                             showToast.error('❌ Failed to clear inventory. Please try again.')
                           }

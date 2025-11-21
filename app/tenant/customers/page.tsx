@@ -79,6 +79,11 @@ export default function CustomersPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false)
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    activeFields: 0,
+    requiredFields: 0
+  })
 
   const { storeName, tenantId } = useStore()
 
@@ -122,9 +127,25 @@ export default function CustomersPage() {
     }
   }
 
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/customers/stats', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.warn('Customer stats API unavailable:', error)
+    }
+  }
+
   useEffect(() => {
     fetchCustomerFields()
     fetchCustomers(1)
+    fetchStats()
   }, [])
 
   useEffect(() => {
@@ -220,7 +241,7 @@ export default function CustomersPage() {
     }
   }
 
-  const totalCustomers = customers.length
+  const { totalCustomers, activeFields, requiredFields } = stats
 
   return (
     <MainLayout title={t('customers')}>
@@ -243,7 +264,7 @@ export default function CustomersPage() {
                 <Settings className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{customerFields.length}</div>
+                <div className="text-2xl font-bold">{activeFields}</div>
               </CardContent>
             </Card>
 
@@ -253,7 +274,7 @@ export default function CustomersPage() {
                 <ShoppingBag className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{customerFields.filter(f => f.required).length}</div>
+                <div className="text-2xl font-bold">{requiredFields}</div>
               </CardContent>
             </Card>
           </div>
