@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     
     // Get all inventory items for statistics calculation
     const allInventory = await inventoryCollection.find({}).toArray()
+    console.log('Stats API - Found items:', allInventory.length)
     
     // Calculate statistics
     const totalProducts = allInventory.length
