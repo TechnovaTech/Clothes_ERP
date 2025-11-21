@@ -82,6 +82,15 @@ export async function PUT(
       }
     })
     
+    // Also add ALL fields from body that aren't system fields
+    Object.keys(body).forEach(key => {
+      if (!['_id', 'id', 'tenantId', 'storeId', 'createdAt', 'updatedAt'].includes(key)) {
+        if (updateData[key] === undefined) {
+          updateData[key] = body[key]
+        }
+      }
+    })
+    
     console.log('Final update data:', JSON.stringify(updateData, null, 2))
 
     const result = await inventoryCollection.updateOne(
@@ -89,11 +98,13 @@ export async function PUT(
       { $set: updateData }
     )
 
+    console.log('Update result:', { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount })
+
     if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ message: 'Item updated successfully' })
+    return NextResponse.json({ message: 'Item updated successfully', modifiedCount: result.modifiedCount })
   } catch (error) {
     console.error('Update error:', error)
     return NextResponse.json({ error: 'Failed to update item' }, { status: 500 })
