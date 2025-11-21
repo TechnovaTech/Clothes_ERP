@@ -59,7 +59,7 @@ const getRetailNavItems = (t: (key: any) => string) => [
   // Core Operations
   { title: t("dashboard"), href: "/tenant", icon: LayoutDashboard, feature: "dashboard" as FeatureKey, group: "Dashboard" },
   
-  // Sales
+  // Sales 
   { title: t("inventory"), href: "/tenant/inventory", icon: Package, feature: "inventory" as FeatureKey, group: "sales" },
   { title: t("pos"), href: "/tenant/pos", icon: ShoppingCart, feature: "pos" as FeatureKey, group: "sales" },
   { title: t("customers"), href: "/tenant/customers", icon: UserCheck, feature: "customers" as FeatureKey, group: "sales" },
