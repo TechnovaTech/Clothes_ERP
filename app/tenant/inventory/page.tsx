@@ -45,6 +45,7 @@ import { BarcodeDisplay, PrintableBarcode } from "@/components/barcode-display"
 import { BulkBarcodePrint } from "@/components/bulk-barcode-print"
 import { QuantityBarcodePrint } from "@/components/quantity-barcode-print"
 import { DynamicInventoryForm } from "@/components/dynamic-inventory-form"
+import { formatDateToDDMMYYYY } from "@/lib/date-utils"
 
 interface InventoryItem {
   id: string
@@ -1012,7 +1013,7 @@ export default function InventoryPage() {
                                 <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
                               ) : (
                                 <div className="break-words whitespace-normal text-sm">
-                                  {displayValue}
+                                  {field.type === 'date' ? formatDateToDDMMYYYY(displayValue) : displayValue}
                                 </div>
                               )}
                             </TableCell>

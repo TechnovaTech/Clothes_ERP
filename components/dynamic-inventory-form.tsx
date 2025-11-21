@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Package } from "lucide-react"
 import JsBarcode from "jsbarcode"
+import { formatDateToDDMMYYYY, parseDDMMYYYYToDate } from "@/lib/date-utils"
 
 interface Field {
   name: string
@@ -166,11 +167,28 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
         )
       
       case 'date':
+        // Convert dd-mm-yyyy to yyyy-mm-dd for input, and vice versa
+        const dateInputValue = fieldValue ? (
+          fieldValue.includes('-') && fieldValue.split('-').length === 3 && fieldValue.split('-')[0].length === 2
+            ? fieldValue.split('-').reverse().join('-') // Convert dd-mm-yyyy to yyyy-mm-dd
+            : fieldValue
+        ) : ''
+        
         return (
           <Input
             type="date"
-            value={fieldValue}
-            onChange={(e) => updateFormData(field.name, e.target.value)}
+            value={dateInputValue}
+            onChange={(e) => {
+              // Convert yyyy-mm-dd to dd-mm-yyyy for storage
+              const inputDate = e.target.value
+              if (inputDate) {
+                const [year, month, day] = inputDate.split('-')
+                const formattedDate = `${day}-${month}-${year}`
+                updateFormData(field.name, formattedDate)
+              } else {
+                updateFormData(field.name, '')
+              }
+            }}
             required={field.required}
           />
         )

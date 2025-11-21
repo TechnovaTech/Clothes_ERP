@@ -187,6 +187,14 @@ export default function BusinessTypesPage() {
               <DialogTitle className="text-xl font-semibold">Create Business Type Template</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">Define custom fields for this business type</p>
             </DialogHeader>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start gap-2">
+                <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0 mt-0.5"></div>
+                <div className="text-sm text-blue-800">
+                  <strong>Note:</strong> Customer fields (Name, Phone, Email, Address) are already set in the system. No need to enter these during business creation.
+                </div>
+              </div>
+            </div>
             <div className="flex-1 overflow-y-auto px-1 py-4">
               <div className="space-y-6">
               <div>

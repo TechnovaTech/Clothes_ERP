@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
           
           // Extract individual phone numbers from comma-separated string
           if (customer.phone && customer.phone.trim()) {
-            const phoneNumbers = customer.phone.split(',').map(p => p.trim()).filter(Boolean)
-            phoneNumbers.forEach(phone => {
+            const phoneNumbers = customer.phone.split(',').map((p: string) => p.trim()).filter(Boolean)
+            phoneNumbers.forEach((phone: string) => {
               queries.push({ phone: { $regex: phone, $options: 'i' } })
             })
           }

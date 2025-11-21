@@ -36,6 +36,7 @@ import {
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast, confirmDelete } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
+import { formatDateToDDMMYYYY } from "@/lib/date-utils"
 
 interface CustomerField {
   name: string
@@ -425,10 +426,10 @@ export default function CustomersPage() {
                           {customerFields.map((field) => (
                             <TableCell key={field.name} className="text-center max-w-[150px] p-2">
                               <div className={`${field.name === customerFields[0]?.name ? "font-medium" : "text-sm"} break-words whitespace-normal`}>
-                                {customer[field.name] || '-'}
+                                {field.type === 'date' ? formatDateToDDMMYYYY(customer[field.name]) : (customer[field.name] || '-')}
                               </div>
                             </TableCell>
-                          ))}
+                          ))
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-2">
                               <Button 
@@ -543,7 +544,7 @@ export default function CustomersPage() {
                           if (!value || field.name === 'name') return null
                           return (
                             <p key={field.name} className="text-sm text-muted-foreground">
-                              <span className="font-medium">{field.label}:</span> {value}
+                              <span className="font-medium">{field.label}:</span> {field.type === 'date' ? formatDateToDDMMYYYY(value) : value}
                             </p>
                           )
                         })}
@@ -551,7 +552,7 @@ export default function CustomersPage() {
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    <span className="font-medium">Customer Since:</span> {new Date(selectedCustomer.createdAt).toLocaleDateString('en-IN')}
+                    <span className="font-medium">Customer Since:</span> {formatDateToDDMMYYYY(selectedCustomer.createdAt)}
                   </div>
                 </div>
               )}

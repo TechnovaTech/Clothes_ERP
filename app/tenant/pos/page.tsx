@@ -41,6 +41,7 @@ import { FeatureGuard } from "@/components/feature-guard"
 import { BarcodeScanner } from "@/components/barcode-scanner"
 import { useLanguage } from "@/lib/language-context"
 import { translateName } from "@/lib/name-translator"
+import { formatDateToDDMMYYYY } from "@/lib/date-utils"
 
 interface Product {
   id: string
@@ -975,7 +976,7 @@ export default function POSPage() {
                 <div className="mb-3">
                   <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px'}}>
                     <span>{t('billNo')}: {completedSale.billNo}</span>
-                    <span>{completedSale.date.toLocaleDateString('en-IN')}</span>
+                    <span>{formatDateToDDMMYYYY(completedSale.date)}</span>
                   </div>
                   <div style={{fontSize: '10px', marginBottom: '2px'}}>
                     {t('time')}: {completedSale.date.toLocaleTimeString('en-IN', {hour12: true})}
@@ -1214,7 +1215,7 @@ ${settings.gst ? `│ 🏛️ GST: ${settings.gst.padEnd(31)} │` : ''}
 *📋 INVOICE DETAILS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *Bill No:* ${completedSale.billNo}
-*Date:* ${completedSale.date.toLocaleDateString('en-IN')}
+*Date:* ${formatDateToDDMMYYYY(completedSale.date)}
 *Time:* ${completedSale.date.toLocaleTimeString('en-IN', {hour12: true})}
 *Cashier:* ${completedSale.staffMember || 'Admin'}
 
