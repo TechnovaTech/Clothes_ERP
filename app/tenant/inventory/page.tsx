@@ -168,10 +168,19 @@ export default function InventoryPage() {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
+        return
       }
     } catch (error) {
-      console.warn('Stats API unavailable:', error)
+      console.warn('Stats API unavailable, using fallback:', error)
     }
+    
+    // Fallback calculation - always use current totalItems
+    setStats({
+      totalProducts: totalItems,
+      lowStockItems: 0,
+      totalValue: 0,
+      categories: 0
+    })
   }
 
   const fetchDropdownData = async () => {
@@ -464,8 +473,7 @@ export default function InventoryPage() {
           fetchDropdownData(),
           fetchSettings(),
           fetchPlanLimits(),
-          fetchTenantFields(),
-          fetchStats()
+          fetchTenantFields()
         ])
         
         setInventory(inventoryData)
@@ -487,6 +495,13 @@ export default function InventoryPage() {
     }
     initializeData()
   }, [])
+
+  // Fetch stats after totalItems is available
+  useEffect(() => {
+    if (totalItems >= 0) {
+      fetchStats()
+    }
+  }, [totalItems])
 
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch =

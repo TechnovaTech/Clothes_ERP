@@ -136,17 +136,34 @@ export default function CustomersPage() {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
+        return
       }
     } catch (error) {
-      console.warn('Customer stats API unavailable:', error)
+      console.warn('Customer stats API unavailable, using fallback:', error)
     }
+    
+    // Fallback calculation - always use current data
+    setStats({
+      totalCustomers: totalItems,
+      activeFields: customerFields.length,
+      requiredFields: customerFields.filter(f => f.required).length
+    })
   }
 
   useEffect(() => {
-    fetchCustomerFields()
-    fetchCustomers(1)
-    fetchStats()
+    const initData = async () => {
+      await fetchCustomerFields()
+      await fetchCustomers(1)
+    }
+    initData()
   }, [])
+
+  // Fetch stats after totalItems and customerFields are available
+  useEffect(() => {
+    if (totalItems >= 0 && customerFields.length >= 0) {
+      fetchStats()
+    }
+  }, [totalItems, customerFields])
 
   useEffect(() => {
     fetchCustomers(currentPage)
