@@ -371,26 +371,37 @@ export default function InventoryPage() {
   }
 
   const openEditDialog = (item: InventoryItem) => {
+    console.log('Opening edit dialog for item:', item)
     setSelectedItem(item)
     const currentPrice = (item.price ?? 0).toString()
     
-    const editFormData: any = {
-      name: item.name || '',
-      sku: item.sku || '',
-      barcode: (item as any).barcode || '',
-      category: item.category || '',
-      price: currentPrice,
-      finalPrice: currentPrice,
-      costPrice: (item.costPrice ?? 0).toString(),
-      stock: (item.stock ?? 0).toString(),
-      minStock: (item.minStock ?? 0).toString(),
-      sizes: (item.sizes || []).join(', '),
-      colors: (item.colors || []).join(', '),
-      description: item.description || '',
-      material: (item as any).material || '',
-      brand: (item as any).brand || ''
-    }
+    const editFormData: any = {}
     
+    // Copy ALL fields from item to formData
+    Object.keys(item).forEach(key => {
+      if (key !== '_id' && key !== 'id' && key !== 'tenantId' && key !== 'storeId' && key !== 'createdAt' && key !== 'updatedAt') {
+        const value = (item as any)[key]
+        editFormData[key] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
+      }
+    })
+    
+    // Ensure standard fields
+    editFormData.name = item.name || ''
+    editFormData.sku = item.sku || ''
+    editFormData.barcode = (item as any).barcode || ''
+    editFormData.category = item.category || ''
+    editFormData.price = currentPrice
+    editFormData.finalPrice = currentPrice
+    editFormData.costPrice = (item.costPrice ?? 0).toString()
+    editFormData.stock = (item.stock ?? 0).toString()
+    editFormData.minStock = (item.minStock ?? 0).toString()
+    editFormData.sizes = (item.sizes || []).join(', ')
+    editFormData.colors = (item.colors || []).join(', ')
+    editFormData.description = item.description || ''
+    editFormData.material = (item as any).material || ''
+    editFormData.brand = (item as any).brand || ''
+    
+    // Map tenant fields
     tenantFields.forEach(field => {
       const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
       let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()] || ''
@@ -399,18 +410,17 @@ export default function InventoryPage() {
         value = item.name || value
       }
       
-      editFormData[fieldKey] = Array.isArray(value) ? value.join(', ') : value.toString()
+      editFormData[fieldKey] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
       editFormData[field.name] = editFormData[fieldKey]
       editFormData[field.name.toLowerCase()] = editFormData[fieldKey]
-      editFormData['ProductName'] = item.name || ''
-      editFormData['productname'] = item.name || ''
-      editFormData['product_name'] = item.name || ''
     })
     
+    // Additional name mappings
     editFormData['ProductName'] = item.name || ''
     editFormData['productname'] = item.name || ''
     editFormData['product_name'] = item.name || ''
     
+    console.log('Edit form data:', editFormData)
     setFormData(editFormData)
     setIsEditDialogOpen(true)
   }
