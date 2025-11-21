@@ -326,7 +326,6 @@ export default function ReportsPage() {
             <TabsTrigger value="daily-sales">{t('dailySalesReport')}</TabsTrigger>
             <TabsTrigger value="daily-profit">{t('dailyProfitReport')}</TabsTrigger>
             <TabsTrigger value="best-sellers">{t('bestSellingProducts')}</TabsTrigger>
-            <TabsTrigger value="sales-history">{t('salesHistory')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="monthly-profit">
@@ -533,77 +532,7 @@ export default function ReportsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="sales-history">
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Receipt className="w-5 h-5" />
-                    <span>{t('salesHistory')}</span>
-                  </CardTitle>
-                  <div className="flex space-x-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('searchBills')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-64"
-                      />
-                    </div>
-                    <Button variant="outline">
-                      <Download className="w-4 h-4 mr-2" />
-                      {t('export')}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('billNo')}</TableHead>
-                      <TableHead>{t('customer')}</TableHead>
-                      <TableHead>{t('items')}</TableHead>
-                      <TableHead>{t('total')}</TableHead>
-                      <TableHead>{t('paymentMethod')}</TableHead>
-                      <TableHead>{t('date')}</TableHead>
-                      <TableHead>{t('actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSales.map((sale) => (
-                      <TableRow key={sale.id}>
-                        <TableCell className="font-medium">{sale.billNo}</TableCell>
-                        <TableCell>
-                          <div>
-                            <div>{sale.customerName}</div>
-                            {sale.customerPhone && (
-                              <div className="text-sm text-muted-foreground">{sale.customerPhone}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{sale.items.length} {t('itemsCount')}</TableCell>
-                        <TableCell>₹{(sale.total || 0).toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{sale.paymentMethod}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(sale.createdAt).toLocaleDateString('en-IN')}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
       </FeatureGuard>

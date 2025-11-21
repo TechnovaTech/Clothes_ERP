@@ -1,32 +1,52 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
+    
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
-    const customers = await customersCollection.find({}).sort({ createdAt: -1 }).toArray()
+    const customers = await customersCollection.find({}).toArray()
+    
+    if (customers.length === 0) {
+      return NextResponse.json({ error: 'No customers to export' }, { status: 400 })
+    }
 
-    const csv = [
-      'Name,Phone,Email,Address,Order Count,Total Spent,Last Order Date,Created At',
-      ...customers.map(c => 
-        `"${c.name}","${c.phone || ''}","${c.email || ''}","${c.address || ''}",${c.orderCount || 0},${c.totalSpent || 0},"${c.lastOrderDate ? new Date(c.lastOrderDate).toISOString() : ''}","${new Date(c.createdAt).toISOString()}"`
-      )
-    ].join('\n')
-
+    // Get all unique field names
+    const allFields = new Set<string>()
+    customers.forEach(customer => {
+      Object.keys(customer).forEach(key => {
+        if (!['_id', 'tenantId', 'createdAt', 'updatedAt'].includes(key)) {
+          allFields.add(key)
+        }
+      })
+    })
+    
+    const headers = Array.from(allFields)
+    let csv = headers.join(',') + '\n'
+    
+    customers.forEach(customer => {
+      const row = headers.map(header => {
+        const value = customer[header] || ''
+        return `"${String(value).replace(/"/g, '""')}"`
+      }).join(',')
+      csv += row + '\n'
+    })
+    
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="customers_${new Date().toISOString().split('T')[0]}.csv"`
+        'Content-Disposition': 'attachment; filename="customers.csv"'
       }
     })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to export customers' }, { status: 500 })
+    console.error('Customer export error:', error)
+    return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
 }

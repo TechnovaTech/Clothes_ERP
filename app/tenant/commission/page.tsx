@@ -49,6 +49,8 @@ export default function CommissionPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isClearAllOpen, setIsClearAllOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
 
   const fetchEmployees = async () => {
     try {
@@ -116,6 +118,12 @@ export default function CommissionPage() {
   const totalCommissions = commissionData.reduce((sum, emp) => sum + emp.commissionEarned, 0)
   const totalSales = commissionData.reduce((sum, emp) => sum + emp.totalSales, 0)
   const avgCommission = commissionData.length > 0 ? totalCommissions / commissionData.length : 0
+  
+  // Pagination logic
+  const totalPages = Math.ceil(commissionData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedCommissionData = commissionData.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -236,7 +244,14 @@ export default function CommissionPage() {
                         })
                         const result = await response.json()
                         if (response.ok) {
-                          showToast.success(`✅ Imported ${result.imported} commission records successfully!`)
+                          let message = `✅ Imported ${result.imported} commission records`
+                          if (result.skipped > 0) {
+                            message += ` (${result.skipped} skipped)`
+                          }
+                          if (result.errors && result.errors.length > 0) {
+                            message += `\nErrors: ${result.errors.join(', ')}`
+                          }
+                          showToast.success(message)
                           calculateCommissions()
                         } else {
                           showToast.error(result.error || '❌ Failed to import commissions')
@@ -290,12 +305,14 @@ export default function CommissionPage() {
                       <TableRow>
                         <TableHead className="w-12">
                           <Checkbox
-                            checked={selectedCommissions.length === commissionData.length && commissionData.length > 0}
+                            checked={paginatedCommissionData.length > 0 && paginatedCommissionData.every(c => selectedCommissions.includes(c.employeeId))}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedCommissions(commissionData.map(c => c.employeeId))
+                                const pageIds = paginatedCommissionData.map(c => c.employeeId)
+                                setSelectedCommissions([...new Set([...selectedCommissions, ...pageIds])])
                               } else {
-                                setSelectedCommissions([])
+                                const pageIds = paginatedCommissionData.map(c => c.employeeId)
+                                setSelectedCommissions(selectedCommissions.filter(id => !pageIds.includes(id)))
                               }
                             }}
                           />
@@ -310,7 +327,7 @@ export default function CommissionPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {commissionData.map((emp, index) => (
+                      {paginatedCommissionData.map((emp, index) => (
                         <TableRow key={emp.employeeId}>
                           <TableCell>
                             <Checkbox
@@ -324,7 +341,7 @@ export default function CommissionPage() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="text-center">{index + 1}</TableCell>
+                          <TableCell className="text-center">{startIndex + index + 1}</TableCell>
                           <TableCell className="text-center">
                             <div>
                               <div className="font-medium">{emp.employeeName}</div>
@@ -351,6 +368,56 @@ export default function CommissionPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+              
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-2 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(endIndex, commissionData.length)} of {commissionData.length} commission records
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => 
+                          page === 1 || 
+                          page === totalPages || 
+                          Math.abs(page - currentPage) <= 1
+                        )
+                        .map((page, index, array) => (
+                          <div key={page} className="flex items-center">
+                            {index > 0 && array[index - 1] !== page - 1 && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {page}
+                            </Button>
+                          </div>
+                        ))
+                      }
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

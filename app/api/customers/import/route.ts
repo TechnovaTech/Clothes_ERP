@@ -1,17 +1,41 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getTenantCollection } from '@/lib/tenant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getTenantCollection } from '@/lib/tenant-data'
 
-export async function POST(request: Request) {
+function parseCSVLine(line: string): string[] {
+  const result = []
+  let current = ''
+  let inQuotes = false
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  
+  result.push(current.trim())
+  return result
+}
+
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    
     if (!session?.user?.tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
@@ -20,38 +44,68 @@ export async function POST(request: Request) {
     const lines = text.split('\n').filter(line => line.trim())
     
     if (lines.length < 2) {
-      return NextResponse.json({ error: 'CSV file is empty' }, { status: 400 })
+      return NextResponse.json({ error: 'CSV must have header and at least one data row' }, { status: 400 })
     }
 
-    const dataLines = lines.slice(1)
+    const headers = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''))
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
-
+    
     let imported = 0
-    for (const line of dataLines) {
-      const values = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(v => v.trim().replace(/^"|"$/g, '')) || []
-      
-      if (values.length < 1 || !values[0]) continue
-
-      const customerData = {
-        name: values[0],
-        phone: values[1] || null,
-        email: values[2] || null,
-        address: values[3] || null,
-        orderCount: parseInt(values[4]) || 0,
-        totalSpent: parseFloat(values[5]) || 0,
-        lastOrderDate: values[6] ? new Date(values[6]) : null,
-        tenantId: session.user.tenantId,
-        createdAt: values[7] ? new Date(values[7]) : new Date(),
-        updatedAt: new Date()
+    let skipped = 0
+    
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCSVLine(lines[i]).map(v => v.replace(/"/g, ''))
+        
+        if (values.length === 0 || values.every(v => !v.trim())) continue
+        
+        const customer: any = {
+          tenantId: session.user.tenantId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          orderCount: 0,
+          totalSpent: 0,
+          lastOrderDate: null
+        }
+        
+        headers.forEach((header, index) => {
+          if (values[index] !== undefined) {
+            customer[header] = values[index] || ''
+          }
+        })
+        
+        // Only check for duplicates if name or phone exists
+        let existing = null
+        if (customer.name || customer.phone) {
+          const query: any = {}
+          if (customer.phone && customer.phone.trim()) {
+            query.phone = customer.phone.trim()
+          }
+          if (customer.name && customer.name.trim()) {
+            query.name = customer.name.trim()
+          }
+          
+          if (Object.keys(query).length > 0) {
+            existing = await customersCollection.findOne({ $or: [query] })
+          }
+        }
+        
+        if (!existing) {
+          await customersCollection.insertOne(customer)
+          imported++
+        } else {
+          skipped++
+        }
+      } catch (rowError) {
+        console.error(`Error processing row ${i}:`, rowError)
+        skipped++
       }
-
-      await customersCollection.insertOne(customerData)
-      imported++
     }
-
-    return NextResponse.json({ success: true, imported })
+    
+    return NextResponse.json({ count: imported, skipped })
   } catch (error) {
-    console.error('Import error:', error)
-    return NextResponse.json({ error: 'Failed to import customers' }, { status: 500 })
+    console.error('Customer import error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Import failed: ' + errorMessage }, { status: 500 })
   }
 }

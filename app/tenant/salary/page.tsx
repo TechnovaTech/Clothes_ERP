@@ -34,6 +34,8 @@ export default function SalaryPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isClearAllOpen, setIsClearAllOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
 
   const calculateSalary = async () => {
     try {
@@ -149,6 +151,12 @@ export default function SalaryPage() {
     salary.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     salary.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   )
+  
+  // Pagination logic
+  const totalPages = Math.ceil(filteredSalaryData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedSalaryData = filteredSalaryData.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -317,12 +325,14 @@ export default function SalaryPage() {
                     <TableRow>
                       <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedSalaries.length === filteredSalaryData.length && filteredSalaryData.length > 0}
+                          checked={paginatedSalaryData.length > 0 && paginatedSalaryData.every(s => selectedSalaries.includes(s.employeeId))}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedSalaries(filteredSalaryData.map(s => s.employeeId))
+                              const pageIds = paginatedSalaryData.map(s => s.employeeId)
+                              setSelectedSalaries([...new Set([...selectedSalaries, ...pageIds])])
                             } else {
-                              setSelectedSalaries([])
+                              const pageIds = paginatedSalaryData.map(s => s.employeeId)
+                              setSelectedSalaries(selectedSalaries.filter(id => !pageIds.includes(id)))
                             }
                           }}
                         />
@@ -337,7 +347,7 @@ export default function SalaryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSalaryData.map((salary, index) => (
+                    {paginatedSalaryData.map((salary, index) => (
                       <TableRow key={salary.employeeId}>
                         <TableCell>
                           <Checkbox
@@ -351,7 +361,7 @@ export default function SalaryPage() {
                             }}
                           />
                         </TableCell>
-                        <TableCell className="text-center">{index + 1}</TableCell>
+                        <TableCell className="text-center">{startIndex + index + 1}</TableCell>
                         <TableCell className="text-center">
                           <div>
                             <div className="font-medium">{salary.employeeName}</div>
@@ -372,6 +382,56 @@ export default function SalaryPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredSalaryData.length)} of {filteredSalaryData.length} salary records
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === totalPages || 
+                        Math.abs(page - currentPage) <= 1
+                      )
+                      .map((page, index, array) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

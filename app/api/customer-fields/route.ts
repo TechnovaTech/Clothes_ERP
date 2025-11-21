@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getTenantCollection, getTenantsCollection, connectDB } from '@/lib/database'
+import { getTenantsCollection, connectDB } from '@/lib/database'
 import { ObjectId } from 'mongodb'
 
 export async function GET() {
@@ -25,7 +25,7 @@ export async function GET() {
       if (businessType?.customerFields) {
         // Filter out old static fields and only return enabled dynamic fields
         const staticFieldNames = ['name', 'phone', 'email', 'address']
-        dynamicFields = businessType.customerFields.filter(field => 
+        dynamicFields = businessType.customerFields.filter((field: any) => 
           field.enabled && !staticFieldNames.includes(field.name)
         )
       }
@@ -46,10 +46,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const { fields } = await request.json()
-    const fieldsCollection = await getTenantCollection(session.user.tenantId, 'customer_fields')
+    const db = await connectDB()
     
-    await fieldsCollection.updateOne(
-      {},
+    await db.collection('customer_fields').updateOne(
+      { tenantId: session.user.tenantId },
       { $set: { fields, updatedAt: new Date() } },
       { upsert: true }
     )

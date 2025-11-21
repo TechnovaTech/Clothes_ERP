@@ -29,9 +29,12 @@ import {
   UserPlus,
   UserCheck,
   ShoppingBag,
+  Download,
+  Upload,
+  AlertTriangle,
 } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
-import { showToast } from "@/lib/toast"
+import { showToast, confirmDelete } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
 
 interface CustomerField {
@@ -72,6 +75,9 @@ export default function CustomersPage() {
   const [customerFields, setCustomerFields] = useState<CustomerField[]>([])
   const [fieldsLoading, setFieldsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false)
 
   const { storeName, tenantId } = useStore()
 
@@ -247,6 +253,71 @@ export default function CustomersPage() {
                   <CardDescription>{t('manageCustomerDatabase')}</CardDescription>
                 </div>
                 <div className="flex space-x-2">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      
+                      try {
+                        const response = await fetch('/api/customers/import', {
+                          method: 'POST',
+                          body: formData
+                        })
+                        
+                        if (response.ok) {
+                          const result = await response.json()
+                          const message = result.skipped > 0 
+                            ? `✅ Imported ${result.count} customers (${result.skipped} skipped - duplicates)`
+                            : `✅ Successfully imported ${result.count} customers!`
+                          showToast.success(message)
+                          fetchCustomers(currentPage)
+                        } else {
+                          const errorData = await response.json()
+                          showToast.error(`❌ ${errorData.error || 'Import failed. Please check your CSV file format.'}`)
+                        }
+                      } catch (error) {
+                        showToast.error('❌ Import error. Please try again.')
+                      } finally {
+                        e.target.value = ''
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                    id="customer-csv-upload"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => document.getElementById('customer-csv-upload')?.click()}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Import CSV
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => window.open('/api/customers/export', '_blank')}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  {selectedCustomers.length > 0 && (
+                    <Button 
+                      variant="destructive"
+                      onClick={() => setIsBulkDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete ({selectedCustomers.length})
+                    </Button>
+                  )}
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setIsClearAllDialogOpen(true)}
+                  >
+                    Clear All
+                  </Button>
                   <Button variant="outline" asChild>
                     <Link href="/tenant/field-settings">
                       <Settings className="w-4 h-4 mr-2" />
@@ -298,6 +369,20 @@ export default function CustomersPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="text-center w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedCustomers.length === filteredCustomers.length && filteredCustomers.length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCustomers(filteredCustomers.map(c => c.id))
+                              } else {
+                                setSelectedCustomers([])
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                        </TableHead>
                         <TableHead className="text-center w-16">Sr. No.</TableHead>
                         {customerFields.map((field) => (
                           <TableHead key={field.name} className="text-center">{field.label}</TableHead>
@@ -308,12 +393,26 @@ export default function CustomersPage() {
                     <TableBody>
                       {filteredCustomers.map((customer, index) => (
                         <TableRow key={customer.id}>
+                          <TableCell className="text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedCustomers.includes(customer.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCustomers([...selectedCustomers, customer.id])
+                                } else {
+                                  setSelectedCustomers(selectedCustomers.filter(id => id !== customer.id))
+                                }
+                              }}
+                              className="cursor-pointer"
+                            />
+                          </TableCell>
                           <TableCell className="text-center font-medium">
                             {((currentPage - 1) * itemsPerPage) + index + 1}
                           </TableCell>
                           {customerFields.map((field) => (
-                            <TableCell key={field.name} className="text-center">
-                              <div className={field.name === customerFields[0]?.name ? "font-medium" : "text-sm"}>
+                            <TableCell key={field.name} className="text-center max-w-[150px] p-2">
+                              <div className={`${field.name === customerFields[0]?.name ? "font-medium" : "text-sm"} break-words whitespace-normal`}>
                                 {customer[field.name] || '-'}
                               </div>
                             </TableCell>
@@ -359,6 +458,56 @@ export default function CustomersPage() {
                   </Table>
                 </div>
               )}
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} customers
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === totalPages || 
+                        Math.abs(page - currentPage) <= 1
+                      )
+                      .map((page, index, array) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
             </CardContent>
           </Card>
 
@@ -437,14 +586,19 @@ export default function CustomersPage() {
                         body: JSON.stringify(customerFormData)
                       })
                       if (response.ok) {
-                        showToast.success(editingCustomer ? t('customerUpdatedSuccess') : t('customerCreatedSuccess'))
+                        const action = editingCustomer ? 'updated' : 'created'
+                        showToast.success(`✅ Customer successfully ${action}!`)
                         fetchCustomers(currentPage)
                         setIsCustomerDialogOpen(false)
                       } else {
-                        showToast.error(editingCustomer ? t('failedToUpdateCustomer') : t('failedToCreateCustomer'))
+                        const errorData = await response.json()
+                        const action = editingCustomer ? 'update' : 'create'
+                        showToast.error(`❌ Failed to ${action} customer: ${errorData.error || 'Unknown error'}`)
                       }
                     } catch (error) {
                       console.error('Error saving customer:', error)
+                      const action = editingCustomer ? 'updating' : 'creating'
+                      showToast.error(`❌ Error ${action} customer. Please check your connection.`)
                     } finally {
                       setSaving(false)
                     }
@@ -477,13 +631,14 @@ export default function CustomersPage() {
                           method: 'DELETE'
                         })
                         if (response.ok) {
-                          showToast.success(t('customerDeletedSuccess'))
+                          showToast.success(`✅ Customer "${customerToDelete.name}" deleted successfully!`)
                           fetchCustomers(currentPage)
                         } else {
-                          showToast.error(t('failedToDeleteCustomer'))
+                          showToast.error('❌ Failed to delete customer. Please try again.')
                         }
                       } catch (error) {
-                        showToast.error(t('errorDeletingCustomer'))
+                        console.error('Delete customer error:', error)
+                        showToast.error('❌ Error deleting customer. Please check your connection.')
                       }
                       setIsDeleteDialogOpen(false)
                       setCustomerToDelete(null)
@@ -491,6 +646,90 @@ export default function CustomersPage() {
                   }}
                 >
                   {t('delete')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Selected Customers</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete {selectedCustomers.length} selected customers? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setIsBulkDeleteDialogOpen(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button variant="destructive" onClick={async () => {
+                  try {
+                    const deletePromises = selectedCustomers.map(id => 
+                      fetch(`/api/customers/${id}`, { method: 'DELETE' })
+                    )
+                    const results = await Promise.all(deletePromises)
+                    
+                    const successCount = results.filter(r => r.ok).length
+                    const failCount = results.length - successCount
+                    
+                    if (successCount > 0) {
+                      showToast.success(`✅ Successfully deleted ${successCount} customers!`)
+                    }
+                    if (failCount > 0) {
+                      showToast.error(`❌ Failed to delete ${failCount} customers`)
+                    }
+                    
+                    setSelectedCustomers([])
+                    setIsBulkDeleteDialogOpen(false)
+                    fetchCustomers(currentPage)
+                  } catch (error) {
+                    console.error('Bulk delete error:', error)
+                    showToast.error('❌ Error deleting customers. Please try again.')
+                  }
+                }}>
+                  {t('delete')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <span>Clear All Customers</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete <strong>ALL customers</strong>? This action cannot be undone and will permanently remove all customer data from your database!
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setIsClearAllDialogOpen(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button variant="destructive" onClick={async () => {
+                  try {
+                    const response = await fetch('/api/customers/clear', {
+                      method: 'DELETE'
+                    })
+                    
+                    if (response.ok) {
+                      const result = await response.json()
+                      showToast.success(`🗑️ Successfully cleared ${result.count} customers from database!`)
+                      fetchCustomers(1)
+                      setCurrentPage(1)
+                      setSelectedCustomers([])
+                    } else {
+                      showToast.error('❌ Failed to clear customers. Please try again.')
+                    }
+                  } catch (error) {
+                    showToast.error('❌ Error clearing customers. Please check your connection.')
+                  }
+                  setIsClearAllDialogOpen(false)
+                }}>
+                  Clear All Customers
                 </Button>
               </div>
             </DialogContent>

@@ -129,6 +129,7 @@ export default function InventoryPage() {
   const { storeName, tenantId } = useStore()
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false)
 
   const fetchInventory = async (page = 1) => {
     try {
@@ -728,26 +729,7 @@ export default function InventoryPage() {
                 )}
                 <Button 
                   variant="destructive"
-                  onClick={async () => {
-                    if (confirm('⚠️ Are you sure you want to clear ALL inventory items? This action cannot be undone!')) {
-                      try {
-                        const response = await fetch('/api/inventory/clear', {
-                          method: 'DELETE'
-                        })
-                        
-                        if (response.ok) {
-                          const result = await response.json()
-                          showToast.success(`🗑️ Successfully cleared ${result.count} products from inventory!`)
-                          const inventoryData = await fetchInventory()
-                          setInventory(inventoryData)
-                        } else {
-                          showToast.error('❌ Failed to clear inventory. Please try again.')
-                        }
-                      } catch (error) {
-                        showToast.error('❌ Error clearing inventory. Please check your connection.')
-                      }
-                    }
-                  }}
+                  onClick={() => setIsClearAllDialogOpen(true)}
                 >
                   {t('clearAll')}
                 </Button>
@@ -862,6 +844,47 @@ export default function InventoryPage() {
                         }
                       }}>
                         {t('delete')}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center space-x-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        <span>Clear All Inventory</span>
+                      </DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to delete <strong>ALL inventory items</strong>? This action cannot be undone and will permanently remove all products from your inventory!
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsClearAllDialogOpen(false)}>
+                        {t('cancel')}
+                      </Button>
+                      <Button variant="destructive" onClick={async () => {
+                        try {
+                          const response = await fetch('/api/inventory/clear', {
+                            method: 'DELETE'
+                          })
+                          
+                          if (response.ok) {
+                            const result = await response.json()
+                            showToast.success(`🗑️ Successfully cleared ${result.count} products from inventory!`)
+                            const inventoryData = await fetchInventory()
+                            setInventory(inventoryData)
+                            setSelectedItems([])
+                          } else {
+                            showToast.error('❌ Failed to clear inventory. Please try again.')
+                          }
+                        } catch (error) {
+                          showToast.error('❌ Error clearing inventory. Please check your connection.')
+                        }
+                        setIsClearAllDialogOpen(false)
+                      }}>
+                        Clear All Inventory
                       </Button>
                     </div>
                   </DialogContent>
@@ -981,13 +1004,16 @@ export default function InventoryPage() {
                           }
                           
                           const isBarcode = field.name.toLowerCase() === 'barcode' || field.type === 'barcode'
+                          const displayValue = Array.isArray(value) ? value.join(', ') : (value || 'N/A')
                           
                           return (
-                            <TableCell key={field.name} className="text-center">
+                            <TableCell key={field.name} className="text-center max-w-[150px] p-2">
                               {isBarcode && value ? (
                                 <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
                               ) : (
-                                Array.isArray(value) ? value.join(', ') : (value || 'N/A')
+                                <div className="break-words whitespace-normal text-sm">
+                                  {displayValue}
+                                </div>
                               )}
                             </TableCell>
                           )

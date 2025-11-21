@@ -74,6 +74,10 @@ export default function HRPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isClearAllOpen, setIsClearAllOpen] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const itemsPerPage = 20
   const [formData, setFormData] = useState({
     name: '',
     employeeId: '',
@@ -87,16 +91,23 @@ export default function HRPage() {
     commissionRate: ''
   })
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (page = 1) => {
     try {
-      const response = await fetch('/api/employees')
+      const response = await fetch(`/api/employees?page=${page}&limit=${itemsPerPage}`)
       if (response.ok) {
         const result = await response.json()
-        const data = result.data || result || []
-        const employeesArray = Array.isArray(data) ? data : []
-        setEmployees(employeesArray)
-        // Auto-generate next employee ID
-        const nextId = `EMP${String(employeesArray.length + 1).padStart(3, '0')}`
+        if (result.pagination) {
+          setTotalPages(result.pagination.totalPages)
+          setTotalItems(result.pagination.total)
+          setEmployees(result.data || [])
+        } else {
+          const data = result.data || result || []
+          const employeesArray = Array.isArray(data) ? data : []
+          setEmployees(employeesArray)
+        }
+        // Auto-generate next employee ID based on total count
+        const totalCount = result.pagination?.total || employees.length
+        const nextId = `EMP${String(totalCount + 1).padStart(3, '0')}`
         setFormData(prev => ({...prev, employeeId: nextId}))
       } else {
         setEmployees([])
@@ -122,7 +133,7 @@ export default function HRPage() {
       })
       
       if (response.ok) {
-        fetchEmployees()
+        fetchEmployees(currentPage)
         setIsAddDialogOpen(false)
         resetForm()
         showToast.success('Employee created successfully!')
@@ -149,7 +160,7 @@ export default function HRPage() {
       })
       
       if (response.ok) {
-        fetchEmployees()
+        fetchEmployees(currentPage)
         setIsEditDialogOpen(false)
         resetForm()
         showToast.success('Employee updated successfully!')
@@ -175,7 +186,7 @@ export default function HRPage() {
       })
       
       if (response.ok) {
-        fetchEmployees()
+        fetchEmployees(currentPage)
         setIsDeleteDialogOpen(false)
         setEmployeeToDelete(null)
         showToast.success('Employee deleted successfully!')
@@ -223,8 +234,12 @@ export default function HRPage() {
   }
 
   useEffect(() => {
-    fetchEmployees()
+    fetchEmployees(1)
   }, [])
+
+  useEffect(() => {
+    fetchEmployees(currentPage)
+  }, [currentPage])
 
   const filteredEmployees = Array.isArray(employees) ? employees.filter((employee) => {
     const matchesSearch =
@@ -373,7 +388,8 @@ export default function HRPage() {
                       const result = await response.json()
                       if (response.ok) {
                         showToast.success(`✅ Imported ${result.imported} employees successfully!`)
-                        fetchEmployees()
+                        fetchEmployees(1)
+                        setCurrentPage(1)
                       } else {
                         showToast.error(result.error || '❌ Failed to import employees')
                       }
@@ -686,7 +702,7 @@ export default function HRPage() {
                             )
                             showToast.success(`✅ Deleted ${selectedEmployees.length} employees`)
                             setSelectedEmployees([])
-                            fetchEmployees()
+                            fetchEmployees(currentPage)
                           } catch (error) {
                             showToast.error('❌ Failed to delete employees')
                           }
@@ -721,7 +737,8 @@ export default function HRPage() {
                           if (response.ok) {
                             showToast.success('✅ All employees deleted!')
                             setSelectedEmployees([])
-                            fetchEmployees()
+                            fetchEmployees(1)
+                            setCurrentPage(1)
                           } else {
                             showToast.error('❌ Failed to clear employees')
                           }
@@ -841,7 +858,7 @@ export default function HRPage() {
                           />
                         </TableCell>
                         <TableCell className="text-center font-medium">
-                          {index + 1}
+                          {((currentPage - 1) * itemsPerPage) + index + 1}
                         </TableCell>
                         <TableCell className="text-center">
                           <div>
@@ -886,7 +903,7 @@ export default function HRPage() {
                                     body: JSON.stringify({ status: newStatus })
                                   })
                                   if (response.ok) {
-                                    fetchEmployees()
+                                    fetchEmployees(currentPage)
                                     showToast.success('✅ Employee status updated successfully!')
                                   }
                                 } catch (error) {
@@ -913,6 +930,56 @@ export default function HRPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} employees
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === totalPages || 
+                        Math.abs(page - currentPage) <= 1
+                      )
+                      .map((page, index, array) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
