@@ -653,6 +653,7 @@ export default function InventoryPage() {
                 <input
                   type="file"
                   accept=".csv"
+                  aria-label="Import CSV file"
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
@@ -930,6 +931,7 @@ export default function InventoryPage() {
                       <TableHead className="text-center w-12">
                         <input
                           type="checkbox"
+                          aria-label="Select all items"
                           checked={selectedItems.length === paginatedInventory.length && paginatedInventory.length > 0}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -955,6 +957,7 @@ export default function InventoryPage() {
                         <TableCell className="text-center">
                           <input
                             type="checkbox"
+                            aria-label={`Select ${item.name}`}
                             checked={selectedItems.includes(item.id)}
                             onChange={(e) => {
                               if (e.target.checked) {
