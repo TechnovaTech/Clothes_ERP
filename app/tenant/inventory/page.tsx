@@ -299,7 +299,7 @@ export default function InventoryPage() {
       })
       console.log('Update response status:', response.status)
       if (response.ok) {
-        const inventoryData = await fetchInventory()
+        const inventoryData = await fetchInventory(currentPage)
         setInventory(inventoryData)
         setIsEditDialogOpen(false)
         resetForm()
