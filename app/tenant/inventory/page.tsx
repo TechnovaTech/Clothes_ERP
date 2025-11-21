@@ -481,7 +481,7 @@ export default function InventoryPage() {
         })
         // Set initial stats from totalItems immediately
         setStats({
-          totalProducts: totalItems,
+          totalProducts: totalItems || inventory.length,
           lowStockItems: 0,
           totalValue: 0,
           categories: 0
