@@ -283,7 +283,12 @@ export default function InventoryPage() {
   }
 
   const updateItem = async () => {
-    if (!selectedItem) return
+    if (!selectedItem) {
+      console.error('No item selected')
+      return
+    }
+    console.log('Updating item ID:', selectedItem.id)
+    console.log('Form data:', formData)
     try {
       const requestData = { ...formData }
       
@@ -292,6 +297,7 @@ export default function InventoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
       })
+      console.log('Update response status:', response.status)
       if (response.ok) {
         const inventoryData = await fetchInventory()
         setInventory(inventoryData)
@@ -299,7 +305,9 @@ export default function InventoryPage() {
         resetForm()
         showToast.success(language === 'en' ? '✅ Product updated successfully!' : language === 'gu' ? '✅ પ્રોડક્ટ સફળતાપૂર્વક અપડેટ થયું!' : '✅ उत्पाद सफलतापूर्वक अपडेट हुआ!')
       } else {
-        showToast.error('❌ Failed to update product. Please try again.')
+        const errorData = await response.json()
+        console.error('Update error:', errorData)
+        showToast.error(`❌ Failed: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Failed to update item:', error)
