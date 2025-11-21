@@ -132,7 +132,10 @@ export default function InventoryPage() {
 
   const fetchInventory = async (page = 1) => {
     try {
-      const response = await fetch(`/api/inventory?page=${page}&limit=${itemsPerPage}`)
+      const response = await fetch(`/api/inventory?page=${page}&limit=${itemsPerPage}&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
       if (response.ok) {
         const result = await response.json()
         if (result.pagination) {
@@ -283,7 +286,12 @@ export default function InventoryPage() {
   }
 
   const updateItem = async () => {
-    if (!selectedItem) return
+    if (!selectedItem) {
+      console.error('No item selected')
+      return
+    }
+    console.log('Updating item ID:', selectedItem.id)
+    console.log('Form data:', formData)
     try {
       const requestData = { ...formData }
       
@@ -292,14 +300,19 @@ export default function InventoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
       })
+      console.log('Update response status:', response.status)
       if (response.ok) {
-        const inventoryData = await fetchInventory()
+        console.log('Fetching updated inventory...')
+        const inventoryData = await fetchInventory(currentPage)
+        console.log('Updated inventory data:', inventoryData)
         setInventory(inventoryData)
         setIsEditDialogOpen(false)
         resetForm()
         showToast.success(language === 'en' ? '✅ Product updated successfully!' : language === 'gu' ? '✅ પ્રોડક્ટ સફળતાપૂર્વક અપડેટ થયું!' : '✅ उत्पाद सफलतापूर्वक अपडेट हुआ!')
       } else {
-        showToast.error('❌ Failed to update product. Please try again.')
+        const errorData = await response.json()
+        console.error('Update error:', errorData)
+        showToast.error(`❌ Failed: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Failed to update item:', error)
@@ -363,26 +376,37 @@ export default function InventoryPage() {
   }
 
   const openEditDialog = (item: InventoryItem) => {
+    console.log('Opening edit dialog for item:', item)
     setSelectedItem(item)
     const currentPrice = (item.price ?? 0).toString()
     
-    const editFormData: any = {
-      name: item.name || '',
-      sku: item.sku || '',
-      barcode: (item as any).barcode || '',
-      category: item.category || '',
-      price: currentPrice,
-      finalPrice: currentPrice,
-      costPrice: (item.costPrice ?? 0).toString(),
-      stock: (item.stock ?? 0).toString(),
-      minStock: (item.minStock ?? 0).toString(),
-      sizes: (item.sizes || []).join(', '),
-      colors: (item.colors || []).join(', '),
-      description: item.description || '',
-      material: (item as any).material || '',
-      brand: (item as any).brand || ''
-    }
+    const editFormData: any = {}
     
+    // Copy ALL fields from item to formData
+    Object.keys(item).forEach(key => {
+      if (key !== '_id' && key !== 'id' && key !== 'tenantId' && key !== 'storeId' && key !== 'createdAt' && key !== 'updatedAt') {
+        const value = (item as any)[key]
+        editFormData[key] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
+      }
+    })
+    
+    // Ensure standard fields
+    editFormData.name = item.name || ''
+    editFormData.sku = item.sku || ''
+    editFormData.barcode = (item as any).barcode || ''
+    editFormData.category = item.category || ''
+    editFormData.price = currentPrice
+    editFormData.finalPrice = currentPrice
+    editFormData.costPrice = (item.costPrice ?? 0).toString()
+    editFormData.stock = (item.stock ?? 0).toString()
+    editFormData.minStock = (item.minStock ?? 0).toString()
+    editFormData.sizes = (item.sizes || []).join(', ')
+    editFormData.colors = (item.colors || []).join(', ')
+    editFormData.description = item.description || ''
+    editFormData.material = (item as any).material || ''
+    editFormData.brand = (item as any).brand || ''
+    
+    // Map tenant fields
     tenantFields.forEach(field => {
       const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
       let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()] || ''
@@ -391,18 +415,17 @@ export default function InventoryPage() {
         value = item.name || value
       }
       
-      editFormData[fieldKey] = Array.isArray(value) ? value.join(', ') : value.toString()
+      editFormData[fieldKey] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
       editFormData[field.name] = editFormData[fieldKey]
       editFormData[field.name.toLowerCase()] = editFormData[fieldKey]
-      editFormData['ProductName'] = item.name || ''
-      editFormData['productname'] = item.name || ''
-      editFormData['product_name'] = item.name || ''
     })
     
+    // Additional name mappings
     editFormData['ProductName'] = item.name || ''
     editFormData['productname'] = item.name || ''
     editFormData['product_name'] = item.name || ''
     
+    console.log('Edit form data:', editFormData)
     setFormData(editFormData)
     setIsEditDialogOpen(true)
   }
@@ -630,6 +653,7 @@ export default function InventoryPage() {
                 <input
                   type="file"
                   accept=".csv"
+                  aria-label="Import CSV file"
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
@@ -907,6 +931,7 @@ export default function InventoryPage() {
                       <TableHead className="text-center w-12">
                         <input
                           type="checkbox"
+                          aria-label="Select all items"
                           checked={selectedItems.length === paginatedInventory.length && paginatedInventory.length > 0}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -932,6 +957,7 @@ export default function InventoryPage() {
                         <TableCell className="text-center">
                           <input
                             type="checkbox"
+                            aria-label={`Select ${item.name}`}
                             checked={selectedItems.includes(item.id)}
                             onChange={(e) => {
                               if (e.target.checked) {

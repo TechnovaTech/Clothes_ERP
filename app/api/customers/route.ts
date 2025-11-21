@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     const total = await customersCollection.countDocuments({})
-    const customers = await customersCollection.find({}).sort({ orderCount: -1 }).skip(skip).limit(limit).toArray()
+    console.log(`Fetching customers: Total=${total}, Page=${page}, Limit=${limit}`)
+    const customers = await customersCollection.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray()
+    console.log(`Found ${customers.length} customers`)
     
     const formattedCustomers = customers.map(customer => ({
       ...customer,
@@ -51,15 +53,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('Creating customer with data:', body)
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
-    // Check if customer already exists by phone or name+phone
-    const existingCustomer = await customersCollection.findOne({
-      $or: [
-        { phone: body.phone },
-        { name: body.name, phone: body.phone }
-      ]
-    })
+    // Check if customer already exists by phone or name
+    const query: any = {}
+    if (body.phone) {
+      query.phone = body.phone
+    } else if (body.name) {
+      query.name = body.name
+    }
+    
+    const existingCustomer = query.phone || query.name ? await customersCollection.findOne(query) : null
+    console.log('Existing customer check:', existingCustomer ? 'Found' : 'Not found')
     
     if (existingCustomer) {
       return NextResponse.json({
@@ -80,6 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await customersCollection.insertOne(customer)
+    console.log('Customer created with ID:', result.insertedId.toString())
     
     return NextResponse.json({ 
       ...customer, 
