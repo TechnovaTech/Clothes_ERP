@@ -18,13 +18,14 @@ interface Plan {
   maxUsers: number
   maxProducts: number
   description: string
+  durationDays: number
 }
 
 export default function UpgradePlanPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(true)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const fetchPlans = async () => {
     try {
@@ -117,6 +118,13 @@ export default function UpgradePlanPage() {
     }
   }
 
+  const formatDuration = (days: number) => {
+    if (days === 365) return language === 'en' ? 'per year' : language === 'gu' ? 'પ્રતિ વર્ષ' : 'प्रति वर्ष'
+    if (days === 30) return language === 'en' ? 'per month' : language === 'gu' ? 'પ્રતિ મહિને' : 'प्रति माह'
+    if (days === 7) return language === 'en' ? 'per week' : language === 'gu' ? 'પ્રતિ અઠવાડિયે' : 'प्रति सप्ताह'
+    return language === 'en' ? `per ${days} days` : language === 'gu' ? `${days} દિવસ માટે` : `${days} दिनों के लिए`
+  }
+
   if (loading) {
     return (
       <MainLayout title={t('upgradePlan')}>
@@ -139,7 +147,7 @@ export default function UpgradePlanPage() {
                   {getPlanIcon(currentPlan.name)}
                   <div>
                     <CardTitle>{t('currentPlan')}: {currentPlan.name}</CardTitle>
-                    <CardDescription>₹{currentPlan.price}/year</CardDescription>
+                    <CardDescription>₹{currentPlan.price}/{formatDuration(currentPlan.durationDays || 365)}</CardDescription>
                   </div>
                 </div>
                 <Badge className="bg-primary">{t('active')}</Badge>
@@ -166,7 +174,7 @@ export default function UpgradePlanPage() {
                   </div>
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
                   <div className="text-3xl font-bold">₹{plan.price}</div>
-                  <CardDescription>{t('perYear')}</CardDescription>
+                  <CardDescription>{formatDuration(plan.durationDays || 365)}</CardDescription>
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
