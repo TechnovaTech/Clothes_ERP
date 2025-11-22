@@ -4,26 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.tenantId) {
-      // Return default data for unauthenticated users
-      return NextResponse.json({
-        todaySales: 0,
-        salesTrend: 0,
-        topProducts: [],
-        stockValue: 0,
-        lowStockItems: [],
-        topCustomer: { name: "No customers", totalPurchases: 0, totalSpent: 0 },
-        topCustomers: [],
-        additionalMetrics: {
-          totalCustomers: 0,
-          totalProducts: 0,
-          todayOrders: 0,
-          lowStockCount: 0
-        }
-      })
-    }
+  const session = await getServerSession(authOptions)
+  console.log('Analytics API - Session:', JSON.stringify(session?.user))
+  
+  if (!session?.user?.tenantId) {
+    console.log('Analytics API - No tenant ID')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
     const tenantId = session.user.tenantId
     const salesCollection = await getTenantCollection(tenantId, 'sales')
@@ -41,7 +28,8 @@ export async function GET(request: NextRequest) {
       createdAt: { $gte: startOfToday }
     }).toArray()
 
-    const todayRevenue = todaySales.reduce((sum, sale) => sum + (sale.total || 0), 0)
+    const todayRevenue = todaySales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0)
+    console.log('Analytics API - Today sales count:', todaySales.length, 'Revenue:', todayRevenue)
 
     // Yesterday's sales for trend calculation
     const yesterdaySales = await salesCollection.find({
@@ -51,7 +39,7 @@ export async function GET(request: NextRequest) {
       }
     }).toArray()
 
-    const yesterdayRevenue = yesterdaySales.reduce((sum, sale) => sum + (sale.total || 0), 0)
+    const yesterdayRevenue = yesterdaySales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0)
     const salesTrend = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 : 0
 
     // Get all sales for product analysis
@@ -61,14 +49,16 @@ export async function GET(request: NextRequest) {
     const productSales: any = {}
     allSales.forEach(sale => {
       sale.items?.forEach((item: any) => {
+        const qty = Number(item.quantity) || 0
+        const price = Number(item.price) || 0
         if (productSales[item.name]) {
-          productSales[item.name].quantity += item.quantity || 0
-          productSales[item.name].revenue += (item.quantity || 0) * (item.price || 0)
+          productSales[item.name].quantity += qty
+          productSales[item.name].revenue += qty * price
         } else {
           productSales[item.name] = {
             name: item.name,
-            quantity: item.quantity || 0,
-            revenue: (item.quantity || 0) * (item.price || 0)
+            quantity: qty,
+            revenue: qty * price
           }
         }
       })
@@ -77,6 +67,7 @@ export async function GET(request: NextRequest) {
     const topProducts = Object.values(productSales)
       .sort((a: any, b: any) => b.quantity - a.quantity)
       .slice(0, 5)
+    console.log('Analytics API - Top products:', topProducts.length)
 
     // Get tenant field configuration
     const tenantFieldsCollection = await getTenantCollection(tenantId, 'fields')
@@ -87,8 +78,9 @@ export async function GET(request: NextRequest) {
     
     // Calculate stock value
     const stockValue = products.reduce((sum, product) => 
-      sum + ((product.stock || 0) * (product.price || 0)), 0
+      sum + ((Number(product.stock) || 0) * (Number(product.price) || 0)), 0
     )
+    console.log('Analytics API - Products:', products.length, 'Stock value:', stockValue)
 
     // Helper function to get product name from dynamic fields
     const getProductName = (product: any) => {
@@ -120,12 +112,12 @@ export async function GET(request: NextRequest) {
       if (sale.customerName && sale.customerName !== 'Walk-in Customer') {
         if (customerPurchases[sale.customerName]) {
           customerPurchases[sale.customerName].totalPurchases += 1
-          customerPurchases[sale.customerName].totalSpent += sale.total || 0
+          customerPurchases[sale.customerName].totalSpent += Number(sale.total) || 0
         } else {
           customerPurchases[sale.customerName] = {
             name: sale.customerName,
             totalPurchases: 1,
-            totalSpent: sale.total || 0
+            totalSpent: Number(sale.total) || 0
           }
         }
       }
@@ -141,7 +133,7 @@ export async function GET(request: NextRequest) {
     const totalCustomers = await customersCollection.countDocuments()
     const totalProducts = products.length
 
-    return NextResponse.json({
+    const result = {
       todaySales: todayRevenue,
       salesTrend,
       topProducts,
@@ -155,25 +147,7 @@ export async function GET(request: NextRequest) {
         todayOrders: todaySales.length,
         lowStockCount: lowStockItems.length
       }
-    })
-
-  } catch (error) {
-    console.error('Dashboard analytics error:', error)
-    // Return default data on error
-    return NextResponse.json({
-      todaySales: 0,
-      salesTrend: 0,
-      topProducts: [],
-      stockValue: 0,
-      lowStockItems: [],
-      topCustomer: { name: "No customers", totalPurchases: 0, totalSpent: 0 },
-      topCustomers: [],
-      additionalMetrics: {
-        totalCustomers: 0,
-        totalProducts: 0,
-        todayOrders: 0,
-        lowStockCount: 0
-      }
-    })
-  }
+    }
+    console.log('Analytics API - Returning:', JSON.stringify(result))
+    return NextResponse.json(result)
 }
