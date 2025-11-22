@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Settings, Store, Percent, Eye, EyeOff, Image } from "lucide-react"
+import { Settings, Store, Percent, Eye, EyeOff, Image, Palette } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
@@ -392,6 +392,30 @@ export default function SettingsPage() {
         </Card>
 
 
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Palette className="w-5 h-5" />
+              <span>Bill Template Settings</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Customize Your Bill Templates</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Design professional invoices, reports, and certificates with our drag-and-drop template builder.
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/tenant/template-builder'}
+                className="w-full"
+              >
+                <Palette className="w-4 h-4 mr-2" />
+                Open Template Builder
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
