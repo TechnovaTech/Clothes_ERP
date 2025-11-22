@@ -180,8 +180,28 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-3 py-6">
           <nav className="space-y-4">
-            {/* Dashboard - Direct Link */}
-            {navItems.filter(item => item.group === 'Dashboard').map((item) => {
+            {/* Super Admin Menu Items */}
+            {userType === "super-admin" && navItems.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                      collapsed ? "justify-center px-2" : "justify-start",
+                      isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
+                    )}
+                  >
+                    <item.icon className={cn("w-5 h-5", !collapsed && "mr-3", isActive && "text-red-600")} />
+                    {!collapsed && <span className="font-medium">{item.title}</span>}
+                  </Button>
+                </Link>
+              )
+            })}
+
+            {/* Dashboard - Direct Link for Retail */}
+            {userType === "retail" && navItems.filter(item => item.group === 'Dashboard').map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link key={item.href} href={item.href}>
