@@ -4,11 +4,15 @@ import { authOptions } from '@/lib/auth'
 import { getTenantCollection } from '@/lib/tenant-data'
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    // Use hardcoded tenantId if no session (temporary fix for live server)
-    const tenantId = session?.user?.tenantId || '691f0591d865755fa6332ff0'
+  const session = await getServerSession(authOptions)
+  console.log('Dashboard Summary API - Session:', JSON.stringify(session?.user))
+  
+  if (!session?.user?.tenantId) {
+    console.log('Dashboard Summary API - No tenant ID')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
+  const tenantId = session.user.tenantId
     
     const salesCollection = await getTenantCollection(tenantId, 'sales')
     const purchasesCollection = await getTenantCollection(tenantId, 'purchases')
@@ -49,7 +53,7 @@ export async function GET(request: NextRequest) {
       (Number(p.stock) || 0) <= (Number(p.minStock || p.min_stock) || 0)
     ).length
 
-    return NextResponse.json({
+    const summary = {
       salesSummary: {
         totalSales,
         todaySales: todaySalesAmount,
@@ -69,13 +73,7 @@ export async function GET(request: NextRequest) {
         stockValue,
         lowStockCount
       }
-    })
-  } catch (error) {
-    console.error('Dashboard summary error:', error)
-    return NextResponse.json({
-      salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
-      purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
-      inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
-    })
-  }
+    }
+    console.log('Dashboard Summary API - Returning:', summary)
+    return NextResponse.json(summary)
 }

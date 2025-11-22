@@ -55,9 +55,10 @@ export function SummaryCards() {
           'Cache-Control': 'no-cache'
         }
       })
+      console.log('Summary API Status:', response.status)
       if (response.ok) {
         const summaryData = await response.json()
-        console.log('API Response:', summaryData)
+        console.log('Summary API Response:', summaryData)
         setData({
           salesSummary: summaryData.salesSummary || { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
           purchaseSummary: summaryData.purchaseSummary || { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
