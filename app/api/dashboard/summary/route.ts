@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
         purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
-        inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
+        inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 },
+        debug: { error: 'No session or tenantId', session: !!session, tenantId: session?.user?.tenantId }
       })
     }
 
