@@ -7,7 +7,8 @@ import {
   ShoppingCart, 
   Package, 
   TrendingUp,
-  DollarSign
+  DollarSign,
+  AlertTriangle
 } from "lucide-react"
 import { StoreHeader } from "@/components/store-header"
 
@@ -16,11 +17,15 @@ interface SummaryData {
     totalSales: number
     todaySales: number
     salesTrend: number
+    todayOrders: number
+    todayProfit: number
   }
   purchaseSummary: {
     totalPurchases: number
     todayPurchases: number
     purchaseTrend: number
+    pendingOrders: number
+    completedOrders: number
   }
   inventorySummary: {
     totalProducts: number
@@ -32,8 +37,8 @@ interface SummaryData {
 export function SummaryCards() {
   const { t, language } = useLanguage()
   const [data, setData] = useState<SummaryData>({
-    salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0 },
-    purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0 },
+    salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
+    purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
     inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
   })
   const [loading, setLoading] = useState(true)
@@ -82,19 +87,36 @@ export function SummaryCards() {
       {/* Sales Summary */}
       <Card className="bg-white border-l-4 border-l-purple-500 shadow-lg hover:shadow-xl transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Sales Summary</CardTitle>
+          <CardTitle className="text-xl font-medium text-gray-700">
+            {language === 'en' ? 'Sales Summary' : language === 'gu' ? 'વેચાણ સારાંશ' : 'बिक्री सारांश'}
+          </CardTitle>
           <div className="p-2 bg-purple-100 rounded-full">
             <ShoppingCart className="h-5 w-5 text-purple-600" />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2 py-4">
           <div className="text-2xl font-bold text-purple-600">{formatCurrency(data.salesSummary.todaySales)}</div>
-          <div className="flex items-center text-xs text-gray-600 mt-1">
+          <div className="flex items-center text-xs text-gray-600">
             <TrendingUp className="h-3 w-3 mr-1 text-purple-500" />
-            {language === 'en' ? 'Today Sales' : language === 'gu' ? 'આજના વેચાણ' : 'आज की बिक्री'}
+            <span className="font-medium">{language === 'en' ? 'Today Sales' : language === 'gu' ? 'આજના વેચાણ' : 'आज की बिक्री'}</span>
           </div>
-          <div className="text-xs text-gray-600 mt-1">
-            {language === 'en' ? 'Total:' : language === 'gu' ? 'કુલ:' : 'कुल:'} <span className="font-semibold text-purple-600">{formatCurrency(data.salesSummary.totalSales)}</span>
+          <div className="text-xs text-gray-600 pt-1 border-t space-y-1">
+            <div>
+              <span>{language === 'en' ? 'Total:' : language === 'gu' ? 'કુલ:' : 'कुल:'}</span>
+              <span className="font-semibold text-purple-600 ml-1">{formatCurrency(data.salesSummary.totalSales)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center">
+                <Package className="h-3 w-3 mr-1 text-blue-500" />
+                <span>{language === 'en' ? 'Orders:' : language === 'gu' ? 'ઓર્ડર:' : 'ऑर्डर:'}</span>
+                <span className="font-semibold text-blue-600 ml-1">{data.salesSummary.todayOrders || 0}</span>
+              </div>
+              <div className="flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                <span>{language === 'en' ? 'Profit:' : language === 'gu' ? 'નફો:' : 'लाभ:'}</span>
+                <span className="font-semibold text-green-600 ml-1">{formatCurrency(data.salesSummary.todayProfit || 0)}</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -102,19 +124,36 @@ export function SummaryCards() {
       {/* Purchase Summary */}
       <Card className="bg-white border-l-4 border-l-rose-500 shadow-lg hover:shadow-xl transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Purchase Summary</CardTitle>
+          <CardTitle className="text-xl font-medium text-gray-700">
+            {language === 'en' ? 'Purchase Summary' : language === 'gu' ? 'ખરીદી સારાંશ' : 'खरीदारी सारांश'}
+          </CardTitle>
           <div className="p-2 bg-rose-100 rounded-full">
             <DollarSign className="h-5 w-5 text-rose-600" />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2 py-4">
           <div className="text-2xl font-bold text-rose-600">{formatCurrency(data.purchaseSummary.todayPurchases)}</div>
-          <div className="flex items-center text-xs text-gray-600 mt-1">
+          <div className="flex items-center text-xs text-gray-600">
             <TrendingUp className="h-3 w-3 mr-1 text-rose-500" />
-            {language === 'en' ? 'Today Purchases' : language === 'gu' ? 'આજની ખરીદી' : 'आज की खरीदारी'}
+            <span className="font-medium">{language === 'en' ? 'Today Purchases' : language === 'gu' ? 'આજની ખરીદી' : 'आज की खरीदारी'}</span>
           </div>
-          <div className="text-xs text-gray-600 mt-1">
-            {language === 'en' ? 'Total:' : language === 'gu' ? 'કુલ:' : 'कुल:'} <span className="font-semibold text-rose-600">{formatCurrency(data.purchaseSummary.totalPurchases)}</span>
+          <div className="text-xs text-gray-600 pt-1 border-t space-y-1">
+            <div>
+              <span>{language === 'en' ? 'Total:' : language === 'gu' ? 'કુલ:' : 'कुल:'}</span>
+              <span className="font-semibold text-rose-600 ml-1">{formatCurrency(data.purchaseSummary.totalPurchases)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center">
+                <Package className="h-3 w-3 mr-1 text-orange-500" />
+                <span>{language === 'en' ? 'Pending:' : language === 'gu' ? 'બાકી:' : 'लंबित:'}</span>
+                <span className="font-semibold text-orange-600 ml-1">{data.purchaseSummary.pendingOrders || 0}</span>
+              </div>
+              <div className="flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                <span>{language === 'en' ? 'Complete:' : language === 'gu' ? 'પૂર્ણ:' : 'पूर्ण:'}</span>
+                <span className="font-semibold text-green-600 ml-1">{data.purchaseSummary.completedOrders || 0}</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -122,19 +161,29 @@ export function SummaryCards() {
       {/* Inventory Summary */}
       <Card className="bg-white border-l-4 border-l-teal-500 shadow-lg hover:shadow-xl transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Inventory Summary</CardTitle>
+          <CardTitle className="text-xl font-medium text-gray-700">
+            {language === 'en' ? 'Inventory Summary' : language === 'gu' ? 'ઇન્વેન્ટરી સારાંશ' : 'इन्वेंटरी सारांश'}
+          </CardTitle>
           <div className="p-2 bg-teal-100 rounded-full">
             <Package className="h-5 w-5 text-teal-600" />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2 py-4">
           <div className="text-2xl font-bold text-teal-600">{data.inventorySummary.totalProducts}</div>
-          <div className="flex items-center text-xs text-gray-600 mt-1">
+          <div className="flex items-center text-xs text-gray-600">
             <Package className="h-3 w-3 mr-1 text-teal-500" />
-            {language === 'en' ? 'Total Products' : language === 'gu' ? 'કુલ ઉત્પાદનો' : 'कुल उत्पाد'}
+            <span className="font-medium">{language === 'en' ? 'Total Products' : language === 'gu' ? 'કુલ ઉત્પાદનો' : 'कुल उत्पाद'}</span>
           </div>
-          <div className="text-xs text-gray-600 mt-1">
-            {language === 'en' ? 'Value:' : language === 'gu' ? 'મૂલ્ય:' : 'मूल्य:'} <span className="font-semibold text-teal-600">{formatCurrency(data.inventorySummary.stockValue)}</span>
+          <div className="text-xs text-gray-600 pt-1 border-t space-y-1">
+            <div>
+              <span>{language === 'en' ? 'Value:' : language === 'gu' ? 'મૂલ્ય:' : 'मूल्य:'}</span>
+              <span className="font-semibold text-teal-600 ml-1">{formatCurrency(data.inventorySummary.stockValue)}</span>
+            </div>
+            <div className="flex items-center">
+              <AlertTriangle className="h-3 w-3 mr-1 text-orange-500" />
+              <span>{language === 'en' ? 'Low Stock:' : language === 'gu' ? 'ઓછો સ્ટોક:' : 'कम स्टॉक:'}</span>
+              <span className="font-semibold text-orange-600 ml-1">{data.inventorySummary.lowStockCount}</span>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -69,6 +69,51 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     }
 
+    // Validate stock availability before processing sale
+    console.log('=== STOCK VALIDATION START ===')
+    const stockValidationErrors = []
+    
+    if (items && items.length > 0) {
+      for (const item of items) {
+        if (!item.id) {
+          stockValidationErrors.push(`Missing product ID for: ${item.name}`)
+          continue
+        }
+        
+        let productId
+        try {
+          productId = new ObjectId(item.id)
+        } catch (e) {
+          stockValidationErrors.push(`Invalid product ID: ${item.id}`)
+          continue
+        }
+        
+        const product = await inventoryCollection.findOne({ _id: productId })
+        if (!product) {
+          stockValidationErrors.push(`Product not found: ${item.name}`)
+          continue
+        }
+        
+        const currentStock = product.stock || 0
+        const requestedQty = parseInt(item.quantity) || 0
+        
+        if (currentStock <= 0) {
+          stockValidationErrors.push(`Out of stock: ${item.name}`)
+        } else if (requestedQty > currentStock) {
+          stockValidationErrors.push(`Insufficient stock for ${item.name}. Available: ${currentStock}, Requested: ${requestedQty}`)
+        }
+      }
+    }
+    
+    if (stockValidationErrors.length > 0) {
+      console.log('❌ Stock validation failed:', stockValidationErrors)
+      return NextResponse.json({ 
+        error: 'Stock validation failed', 
+        details: stockValidationErrors 
+      }, { status: 400 })
+    }
+    console.log('✅ Stock validation passed')
+    
     // Update inventory stock
     console.log('=== STOCK UPDATE START ===')
     console.log('Tenant:', session.user.tenantId)

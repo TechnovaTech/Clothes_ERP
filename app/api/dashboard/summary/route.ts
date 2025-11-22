@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     
     if (!session?.user?.tenantId) {
       return NextResponse.json({
-        salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0 },
-        purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0 },
+        salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
+        purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
         inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
       })
     }
@@ -29,6 +29,12 @@ export async function GET(request: NextRequest) {
     
     const totalSales = Number(allSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
     const todaySalesAmount = Number(todaySales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
+    const todayOrders = todaySales.length
+    const todayProfit = Number(todaySales.reduce((sum, sale) => {
+      const saleTotal = Number(sale.total) || 0
+      const saleCost = Number(sale.cost) || (saleTotal * 0.7) // Assume 30% profit margin if cost not available
+      return sum + (saleTotal - saleCost)
+    }, 0))
 
     // Purchase Summary
     const allPurchases = await purchasesCollection.find({}).toArray()
@@ -36,6 +42,8 @@ export async function GET(request: NextRequest) {
     
     const totalPurchases = Number(allPurchases.reduce((sum, purchase) => sum + (Number(purchase.total) || 0), 0))
     const todayPurchasesAmount = Number(todayPurchases.reduce((sum, purchase) => sum + (Number(purchase.total) || 0), 0))
+    const pendingOrders = await purchasesCollection.countDocuments({ status: 'pending' })
+    const completedOrders = await purchasesCollection.countDocuments({ status: 'completed' })
 
     // Inventory Summary
     const products = await inventoryCollection.find({}).toArray()
@@ -51,12 +59,16 @@ export async function GET(request: NextRequest) {
       salesSummary: {
         totalSales,
         todaySales: todaySalesAmount,
-        salesTrend: 0
+        salesTrend: 0,
+        todayOrders,
+        todayProfit
       },
       purchaseSummary: {
         totalPurchases,
         todayPurchases: todayPurchasesAmount,
-        purchaseTrend: 0
+        purchaseTrend: 0,
+        pendingOrders,
+        completedOrders
       },
       inventorySummary: {
         totalProducts,
@@ -67,8 +79,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Dashboard summary error:', error)
     return NextResponse.json({
-      salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0 },
-      purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0 },
+      salesSummary: { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
+      purchaseSummary: { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
       inventorySummary: { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
     })
   }

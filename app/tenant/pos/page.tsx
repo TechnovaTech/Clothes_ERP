@@ -288,6 +288,21 @@ export default function POSPage() {
   }
 
   const addToCart = (product: any) => {
+    const currentStock = product.stock || 0
+    const existingItem = cart.find((item) => item.id === product.id)
+    const currentCartQty = existingItem ? existingItem.quantity : 0
+    
+    // Check stock availability
+    if (currentStock <= 0) {
+      showToast.error(`${t('outOfStock')}: ${product.name || 'Product'}`)
+      return
+    }
+    
+    if (currentCartQty >= currentStock) {
+      showToast.error(`${t('insufficientStock')}: ${t('available')} ${currentStock}`)
+      return
+    }
+    
     const displayPrice = product.price
     // Get product name from configured fields or fallback to productname
     let productName = 'Unnamed Product'
@@ -303,7 +318,6 @@ export default function POSPage() {
       productName = nameField ? getFieldValue(product, nameField.name) || (product as any).productname || product.name : (product as any).productname || product.name || 'Unnamed Product'
     }
     
-    const existingItem = cart.find((item) => item.id === product.id)
     if (existingItem) {
       setCart(
         cart.map((item) =>
@@ -333,6 +347,10 @@ export default function POSPage() {
       const product = products.find(p => p.barcode === barcode)
       
       if (product) {
+        if ((product.stock || 0) <= 0) {
+          showToast.error(`${t('outOfStock')}: ${product.name}`)
+          return
+        }
         addToCart(product)
         showToast.success(`${t('added')} ${product.name} ${t('toCart')}`)
       } else {
@@ -343,6 +361,10 @@ export default function POSPage() {
           const foundProduct = searchResults.find((p: any) => p.barcode === barcode)
           
           if (foundProduct) {
+            if ((foundProduct.stock || 0) <= 0) {
+              showToast.error(`${t('outOfStock')}: ${foundProduct.name}`)
+              return
+            }
             addToCart(foundProduct)
             showToast.success(`${t('added')} ${foundProduct.name} ${t('toCart')}`)
           } else {
@@ -362,6 +384,13 @@ export default function POSPage() {
     if (newQuantity === 0) {
       setCart(cart.filter((item) => item.id !== id))
     } else {
+      // Check stock availability for the product
+      const product = products.find(p => p.id === id)
+      if (product && newQuantity > (product.stock || 0)) {
+        showToast.error(`${t('insufficientStock')}: ${t('available')} ${product.stock || 0}`)
+        return
+      }
+      
       setCart(
         cart.map((item) =>
           item.id === id ? { ...item, quantity: newQuantity, total: newQuantity * item.price } : item,
@@ -529,8 +558,8 @@ export default function POSPage() {
                     return (
                       <div
                         key={product.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                        onClick={() => addToCart(product)}
+                        className={`flex items-center justify-between p-3 border rounded-lg ${(product.stock || 0) <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:bg-accent cursor-pointer'}`}
+                        onClick={() => (product.stock || 0) > 0 && addToCart(product)}
                       >
                         <div className="flex-1">
                           <h4 className="font-medium">
@@ -550,8 +579,8 @@ export default function POSPage() {
                               return result
                             })()}
                           </h4>
-                          <p className="text-sm text-muted-foreground">
-                            {t('stock')}: {product.stock || 0}
+                          <p className={`text-sm ${(product.stock || 0) <= 0 ? 'text-red-500 font-medium' : (product.stock || 0) <= 5 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                            {t('stock')}: {product.stock || 0} {(product.stock || 0) <= 0 ? '(Out of Stock)' : (product.stock || 0) <= 5 ? '(Low Stock)' : ''}
                           </p>
                         </div>
                         <div className="text-right">
@@ -931,7 +960,13 @@ export default function POSPage() {
                               showToast.success(language === 'en' ? 'Sale completed successfully!' : language === 'gu' ? 'વેચાણ સફળતાપૂર્વક પૂર્ણ થયું!' : 'बिक्री सफलतापूर्वक पूर्ण हुई!')
                             } else {
                               const errorData = await response.json()
-                              showToast.error(`${t('failedToProcessSale')}: ${errorData.error || t('unknownError')}`)
+                              if (errorData.error === 'Stock validation failed' && errorData.details) {
+                                showToast.error(`Stock Error: ${errorData.details.join(', ')}`)
+                                // Refresh products to get updated stock
+                                fetchProducts()
+                              } else {
+                                showToast.error(`${t('failedToProcessSale')}: ${errorData.error || t('unknownError')}`)
+                              }
                               console.error('Sale error:', errorData)
                             }
                           } catch (error) {

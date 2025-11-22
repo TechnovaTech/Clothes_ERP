@@ -153,7 +153,7 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
 
   return (
     <div
-      className={cn("relative flex flex-col h-screen border-r bg-white text-gray-800 transition-all duration-300", collapsed ? "w-16" : "w-64")}
+      className={cn("relative flex flex-col h-screen border-r bg-white text-gray-800 transition-all duration-300", collapsed ? "w-20" : "w-64")}
     >
       {/* Fixed Header */}
       <div className="flex-shrink-0 flex h-16 items-center justify-between px-4 py-4 border-b border-gray-200">
@@ -180,46 +180,33 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-3 py-6">
           <nav className="space-y-4">
-            {/* Core Operations */}
-            <Collapsible open={openSections.core} onOpenChange={() => toggleSection('core')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
-                  <div className="flex items-center">
-                    <Home className="w-4 h-4 mr-2" />
-                    {!collapsed && t('core')}
-                  </div>
-                  {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.core && "rotate-180")} />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1 mt-2">
-                {navItems.filter(item => item.group === 'core').map((item) => {
-                  const isActive = pathname === item.href
-                  return (
-                    <Link key={item.href} href={item.href}>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
-                          collapsed && "px-2",
-                          isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
-                        )}
-                      >
-                        <item.icon className={cn("w-5 h-5", !collapsed && "mr-3", isActive && "text-red-600")} />
-                        {!collapsed && <span className="font-medium">{item.title}</span>}
-                      </Button>
-                    </Link>
-                  )
-                })}
-              </CollapsibleContent>
-            </Collapsible>
+            {/* Dashboard - Direct Link */}
+            {navItems.filter(item => item.group === 'Dashboard').map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                      collapsed ? "justify-center px-2" : "justify-start",
+                      isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
+                    )}
+                  >
+                    <item.icon className={cn("w-5 h-5", !collapsed && "mr-3", isActive && "text-red-600")} />
+                    {!collapsed && <span className="font-medium">{item.title}</span>}
+                  </Button>
+                </Link>
+              )
+            })}
 
             {/* Customer & Sales - Only for retail users */}
             {userType === "retail" && navItems.filter(item => item.group === 'sales').length > 0 && (
               <Collapsible open={openSections.sales} onOpenChange={() => toggleSection('sales')}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
+                  <Button variant="ghost" className={cn("w-full text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2", collapsed ? "justify-center" : "justify-between")}>
                     <div className="flex items-center">
-                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      <ShoppingCart className={cn("w-4 h-4", !collapsed && "mr-2")} />
                       {!collapsed && t('sales')}
                     </div>
                     {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.sales && "rotate-180")} />}
@@ -233,8 +220,8 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
                         <Button
                           variant="ghost"
                           className={cn(
-                            "w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
-                            collapsed && "px-2",
+                            "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                            collapsed ? "justify-center px-2" : "justify-start",
                             isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
                           )}
                         >
@@ -252,9 +239,9 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
             {userType === "retail" && navItems.filter(item => item.group === 'hr').length > 0 && (
               <Collapsible open={openSections.hr} onOpenChange={() => toggleSection('hr')}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
+                  <Button variant="ghost" className={cn("w-full text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2", collapsed ? "justify-center" : "justify-between")}>
                     <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
+                      <Users className={cn("w-4 h-4", !collapsed && "mr-2")} />
                       {!collapsed && t('hrSection')}
                     </div>
                     {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.hr && "rotate-180")} />}
@@ -268,8 +255,8 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
                         <Button
                           variant="ghost"
                           className={cn(
-                            "w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
-                            collapsed && "px-2",
+                            "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                            collapsed ? "justify-center px-2" : "justify-start",
                             isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
                           )}
                         >
@@ -287,9 +274,9 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
             {userType === "retail" && navItems.filter(item => item.group === 'analytics').length > 0 && (
               <Collapsible open={openSections.analytics} onOpenChange={() => toggleSection('analytics')}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
+                  <Button variant="ghost" className={cn("w-full text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2", collapsed ? "justify-center" : "justify-between")}>
                     <div className="flex items-center">
-                      <TrendingUp className="w-4 h-4 mr-2" />
+                      <TrendingUp className={cn("w-4 h-4", !collapsed && "mr-2")} />
                       {!collapsed && t('analytics')}
                     </div>
                     {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.analytics && "rotate-180")} />}
@@ -303,8 +290,8 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
                         <Button
                           variant="ghost"
                           className={cn(
-                            "w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
-                            collapsed && "px-2",
+                            "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                            collapsed ? "justify-center px-2" : "justify-start",
                             isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
                           )}
                         >
@@ -322,9 +309,9 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
             {userType === "retail" && navItems.filter(item => item.group === 'config').length > 0 && (
               <Collapsible open={openSections.config} onOpenChange={() => toggleSection('config')}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
+                  <Button variant="ghost" className={cn("w-full text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2", collapsed ? "justify-center" : "justify-between")}>
                     <div className="flex items-center">
-                      <Cog className="w-4 h-4 mr-2" />
+                      <Cog className={cn("w-4 h-4", !collapsed && "mr-2")} />
                       {!collapsed && t('configuration')}
                     </div>
                     {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.config && "rotate-180")} />}
@@ -338,8 +325,8 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
                         <Button
                           variant="ghost"
                           className={cn(
-                            "w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
-                            collapsed && "px-2",
+                            "w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200",
+                            collapsed ? "justify-center px-2" : "justify-start",
                             isActive && "bg-red-50 text-red-600 border-r-2 border-red-500",
                           )}
                         >
@@ -357,9 +344,9 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
             {userType === "retail" && (
               <Collapsible open={openSections.support} onOpenChange={() => toggleSection('support')}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2">
+                  <Button variant="ghost" className={cn("w-full text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-100 px-2 py-2", collapsed ? "justify-center" : "justify-between")}>
                     <div className="flex items-center">
-                      <LifeBuoy className="w-4 h-4 mr-2" />
+                      <LifeBuoy className={cn("w-4 h-4", !collapsed && "mr-2")} />
                       {!collapsed && t('support')}
                     </div>
                     {!collapsed && <ChevronDown className={cn("w-4 h-4 transition-transform", openSections.support && "rotate-180")} />}

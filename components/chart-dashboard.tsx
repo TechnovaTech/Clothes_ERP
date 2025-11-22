@@ -175,55 +175,6 @@ export function ChartDashboard() {
       {/* Summary Cards */}
       <SummaryCards />
 
-      {/* Key Metrics */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-white border-l-4 border-l-green-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">{t('totalSales')}</CardTitle>
-            <div className="p-2 bg-green-100 rounded-full">
-              <DollarSign className="h-5 w-5 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{formatCurrency(data.todaySales)}</div>
-            <div className="flex items-center text-xs text-gray-600 mt-2">
-              {data.salesTrend >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              ) : (
-                <TrendingUp className="h-4 w-4 text-red-500 mr-1 rotate-180" />
-              )}
-              <span className="font-medium">{Math.abs(data.salesTrend).toFixed(1)}%</span> {language === 'en' ? 'from yesterday' : language === 'gu' ? 'ગઈકાલથી' : 'कल से'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">{t('inventory')}</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-full">
-              <Package className="h-5 w-5 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{formatCurrency(data.stockValue)}</div>
-            <div className="text-xs text-gray-600 mt-2">{language === 'en' ? 'Total inventory worth' : language === 'gu' ? 'કુલ ઇન્વેન્ટરી મૂલ્ય' : 'कुल इन्वेंटरी मूल्य'}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-l-4 border-l-red-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">{t('lowStock')}</CardTitle>
-            <div className="p-2 bg-red-100 rounded-full">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{data.lowStockItems.length}</div>
-            <div className="text-xs text-gray-600 mt-2">{language === 'en' ? 'Items need restocking' : language === 'gu' ? 'આઇટમ્સને રિસ્ટોકિંગની જરૂર છે' : 'आइटम्स को पुनः स्टॉक करने की जरूरत'}</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Quick Access Section */}
       <QuickAccessCard />
 
@@ -367,9 +318,6 @@ export function ChartDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Alert Logs */}
-        <AlertLogs />
 
       </div>
     </div>

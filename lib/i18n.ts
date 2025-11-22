@@ -616,6 +616,10 @@ export const translations = {
     allItemsWellStocked: "All items are well stocked!",
     online: "Online",
     failedToSendWhatsApp: "Failed to send WhatsApp",
+    outOfStock: "Out of Stock",
+    insufficientStock: "Insufficient Stock",
+    available: "Available",
+    termsConditions: "Terms & Conditions",
   },
   
   gu: {
@@ -1235,6 +1239,10 @@ export const translations = {
     allItemsWellStocked: "બધી વસ્તુઓ સારી રીતે સ્ટોક છે!",
     online: "ઓનલાઇન",
     failedToSendWhatsApp: "વ્હોટ્સએપ મોકલવામાં નિષ્ફળ",
+    outOfStock: "સ્ટોક ખતમ",
+    insufficientStock: "અપૂરતો સ્ટોક",
+    available: "ઉપલબ્ધ",
+    termsConditions: "નિયમો અને શરતો",
   },
   
   hi: {
@@ -1854,6 +1862,10 @@ export const translations = {
     allItemsWellStocked: "सभी आइटम अच्छे स्टॉक में हैं!",
     online: "ऑनलाइन",
     failedToSendWhatsApp: "व्हाट्सएप भेजने में विफल",
+    outOfStock: "स्टॉक खत्म",
+    insufficientStock: "अपर्याप्त स्टॉक",
+    available: "उपलब्ध",
+    termsConditions: "नियम और शर्तें",
   }
 }
 

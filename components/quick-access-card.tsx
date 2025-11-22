@@ -15,11 +15,11 @@ import {
 import Link from "next/link"
 
 export function QuickAccessCard() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const quickActions = [
     {
-      title: "New Sale",
+      title: language === 'en' ? 'New Sale' : language === 'gu' ? 'નવી વેચાણ' : 'नई बिक्री',
       icon: ShoppingCart,
       href: "/tenant/pos",
       gradient: "from-violet-50 to-violet-100",
@@ -28,7 +28,7 @@ export function QuickAccessCard() {
       textColor: "text-violet-800"
     },
     {
-      title: "Add Product",
+      title: language === 'en' ? 'Add Product' : language === 'gu' ? 'પ્રોડક્ટ ઉમેરો' : 'उत्पाद जोड़ें',
       icon: Plus,
       href: "/tenant/inventory",
       gradient: "from-sky-50 to-sky-100",
@@ -37,7 +37,7 @@ export function QuickAccessCard() {
       textColor: "text-sky-800"
     },
     {
-      title: "Add Customer",
+      title: language === 'en' ? 'Add Customer' : language === 'gu' ? 'ગ્રાહક ઉમેરો' : 'ग्राहक जोड़ें',
       icon: UserPlus,
       href: "/tenant/customers",
       gradient: "from-emerald-50 to-emerald-100",
@@ -47,7 +47,7 @@ export function QuickAccessCard() {
       
     },
     {
-      title: "Purchase",
+      title: language === 'en' ? 'Purchase' : language === 'gu' ? 'ખરીદી' : 'खरीदारी',
       icon: Package,
       href: "/tenant/purchases",
       gradient: "from-amber-50 to-amber-100",
@@ -56,7 +56,7 @@ export function QuickAccessCard() {
       textColor: "text-amber-800"
     },
     {
-      title: "Reports",
+      title: language === 'en' ? 'Reports' : language === 'gu' ? 'રિપોર્ટ્સ' : 'रिपोर्ट',
       icon: BarChart3,
       href: "/tenant/reports",
       gradient: "from-rose-50 to-rose-100",
@@ -65,7 +65,7 @@ export function QuickAccessCard() {
       textColor: "text-rose-800"
     },
     {
-      title: "Settings",
+      title: language === 'en' ? 'Settings' : language === 'gu' ? 'સેટિંગ્સ' : 'सेटिंग्स',
       icon: Settings,
       href: "/tenant/settings",
       gradient: "from-slate-50 to-slate-100",
@@ -80,7 +80,7 @@ export function QuickAccessCard() {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Zap className="h-5 w-5 text-muted-foreground" />
-          <span>Quick Access</span>
+          <span>{language === 'en' ? 'Quick Access' : language === 'gu' ? 'ઝડપી પહોંચ' : 'तुरंत पहुंच'}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
