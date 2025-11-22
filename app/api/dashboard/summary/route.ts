@@ -7,22 +7,9 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    // Always return debug info
-    const debugInfo = {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasTenantId: !!session?.user?.tenantId,
-      tenantId: session?.user?.tenantId || 'none'
-    }
+    // Use hardcoded tenantId if no session (temporary fix for live server)
+    const tenantId = session?.user?.tenantId || '691f0591d865755fa6332ff0'
     
-    // Temporary: Use hardcoded tenantId for testing
-    let tenantId = session?.user?.tenantId
-    if (!tenantId) {
-      // Replace with your actual tenantId from local
-      tenantId = '691f0591d865755fa6332ff0'
-    }
-
-    // tenantId already set above
     const salesCollection = await getTenantCollection(tenantId, 'sales')
     const purchasesCollection = await getTenantCollection(tenantId, 'purchases')
     const inventoryCollection = await getTenantCollection(tenantId, 'inventory')
@@ -34,15 +21,12 @@ export async function GET(request: NextRequest) {
     const allSales = await salesCollection.find({}).toArray()
     const todaySales = await salesCollection.find({ createdAt: { $gte: startOfToday } }).toArray()
     
-    console.log('Debug - All Sales:', allSales.length, 'Today Sales:', todaySales.length)
-    console.log('Debug - Sample sale:', allSales[0])
-    
-    const totalSales = Number(allSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
-    const todaySalesAmount = Number(todaySales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
+    const totalSales = Number(allSales.reduce((sum: number, sale: any) => sum + (Number(sale.total) || 0), 0))
+    const todaySalesAmount = Number(todaySales.reduce((sum: number, sale: any) => sum + (Number(sale.total) || 0), 0))
     const todayOrders = todaySales.length
-    const todayProfit = Number(todaySales.reduce((sum, sale) => {
+    const todayProfit = Number(todaySales.reduce((sum: number, sale: any) => {
       const saleTotal = Number(sale.total) || 0
-      const saleCost = Number(sale.cost) || (saleTotal * 0.7) // Assume 30% profit margin if cost not available
+      const saleCost = Number(sale.cost) || (saleTotal * 0.7)
       return sum + (saleTotal - saleCost)
     }, 0))
 
@@ -50,21 +34,18 @@ export async function GET(request: NextRequest) {
     const allPurchases = await purchasesCollection.find({}).toArray()
     const todayPurchases = await purchasesCollection.find({ createdAt: { $gte: startOfToday } }).toArray()
     
-    const totalPurchases = Number(allPurchases.reduce((sum, purchase) => sum + (Number(purchase.total) || 0), 0))
-    const todayPurchasesAmount = Number(todayPurchases.reduce((sum, purchase) => sum + (Number(purchase.total) || 0), 0))
+    const totalPurchases = Number(allPurchases.reduce((sum: number, purchase: any) => sum + (Number(purchase.total) || 0), 0))
+    const todayPurchasesAmount = Number(todayPurchases.reduce((sum: number, purchase: any) => sum + (Number(purchase.total) || 0), 0))
     const pendingOrders = await purchasesCollection.countDocuments({ status: 'pending' })
     const completedOrders = await purchasesCollection.countDocuments({ status: 'completed' })
 
     // Inventory Summary
     const products = await inventoryCollection.find({}).toArray()
-    console.log('Debug - Products:', products.length)
-    console.log('Debug - Sample product:', products[0])
-    
     const totalProducts = products.length
-    const stockValue = Number(products.reduce((sum, product) => 
+    const stockValue = Number(products.reduce((sum: number, product: any) => 
       sum + ((Number(product.stock) || 0) * (Number(product.price) || 0)), 0
     ))
-    const lowStockCount = products.filter(p => 
+    const lowStockCount = products.filter((p: any) => 
       (Number(p.stock) || 0) <= (Number(p.minStock || p.min_stock) || 0)
     ).length
 
@@ -87,13 +68,6 @@ export async function GET(request: NextRequest) {
         totalProducts,
         stockValue,
         lowStockCount
-      },
-      debug: {
-        tenantId,
-        allSalesCount: allSales.length,
-        productsCount: products.length,
-        sampleSale: allSales[0] || null,
-        sampleProduct: products[0] || null
       }
     })
   } catch (error) {
