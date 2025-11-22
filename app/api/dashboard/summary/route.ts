@@ -80,6 +80,13 @@ export async function GET(request: NextRequest) {
         totalProducts,
         stockValue,
         lowStockCount
+      },
+      debug: {
+        tenantId,
+        allSalesCount: allSales.length,
+        productsCount: products.length,
+        sampleSale: allSales[0] || null,
+        sampleProduct: products[0] || null
       }
     })
   } catch (error) {

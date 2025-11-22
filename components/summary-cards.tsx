@@ -49,10 +49,20 @@ export function SummaryCards() {
 
   const fetchSummaryData = async () => {
     try {
-      const response = await fetch('/api/dashboard/summary')
+      const response = await fetch('/api/dashboard/summary', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const summaryData = await response.json()
-        setData(summaryData)
+        console.log('API Response:', summaryData)
+        setData({
+          salesSummary: summaryData.salesSummary || { totalSales: 0, todaySales: 0, salesTrend: 0, todayOrders: 0, todayProfit: 0 },
+          purchaseSummary: summaryData.purchaseSummary || { totalPurchases: 0, todayPurchases: 0, purchaseTrend: 0, pendingOrders: 0, completedOrders: 0 },
+          inventorySummary: summaryData.inventorySummary || { totalProducts: 0, stockValue: 0, lowStockCount: 0 }
+        })
       }
     } catch (error) {
       console.error('Error fetching summary data:', error)
