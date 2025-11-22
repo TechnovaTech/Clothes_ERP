@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
     const allSales = await salesCollection.find({}).toArray()
     const todaySales = await salesCollection.find({ createdAt: { $gte: startOfToday } }).toArray()
     
+    console.log('Debug - All Sales:', allSales.length, 'Today Sales:', todaySales.length)
+    console.log('Debug - Sample sale:', allSales[0])
+    
     const totalSales = Number(allSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
     const todaySalesAmount = Number(todaySales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0))
     const todayOrders = todaySales.length
@@ -47,6 +50,9 @@ export async function GET(request: NextRequest) {
 
     // Inventory Summary
     const products = await inventoryCollection.find({}).toArray()
+    console.log('Debug - Products:', products.length)
+    console.log('Debug - Sample product:', products[0])
+    
     const totalProducts = products.length
     const stockValue = Number(products.reduce((sum, product) => 
       sum + ((Number(product.stock) || 0) * (Number(product.price) || 0)), 0
