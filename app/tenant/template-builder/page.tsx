@@ -526,12 +526,34 @@ export default function TemplateBuilderPage() {
                               <Button
                                 size="sm"
                                 onClick={() => {
-                                  const cols = (selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 0)) + 1
-                                  const headers = [...(selectedEl.tableConfig?.headers || []), `Col ${cols}`]
-                                  const keys = [...(selectedEl.tableConfig?.columnKeys || []), '']
-                                  const aligns = [...(selectedEl.tableConfig?.align || []), 'left'] as any
-                                  const widths = [...(selectedEl.tableConfig?.columnWidths || [])]
-                                  const equal = Array(cols).fill(Math.round(100 / cols))
+                                  const prevCols = selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 0)
+                                  const cols = prevCols + 1
+                                  // Normalize existing arrays to prevCols
+                                  const prevHeaders = (selectedEl.tableConfig?.headers || []).slice()
+                                  while (prevHeaders.length < prevCols) prevHeaders.push(`Col ${prevHeaders.length + 1}`)
+                                  const prevKeys = (selectedEl.tableConfig?.columnKeys || []).slice()
+                                  while (prevKeys.length < prevCols) prevKeys.push('')
+                                  const prevAligns = (selectedEl.tableConfig?.align || []).slice() as any
+                                  while (prevAligns.length < prevCols) prevAligns.push('left')
+                                  let prevWidths = (selectedEl.tableConfig?.columnWidths || []).slice()
+                                  if (prevWidths.length !== prevCols) {
+                                    // Distribute existing or set equal for prevCols
+                                    prevWidths = Array(prevCols).fill(Math.round(100 / prevCols))
+                                  }
+                                  // Append new column values
+                                  const headers = [...prevHeaders, `Col ${cols}`]
+                                  const keys = [...prevKeys, '']
+                                  const aligns = [...prevAligns, 'left'] as any
+                                  // Keep previous widths and add a new width while keeping sum 100
+                                  const remaining = Math.max(5, Math.round(100 / cols))
+                                  let widths = prevWidths.slice()
+                                  // Reduce each existing width slightly to make room
+                                  const reduceTotal = remaining
+                                  const perReduce = Math.floor(reduceTotal / prevCols)
+                                  widths = widths.map(w => Math.max(5, w - perReduce))
+                                  const sum = widths.reduce((a,b)=>a+b,0)
+                                  const newWidth = Math.max(5, 100 - sum)
+                                  widths.push(newWidth)
                                   updateElement(selectedEl.id, {
                                     tableConfig: {
                                       ...selectedEl.tableConfig!,
@@ -539,7 +561,7 @@ export default function TemplateBuilderPage() {
                                       headers,
                                       columnKeys: keys,
                                       align: aligns,
-                                      columnWidths: widths.length === cols ? widths : equal
+                                      columnWidths: widths
                                     }
                                   })
                                 }}
