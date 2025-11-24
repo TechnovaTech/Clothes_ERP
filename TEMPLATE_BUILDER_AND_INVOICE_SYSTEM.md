@@ -4,6 +4,12 @@
 
 The Template Builder and Invoice System is a comprehensive solution for creating, customizing, and rendering dynamic invoice templates in the Fashion Store ERP. It provides a visual drag-and-drop interface for designing templates and a powerful rendering engine that merges template designs with actual business data.
 
+## 🚀 Quick Start
+
+- Open the builder at `http://localhost:3000/tenant/template-builder`.
+- Or navigate to `Tenant → Settings → Bill Template Settings` and click `Open Template Builder`.
+- Start with the default template, customize elements, preview with sample data, then save.
+
 ## 🎯 Key Features
 
 - **Visual Template Designer** - Drag-and-drop interface for building custom templates
@@ -510,18 +516,48 @@ DEFAULT_TEMPLATES = {
 
 ### 6. GET `/api/bill-pdf/[id]`
 
-**Purpose**: Generate legacy bill PDF (static HTML)
+**Purpose**: Generate legacy-style printable receipt (static HTML)
+
+This system exposes two routes:
+
+- GET `/api/receipt/[id]` – Authenticated tenant receipt
+- GET `/api/public-receipt/[id]` – Public receipt (shareable link)
 
 **Parameters**:
 - `id` (string): Bill ID
 
-**Response**: HTML document with bill details
+**Response**: Complete HTML document with bill details, optimized for printing
 
 **Behavior**:
-- Fetches bill from database
-- Generates static HTML invoice
-- Auto-prints on load
-- Legacy system (before template builder)
+- Fetches bill and tenant settings from the database
+- Generates static HTML invoice layout
+- Includes auto-print script and print styles
+- Intended for quick print flows or sharing receipts
+
+Note: The template builder-based route is `/api/bill-pdf-custom` for fully customized invoices.
+
+---
+
+## 🖨️ Printing & PDF
+
+- The custom route `POST /api/bill-pdf-custom` returns full HTML; open in a new window and use the browser print dialog for PDF export.
+- For server-side PDF generation, integrate a renderer like `puppeteer` to convert the returned HTML to PDF.
+- Ensure page size in template settings matches desired print size (e.g., A4) and verify margins.
+
+Example:
+
+```typescript
+const res = await fetch('/api/bill-pdf-custom', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ billData })
+})
+const html = await res.text()
+const w = window.open()
+w!.document.write(html)
+w!.document.close()
+w!.print()
+```
 
 ---
 

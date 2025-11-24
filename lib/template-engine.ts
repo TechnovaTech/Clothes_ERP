@@ -63,6 +63,11 @@ export interface TemplateElement {
     headerBg: string
     headerColor: string
     borderWidth: number
+    showHeader?: boolean
+    columnKeys?: string[]
+    columnWidths?: number[]
+    align?: ("left" | "center" | "right")[]
+    cellPadding?: number
   }
   dividerType?: 'horizontal' | 'vertical'
 }
@@ -192,33 +197,47 @@ export class TemplateEngine {
 
   // Render table element
   private static renderTable(element: TemplateElement, data: TemplateData, baseStyle: string): string {
-    if (element.placeholder === '{{items.table}}' && data.invoice?.items) {
-      const items = data.invoice.items
-      const rows = items.map((item: any) => `
-        <tr>
-          <td style="border-bottom: 1px solid #e5e7eb; padding: 8px;">${item.name || ''}</td>
-          <td style="border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: center;">${item.quantity || 0}</td>
-          <td style="border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: right;">₹${(item.price || 0).toFixed(2)}</td>
-          <td style="border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: right;">₹${(item.total || 0).toFixed(2)}</td>
-        </tr>
-      `).join('')
-      
-      return `<table style="${baseStyle}border-collapse: collapse; width: 100%;">
+    const borderColor = element.style?.borderColor || '#e5e7eb'
+    const bw = element.tableConfig?.borderWidth ?? 1
+    const pad = element.tableConfig?.cellPadding ?? 8
+    const align = element.tableConfig?.align || []
+    const widths = element.tableConfig?.columnWidths || []
+    const showHeader = element.tableConfig?.showHeader !== false
+    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
+    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
+
+    if (element.placeholder === '{{items.table}}' && Array.isArray(data.invoice?.items)) {
+      const items = data.invoice!.items
+      const headerRow = showHeader ? `
         <thead>
-          <tr style="border-bottom: 2px solid #000;">
-            <th style="padding: 8px; text-align: left; font-weight: 600;">Item</th>
-            <th style="padding: 8px; text-align: center; font-weight: 600;">Qty</th>
-            <th style="padding: 8px; text-align: right; font-weight: 600;">Rate</th>
-            <th style="padding: 8px; text-align: right; font-weight: 600;">Amount</th>
+          <tr style="background:${element.tableConfig?.headerBg || 'transparent'}; color:${element.tableConfig?.headerColor || 'inherit'}; border-bottom:${bw}px solid ${borderColor};">
+            ${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}
           </tr>
         </thead>
+      ` : ''
+
+      const rows = items.map((item: any) => `
+        <tr>
+          ${keys.map((k, i) => {
+            const v = item?.[k]
+            const val = typeof v === 'number' && (k === 'price' || k === 'total') ? `₹${(v || 0).toFixed(2)}` : (v ?? '')
+            return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
+          }).join('')}
+        </tr>
+      `).join('')
+
+      return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor};">
+        ${headerRow}
         <tbody>
           ${rows}
         </tbody>
       </table>`
     }
-    return `<table style="${baseStyle}border-collapse: collapse; width: 100%;">
-      <tr><td style="border: 1px solid #ccc; padding: 8px;">Table content</td></tr>
+    return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor};">
+      ${showHeader ? `<thead><tr>${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}</tr></thead>` : ''}
+      <tbody>
+        <tr>${headers.map((_, i) => `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}"></td>`).join('')}</tr>
+      </tbody>
     </table>`
   }
 

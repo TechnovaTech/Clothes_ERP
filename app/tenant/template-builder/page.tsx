@@ -13,6 +13,7 @@ import { TemplateElement } from '@/lib/template-engine'
 import { showToast } from '@/lib/toast'
 import { Palette, Eye, Save, RotateCcw, Type, Image, Table, Minus, Plus, Trash2, Move, Copy } from 'lucide-react'
 import { QuickGuide } from '@/components/template-builder/quick-guide'
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 
 export default function TemplateBuilderPage() {
   const [elements, setElements] = useState<TemplateElement[]>([])
@@ -22,6 +23,7 @@ export default function TemplateBuilderPage() {
   const [activeTab, setActiveTab] = useState('editor')
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [draggedElement, setDraggedElement] = useState<TemplateElement | null>(null)
+  const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startWidth: number; startHeight: number; lockRatio: boolean } | null>(null)
 
   // Load template on mount and type change
   useEffect(() => {
@@ -146,6 +148,38 @@ export default function TemplateBuilderPage() {
 
   const selectedEl = elements.find(el => el.id === selectedElement)
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedElement) return
+      const el = elements.find(x => x.id === selectedElement)
+      if (!el) return
+      const step = e.shiftKey ? 10 : 1
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 'ArrowRight') {
+          updateElement(el.id, { size: { width: (el.size?.width || 200) + step, height: el.size?.height || 30 } })
+        } else if (e.key === 'ArrowLeft') {
+          updateElement(el.id, { size: { width: Math.max(50, (el.size?.width || 200) - step), height: el.size?.height || 30 } })
+        } else if (e.key === 'ArrowDown') {
+          updateElement(el.id, { size: { width: el.size?.width || 200, height: (el.size?.height || 30) + step } })
+        } else if (e.key === 'ArrowUp') {
+          updateElement(el.id, { size: { width: el.size?.width || 200, height: Math.max(20, (el.size?.height || 30) - step) } })
+        }
+      } else {
+        if (e.key === 'ArrowRight') {
+          updateElement(el.id, { position: { x: (el.position?.x || 0) + step, y: el.position?.y || 0 } })
+        } else if (e.key === 'ArrowLeft') {
+          updateElement(el.id, { position: { x: Math.max(0, (el.position?.x || 0) - step), y: el.position?.y || 0 } })
+        } else if (e.key === 'ArrowDown') {
+          updateElement(el.id, { position: { x: el.position?.x || 0, y: (el.position?.y || 0) + step } })
+        } else if (e.key === 'ArrowUp') {
+          updateElement(el.id, { position: { x: el.position?.x || 0, y: Math.max(0, (el.position?.y || 0) - step) } })
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedElement, elements])
+
   if (loading) {
     return (
       <MainLayout title="Template Builder">
@@ -204,9 +238,8 @@ export default function TemplateBuilderPage() {
           </TabsList>
 
           <TabsContent value="editor" className="flex-1 p-4">
-            <div className="grid grid-cols-12 gap-4 h-full">
-              {/* Element Toolbar */}
-              <div className="col-span-2 space-y-4">
+            <PanelGroup direction="horizontal" className="h-full">
+              <Panel defaultSize={20} minSize={15} className="space-y-4 pr-2 overflow-y-auto overscroll-contain">
                 <Card className="h-fit">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">Add Elements</CardTitle>
@@ -405,6 +438,19 @@ export default function TemplateBuilderPage() {
                             />
                           </div>
                           <div>
+                            <Label className="text-sm">Show Header</Label>
+                            <select
+                              value={(selectedEl.tableConfig?.showHeader ?? true) ? 'true' : 'false'}
+                              onChange={(e) => updateElement(selectedEl.id, {
+                                tableConfig: { ...selectedEl.tableConfig!, showHeader: e.target.value === 'true' }
+                              })}
+                              className="h-8 text-sm border rounded px-2"
+                            >
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                            </select>
+                          </div>
+                          <div>
                             <Label className="text-sm">Border Color</Label>
                             <Input
                               type="color"
@@ -429,6 +475,19 @@ export default function TemplateBuilderPage() {
                             />
                           </div>
                           <div>
+                            <Label className="text-sm">Cell Padding (px)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="20"
+                              value={selectedEl.tableConfig?.cellPadding ?? 8}
+                              onChange={(e) => updateElement(selectedEl.id, {
+                                tableConfig: { ...selectedEl.tableConfig!, cellPadding: Number(e.target.value) }
+                              })}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div>
                             <Label className="text-sm">Column Headers (comma separated)</Label>
                             <Input
                               value={selectedEl.tableConfig?.headers.join(', ') || 'Item, Qty, Rate, Amount'}
@@ -443,6 +502,52 @@ export default function TemplateBuilderPage() {
                                 })
                               }}
                               placeholder="Item, Qty, Rate, Amount"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Column Keys (from invoice.items)</Label>
+                            <Input
+                              value={(selectedEl.tableConfig?.columnKeys || ['name','quantity','price','total']).join(', ')}
+                              onChange={(e) => {
+                                const columnKeys = e.target.value.split(',').map(h => h.trim()).filter(h => h)
+                                updateElement(selectedEl.id, {
+                                  tableConfig: { 
+                                    ...selectedEl.tableConfig!, 
+                                    columnKeys
+                                  }
+                                })
+                              }}
+                              placeholder="name, quantity, price, total"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Column Widths (%)</Label>
+                            <Input
+                              value={(selectedEl.tableConfig?.columnWidths || []).join(', ')}
+                              onChange={(e) => {
+                                const columnWidths = e.target.value.split(',').map(v => Number(v.trim())).filter(v => !Number.isNaN(v))
+                                updateElement(selectedEl.id, {
+                                  tableConfig: { 
+                                    ...selectedEl.tableConfig!, 
+                                    columnWidths
+                                  }
+                                })
+                              }}
+                              placeholder="40, 20, 20, 20"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Column Alignments</Label>
+                            <Input
+                              value={(selectedEl.tableConfig?.align || []).join(', ')}
+                              onChange={(e) => {
+                                const align = e.target.value.split(',').map(a => a.trim() as 'left' | 'center' | 'right').filter(a => ['left','center','right'].includes(a))
+                                updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, align } })
+                              }}
+                              placeholder="left, center, right, right"
                               className="h-8 text-sm"
                             />
                           </div>
@@ -606,10 +711,12 @@ export default function TemplateBuilderPage() {
                     </CardContent>
                   </Card>
                 )}
-              </div>
+              </Panel>
+              <PanelResizeHandle className="mx-2">
+                <div className="w-1 bg-gray-200 hover:bg-gray-300 rounded h-full" />
+              </PanelResizeHandle>
 
-              {/* Canvas Area */}
-              <div className="col-span-8">
+              <Panel defaultSize={60} minSize={40} className="px-2 overflow-hidden">
                 <Card className="h-full flex flex-col">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">Canvas</CardTitle>
@@ -656,7 +763,6 @@ export default function TemplateBuilderPage() {
                             onMouseDown={(e) => {
                               const startX = e.clientX - (element.position?.x || 0)
                               const startY = e.clientY - (element.position?.y || 0)
-                              
                               const handleMouseMove = (e: MouseEvent) => {
                                 updateElement(element.id, {
                                   position: {
@@ -665,12 +771,10 @@ export default function TemplateBuilderPage() {
                                   }
                                 })
                               }
-                              
                               const handleMouseUp = () => {
                                 document.removeEventListener('mousemove', handleMouseMove)
                                 document.removeEventListener('mouseup', handleMouseUp)
                               }
-                              
                               document.addEventListener('mousemove', handleMouseMove)
                               document.addEventListener('mouseup', handleMouseUp)
                             }}
@@ -712,26 +816,76 @@ export default function TemplateBuilderPage() {
                           {element.type === 'table' && (
                             <div className="w-full h-full border text-xs overflow-hidden" style={{ borderColor: element.style?.borderColor }}>
                               <table className="w-full h-full border-collapse">
-                                <thead>
-                                  <tr style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
-                                    {element.tableConfig?.headers.map((header, i) => (
-                                      <th key={i} className="border p-1 text-left" style={{ borderColor: element.style?.borderColor }}>{header}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {Array.from({ length: (element.tableConfig?.rows || 3) - 1 }).map((_, rowIndex) => (
-                                    <tr key={rowIndex}>
-                                      {Array.from({ length: element.tableConfig?.columns || 4 }).map((_, colIndex) => (
-                                        <td key={colIndex} className="border p-1" style={{ borderColor: element.style?.borderColor }}>
-                                          {rowIndex === 0 && colIndex === 0 ? 'Sample' : rowIndex === 0 && colIndex === 1 ? '1' : rowIndex === 0 && colIndex === 2 ? '₹100' : rowIndex === 0 && colIndex === 3 ? '₹100' : ''}
-                                        </td>
+                                {element.tableConfig?.showHeader !== false && (
+                                  <thead>
+                                    <tr style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
+                                      {(element.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((header, i) => (
+                                        <th
+                                          key={i}
+                                          className="border p-1"
+                                          style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                        >
+                                          {header}
+                                        </th>
                                       ))}
+                                    </tr>
+                                  </thead>
+                                )}
+                                <tbody>
+                                  {Array.from({ length: Math.max(1, (element.tableConfig?.rows || 3) - 1) }).map((_, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                      {Array.from({ length: element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4) }).map((_, colIndex) => {
+                                        const keys = element.tableConfig?.columnKeys || ['name','quantity','price','total']
+                                        const sampleValues: any = { name: rowIndex === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100 }
+                                        const v = sampleValues[keys[colIndex] as keyof typeof sampleValues]
+                                        const val = typeof v === 'number' && (keys[colIndex] === 'price' || keys[colIndex] === 'total') ? `₹${(v || 0).toFixed(0)}` : String(v ?? '')
+                                        return (
+                                          <td
+                                            key={colIndex}
+                                            className="border p-1"
+                                            style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[colIndex] || 'left') as any, width: element.tableConfig?.columnWidths?.[colIndex] ? `${element.tableConfig?.columnWidths?.[colIndex]}%` : undefined }}
+                                          >
+                                            {val}
+                                          </td>
+                                        )
+                                      })}
                                     </tr>
                                   ))}
                                 </tbody>
                               </table>
                             </div>
+                          )}
+                          {selectedElement === element.id && (
+                            <div
+                              onMouseDown={(e) => {
+                                e.stopPropagation()
+                                const startX = e.clientX
+                                const startY = e.clientY
+                                const startWidth = element.size?.width || 200
+                                const startHeight = element.size?.height || 30
+                                const ratio = startWidth / (startHeight || 1)
+                                const lockRatio = e.shiftKey && element.type === 'image'
+                                setResizing({ id: element.id, startX, startY, startWidth, startHeight, lockRatio })
+                                const handleMouseMove = (ev: MouseEvent) => {
+                                  const deltaX = ev.clientX - startX
+                                  const deltaY = ev.clientY - startY
+                                  let newWidth = Math.max(50, startWidth + deltaX)
+                                  let newHeight = Math.max(20, startHeight + deltaY)
+                                  if (lockRatio) {
+                                    newHeight = Math.max(20, newWidth / ratio)
+                                  }
+                                  updateElement(element.id, { size: { width: newWidth, height: newHeight } })
+                                }
+                                const handleMouseUp = () => {
+                                  setResizing(null)
+                                  document.removeEventListener('mousemove', handleMouseMove)
+                                  document.removeEventListener('mouseup', handleMouseUp)
+                                }
+                                document.addEventListener('mousemove', handleMouseMove)
+                                document.addEventListener('mouseup', handleMouseUp)
+                              }}
+                              style={{ position: 'absolute', right: -6, bottom: -6, width: 12, height: 12, background: '#3b82f6', borderRadius: 2, cursor: 'nwse-resize', boxShadow: '0 0 0 2px #ffffff' }}
+                            />
                           )}
                           </div>
                         ))}
@@ -739,16 +893,18 @@ export default function TemplateBuilderPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </Panel>
+              <PanelResizeHandle className="mx-2">
+                <div className="w-1 bg-gray-200 hover:bg-gray-300 rounded h-full" />
+              </PanelResizeHandle>
 
-              {/* Elements List */}
-              <div className="col-span-2">
+              <Panel defaultSize={20} minSize={15} className="pl-2 overflow-y-auto overscroll-contain">
                 <Card className="h-full flex flex-col">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">Elements ({elements.length})</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-hidden">
-                    <div className="space-y-2 h-full overflow-y-auto">
+                  <CardContent className="flex-1 overflow-y-auto overscroll-contain">
+                    <div className="space-y-2">
                       {elements.map((element, index) => (
                         <div
                           key={element.id}
@@ -796,8 +952,8 @@ export default function TemplateBuilderPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
+              </Panel>
+            </PanelGroup>
           </TabsContent>
 
           <TabsContent value="preview" className="flex-1 p-4">
@@ -869,27 +1025,35 @@ export default function TemplateBuilderPage() {
                         )}
                         {element.type === 'table' && (
                           <table className="w-full text-xs border-collapse">
-                            <thead>
-                              <tr className="border-b">
-                                <th className="text-left p-1">Item</th>
-                                <th className="text-center p-1">Qty</th>
-                                <th className="text-right p-1">Rate</th>
-                                <th className="text-right p-1">Amount</th>
-                              </tr>
-                            </thead>
+                            {element.tableConfig?.showHeader !== false && (
+                              <thead>
+                                <tr className="border-b" style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
+                                  {(element.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((header, i) => (
+                                    <th
+                                      key={i}
+                                      className="p-1 border"
+                                      style={{ textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                    >
+                                      {header}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                            )}
                             <tbody>
-                              <tr className="border-b">
-                                <td className="p-1">T-Shirt</td>
-                                <td className="text-center p-1">2</td>
-                                <td className="text-right p-1">₹250</td>
-                                <td className="text-right p-1">₹500</td>
-                              </tr>
-                              <tr className="border-b">
-                                <td className="p-1">Jeans</td>
-                                <td className="text-center p-1">1</td>
-                                <td className="text-right p-1">₹500</td>
-                                <td className="text-right p-1">₹500</td>
-                              </tr>
+                              {[{ name: 'T-Shirt', quantity: 2, price: 250, total: 500 }, { name: 'Jeans', quantity: 1, price: 500, total: 500 }].map((it, r) => (
+                                <tr key={r} className="border-b">
+                                  {(element.tableConfig?.columnKeys || ['name','quantity','price','total']).map((k, i) => (
+                                    <td
+                                      key={i}
+                                      className="p-1 border"
+                                      style={{ textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                    >
+                                      {typeof it[k as keyof typeof it] === 'number' && (k === 'price' || k === 'total') ? `₹${(it[k as keyof typeof it] as number).toFixed(0)}` : String(it[k as keyof typeof it])}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         )}
