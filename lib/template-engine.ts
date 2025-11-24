@@ -42,6 +42,7 @@ export interface TemplateElement {
     textAlign?: 'left' | 'center' | 'right'
     color?: string
     backgroundColor?: string
+    borderColor?: string
     padding?: number
     margin?: number
     width?: string
@@ -55,6 +56,15 @@ export interface TemplateElement {
     width: number
     height: number
   }
+  tableConfig?: {
+    rows: number
+    columns: number
+    headers: string[]
+    headerBg: string
+    headerColor: string
+    borderWidth: number
+  }
+  dividerType?: 'horizontal' | 'vertical'
 }
 
 export interface Template {
