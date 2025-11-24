@@ -1008,4 +1008,25 @@ Clothes_ERP/
 - If item GST shows `0.00%` but totals are correct:
   - Verify column Key is `gstRate` or alias `gst`.
   - Ensure the override field in Customer & Billing is set correctly; blank values now fall back to bill/store rate.
-  - Confirm the latest code paths referenced above are deployed.
+- Confirm the latest code paths referenced above are deployed.
+
+---
+
+## Pagination & Page Breaks
+
+### Multi‑Page Items Table
+
+- The invoice items table automatically paginates when the number of items exceeds the visible table height set in the template.
+- Rows per page are calculated from the table element’s height and cell padding.
+- Each page renders as a separate A4/A5 container with `page-break-after: always` where applicable.
+
+### Elements Below the Table
+
+- Elements positioned below the items table (based on `y` position) render only on the last page to avoid overlap.
+- Summary values (Subtotal, Tax, Discount, Total) are also rendered only on the final page.
+
+### Template Tips
+
+- Increase the table element’s height in Template Builder to fit more items per page.
+- Adjust `cellPadding` to tune row height and number of rows per page.
+- Place signatures, notes, and totals below the table area to ensure they move to the last page automatically.

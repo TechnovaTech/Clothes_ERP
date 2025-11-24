@@ -136,22 +136,84 @@ export class TemplateEngine {
   // Render template elements to HTML
   static renderToHTML(template: Template, data: TemplateData): string {
     const { elements, settings } = template.canvasJSON
-    
-    let html = `
-      <div class="template-container" style="
-        width: ${settings.pageSize === 'A4' ? '210mm' : '148mm'};
-        min-height: ${settings.pageSize === 'A4' ? '297mm' : '210mm'};
-        background: white;
-        position: relative;
-        font-family: Arial, sans-serif;
-      ">
-    `
 
-    elements.forEach(element => {
-      html += this.renderElement(element, data)
-    })
+    const pageWidth = settings.pageSize === 'A4' ? '210mm' : '148mm'
+    const pageHeight = settings.pageSize === 'A4' ? '297mm' : '210mm'
 
-    html += '</div>'
+    const tableEl = elements.find(el => el.type === 'table' && el.placeholder === '{{items.table}}')
+    const items = Array.isArray(data.invoice?.items) ? (data.invoice!.items as any[]) : []
+
+    // Calculate rows per page based on table height and padding
+    let rowsPerPage = items.length
+    if (tableEl) {
+      const pad = tableEl.tableConfig?.cellPadding ?? 8
+      const showHeader = tableEl.tableConfig?.showHeader !== false
+      const headerH = showHeader ? (pad * 2 + 18) : 0
+      const rowH = (pad * 2 + 18)
+      const tableHeight = tableEl.size?.height ?? 150
+      const available = Math.max(0, tableHeight - headerH)
+      const calcRows = Math.max(1, Math.floor(available / rowH))
+      rowsPerPage = Math.max(1, calcRows)
+    }
+
+    const pageCount = tableEl ? Math.max(1, Math.ceil(items.length / rowsPerPage)) : 1
+
+    // Identify elements positioned below the items table to render only on the last page
+    const belowTableIds = new Set<string>()
+    if (tableEl && tableEl.position && tableEl.size) {
+      const cutoffY = tableEl.position.y + tableEl.size.height
+      elements.forEach(el => {
+        if (el.id !== tableEl.id && el.position && typeof el.position.y === 'number') {
+          if (el.position.y >= cutoffY) {
+            belowTableIds.add(el.id)
+          }
+        }
+      })
+    }
+
+    const isSummaryElement = (el: TemplateElement) => {
+      if (el.type !== 'text') return false
+      const ph = el.placeholder || ''
+      return ph.includes('invoice.total') || ph.includes('invoice.subtotal') || ph.includes('invoice.tax') || ph.includes('invoice.discount')
+    }
+
+    let html = ''
+
+    for (let p = 0; p < pageCount; p++) {
+      const start = p * rowsPerPage
+      const end = start + rowsPerPage
+      const pageItems = items.slice(start, end)
+
+      html += `
+        <div class="template-container" style="
+          width: ${pageWidth};
+          min-height: ${pageHeight};
+          background: white;
+          position: relative;
+          font-family: Arial, sans-serif;
+          page-break-after: ${p < pageCount - 1 ? 'always' : 'auto'};
+        ">
+      `
+
+      elements.forEach(element => {
+        if (element.type === 'table' && element.placeholder === '{{items.table}}') {
+          html += this.renderTableWithItems(element, data, pageItems)
+        } else if (isSummaryElement(element)) {
+          if (p === pageCount - 1) {
+            html += this.renderElement(element, data)
+          }
+        } else if (belowTableIds.has(element.id)) {
+          if (p === pageCount - 1) {
+            html += this.renderElement(element, data)
+          }
+        } else {
+          html += this.renderElement(element, data)
+        }
+      })
+
+      html += '</div>'
+    }
+
     return html
   }
 
@@ -297,6 +359,73 @@ export class TemplateEngine {
       ${showHeader ? `<thead><tr>${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}</tr></thead>` : ''}
       <tbody>
         <tr>${headers.map((_, i) => `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}"></td>`).join('')}</tr>
+      </tbody>
+    </table>`
+  }
+
+  // Render table with explicit items slice (used for pagination)
+  private static renderTableWithItems(element: TemplateElement, data: TemplateData, pageItems: any[]): string {
+    const borderColor = element.style?.borderColor || '#e5e7eb'
+    const bw = element.tableConfig?.borderWidth ?? (element.style?.borderWidth ?? 1)
+    const pad = element.tableConfig?.cellPadding ?? 8
+    const align = element.tableConfig?.align || []
+    const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
+    let widths = element.tableConfig?.columnWidths && element.tableConfig.columnWidths.length === cols
+      ? element.tableConfig.columnWidths.slice()
+      : Array(cols).fill(Math.round(100 / cols))
+    const sum = widths.reduce((a,b) => a + b, 0)
+    if (sum !== 100) {
+      const diff = 100 - sum
+      widths[0] = Math.max(5, widths[0] + diff)
+    }
+    const showHeader = element.tableConfig?.showHeader !== false
+    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
+    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
+
+    const baseStyle = this.buildElementStyle(element)
+
+    const headerRow = showHeader ? `
+      <thead>
+        <tr style="background:${element.tableConfig?.headerBg || 'transparent'}; color:${element.tableConfig?.headerColor || 'inherit'}; border-bottom:${bw}px solid ${borderColor};">
+          ${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}
+        </tr>
+      </thead>
+    ` : ''
+
+    const rows = pageItems.map((item: any) => `
+      <tr>
+        ${keys.map((k, i) => {
+          const kk = (k === 'gst' ? 'gstRate' : (k === 'gstamt' || k === 'gst_amount' ? 'gstAmount' : k))
+          let v = item?.[kk]
+          if (kk === 'gstRate') {
+            const fallbackRate = (data.invoice as any)?.taxBreakup?.gstRate
+            if (v === undefined || (typeof v === 'number' && v === 0) || (typeof v === 'string' && Number(v) === 0)) {
+              v = fallbackRate
+            }
+          } else if (kk === 'gstAmount' && v === undefined) {
+            const qty = Number(item?.quantity || 0)
+            const price = Number(item?.price || 0)
+            const rate = (typeof item?.gstRate === 'number' ? item!.gstRate : (data.invoice as any)?.taxBreakup?.gstRate) || 0
+            v = qty * price * rate / 100
+          }
+          let val = v ?? ''
+          if (typeof v === 'number') {
+            if (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk)) {
+              val = `₹${(v || 0).toFixed(2)}`
+            } else if (['gstRate','discountRate'].includes(kk)) {
+              val = `${(v || 0).toFixed(2)}%`
+            }
+          }
+          const defaultAlign = (kk === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk) ? 'right' : 'left'))
+          return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
+        }).join('')}
+      </tr>
+    `).join('')
+
+    return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor}; page-break-inside: auto;">
+      ${headerRow}
+      <tbody>
+        ${rows}
       </tbody>
     </table>`
   }
