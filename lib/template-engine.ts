@@ -259,16 +259,20 @@ export class TemplateEngine {
       const rows = items.map((item: any) => `
         <tr>
           ${keys.map((k, i) => {
-            const v = item?.[k]
+            const kk = (k === 'gst' ? 'gstRate' : (k === 'gstamt' || k === 'gst_amount' ? 'gstAmount' : k))
+            let v = item?.[kk]
+            if (v === undefined && kk === 'gstRate') {
+              v = (data.invoice as any)?.taxBreakup?.gstRate
+            }
             let val = v ?? ''
             if (typeof v === 'number') {
-              if (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(k)) {
+              if (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk)) {
                 val = `₹${(v || 0).toFixed(2)}`
-              } else if (['gstRate','discountRate'].includes(k)) {
+              } else if (['gstRate','discountRate'].includes(kk)) {
                 val = `${(v || 0).toFixed(2)}%`
               }
             }
-            const defaultAlign = (k === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(k) ? 'right' : 'left'))
+            const defaultAlign = (kk === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk) ? 'right' : 'left'))
             return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
           }).join('')}
         </tr>

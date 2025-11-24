@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         return r === undefined || r === null || r === '' ? undefined : Number(r)
       }
       const overrideRate = normalizeRate(billData.billGstRate)
-      const fallbackTaxRate = normalizeRate(billData.gstRate) ?? 0
+      const fallbackTaxRate = normalizeRate(billData.gstRate) ?? normalizeRate(settings?.taxRate) ?? 0
       const effectiveRate = billData.gstRateOverride
         ? (overrideRate ?? fallbackTaxRate)
         : (normalizeRate(it.gstRate) ?? overrideRate ?? fallbackTaxRate)
