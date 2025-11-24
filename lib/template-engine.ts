@@ -15,12 +15,22 @@ export interface TemplateData {
   }
   invoice?: {
     billNo?: string
+    series?: string
+    number?: string
     total?: number
     subtotal?: number
     tax?: number
     discount?: number
     date?: string
     items?: any[]
+    taxBreakup?: {
+      cgst?: number
+      sgst?: number
+      igst?: number
+      cess?: number
+      gstRate?: number
+      taxAmount?: number
+    }
   }
   customer?: {
     name?: string
@@ -47,6 +57,16 @@ export interface TemplateElement {
     margin?: number
     width?: string
     height?: string
+    fontFamily?: string
+    lineHeight?: number
+    letterSpacing?: number
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
+    borderWidth?: number
+    borderStyle?: 'solid' | 'dashed' | 'dotted'
+    borderRadius?: number
+    opacity?: number
+    zIndex?: number
+    objectFit?: 'contain' | 'cover'
   }
   position?: {
     x: number
@@ -70,6 +90,8 @@ export interface TemplateElement {
     cellPadding?: number
   }
   dividerType?: 'horizontal' | 'vertical'
+  locked?: boolean
+  hidden?: boolean
 }
 
 export interface Template {
@@ -190,6 +212,16 @@ export class TemplateEngine {
       if (style.margin) css += `margin: ${style.margin}px;`
       if (style.width) css += `width: ${style.width};`
       if (style.height) css += `height: ${style.height};`
+      if (style.fontFamily) css += `font-family: ${style.fontFamily};`
+      if (style.lineHeight) css += `line-height: ${style.lineHeight};`
+      if (style.letterSpacing) css += `letter-spacing: ${style.letterSpacing}px;`
+      if (style.textTransform && style.textTransform !== 'none') css += `text-transform: ${style.textTransform};`
+      if (style.borderColor) css += `border-color: ${style.borderColor};`
+      if (style.borderWidth !== undefined) css += `border-width: ${style.borderWidth}px;`
+      if (style.borderStyle) css += `border-style: ${style.borderStyle};`
+      if (style.borderRadius) css += `border-radius: ${style.borderRadius}px;`
+      if (style.opacity !== undefined) css += `opacity: ${style.opacity};`
+      if (style.zIndex !== undefined) css += `z-index: ${style.zIndex};`
     }
 
     return css
@@ -198,7 +230,7 @@ export class TemplateEngine {
   // Render table element
   private static renderTable(element: TemplateElement, data: TemplateData, baseStyle: string): string {
     const borderColor = element.style?.borderColor || '#e5e7eb'
-    const bw = element.tableConfig?.borderWidth ?? 1
+    const bw = element.tableConfig?.borderWidth ?? (element.style?.borderWidth ?? 1)
     const pad = element.tableConfig?.cellPadding ?? 8
     const align = element.tableConfig?.align || []
     const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
@@ -228,8 +260,16 @@ export class TemplateEngine {
         <tr>
           ${keys.map((k, i) => {
             const v = item?.[k]
-            const val = typeof v === 'number' && (k === 'price' || k === 'total') ? `₹${(v || 0).toFixed(2)}` : (v ?? '')
-            return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
+            let val = v ?? ''
+            if (typeof v === 'number') {
+              if (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(k)) {
+                val = `₹${(v || 0).toFixed(2)}`
+              } else if (['gstRate','discountRate'].includes(k)) {
+                val = `${(v || 0).toFixed(2)}%`
+              }
+            }
+            const defaultAlign = (k === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(k) ? 'right' : 'left'))
+            return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
           }).join('')}
         </tr>
       `).join('')

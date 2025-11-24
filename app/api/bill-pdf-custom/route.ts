@@ -51,8 +51,48 @@ export async function POST(request: NextRequest) {
       template = { ...defaultTemplate, _id: result.insertedId }
     }
 
-    // Get tenant settings for company info
+    // Get tenant settings for company info and sequencing
     const settings = await db.collection('settings').findOne({ tenantId: session.user.tenantId })
+
+    // Ensure bill/invoice number
+    let billNo: string = billData.billNo
+    let series: string | undefined = billData.series
+    let number: string | undefined = billData.number
+    if (!billNo) {
+      const today = new Date()
+      const yyyymmdd = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`
+      const seq = (settings?.invoiceSeq ?? 0) + 1
+      await db.collection('settings').updateOne(
+        { tenantId: session.user.tenantId },
+        { $set: { invoiceSeq: seq } },
+        { upsert: true }
+      )
+      series = billData.series || 'INV'
+      number = `${yyyymmdd}-${String(seq).padStart(4,'0')}`
+      billNo = `${series}-${number}`
+    }
+
+    // Compute tax breakup if not provided
+    const items = Array.isArray(billData.items) ? billData.items : []
+    const taxAgg = items.reduce((acc: any, it: any) => {
+      const qty = Number(it.quantity || 0)
+      const price = Number(it.price || 0)
+      const line = qty * price
+      const rate = Number(it.gstRate || billData.gstRate || 0)
+      const taxType = it.taxType || billData.taxType || 'intra' // intra: cgst+sgst, inter: igst
+      const gstAmount = it.gstAmount != null ? Number(it.gstAmount) : (line * rate / 100)
+      if (taxType === 'inter') {
+        acc.igst += it.igst != null ? Number(it.igst) : gstAmount
+      } else {
+        const half = gstAmount / 2
+        acc.cgst += it.cgst != null ? Number(it.cgst) : half
+        acc.sgst += it.sgst != null ? Number(it.sgst) : half
+      }
+      acc.cess += it.cess != null ? Number(it.cess) : 0
+      acc.gstAmount += gstAmount
+      acc.gstRate = rate
+      return acc
+    }, { cgst: 0, sgst: 0, igst: 0, cess: 0, gstAmount: 0, gstRate: billData.gstRate || 0 })
 
     // Prepare template data
     const templateData: TemplateData = {
@@ -70,13 +110,16 @@ export async function POST(request: NextRequest) {
         role: 'Cashier'
       },
       invoice: {
-        billNo: billData.billNo,
+        billNo,
+        series,
+        number,
         total: billData.total,
         subtotal: billData.subtotal,
-        tax: billData.tax,
+        tax: billData.tax ?? taxAgg.gstAmount,
         discount: billData.discountAmount || billData.discount,
-        date: new Date(billData.createdAt).toLocaleDateString('en-IN'),
-        items: billData.items || []
+        date: new Date(billData.createdAt || Date.now()).toLocaleDateString('en-IN'),
+        items,
+        taxBreakup: taxAgg
       },
       customer: {
         name: billData.customerName || 'Walk-in Customer',

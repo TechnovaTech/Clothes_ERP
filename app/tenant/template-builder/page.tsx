@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 
 export default function TemplateBuilderPage() {
   const [elements, setElements] = useState<TemplateElement[]>([])
+  const [future, setFuture] = useState<TemplateElement[][]>([])
   const [history, setHistory] = useState<TemplateElement[][]>([])
   const [templateType, setTemplateType] = useState('invoice')
   const [loading, setLoading] = useState(true)
@@ -25,6 +26,15 @@ export default function TemplateBuilderPage() {
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [draggedElement, setDraggedElement] = useState<TemplateElement | null>(null)
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; startWidth: number; startHeight: number; lockRatio: boolean } | null>(null)
+  const [elementsFilter, setElementsFilter] = useState('')
+  const [zoom, setZoom] = useState(85)
+  const [snapEnabled, setSnapEnabled] = useState(true)
+  const [snapSize, setSnapSize] = useState(5)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [guideV, setGuideV] = useState<number | null>(null)
+  const [guideH, setGuideH] = useState<number | null>(null)
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+  const [selectionRect, setSelectionRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
 
   // Load template on mount and type change
   useEffect(() => {
@@ -123,17 +133,20 @@ export default function TemplateBuilderPage() {
       dividerType: type === 'divider' ? (subType || 'horizontal') : undefined
     }
     setHistory((h) => [...h, elements])
+    setFuture([])
     setElements([...elements, newElement])
     setSelectedElement(newElement.id)
   }
 
   const updateElement = (id: string, updates: Partial<TemplateElement>) => {
     setHistory((h) => [...h, elements])
+    setFuture([])
     setElements(elements.map(el => el.id === id ? { ...el, ...updates } : el))
   }
 
   const deleteElement = (id: string) => {
     setHistory((h) => [...h, elements])
+    setFuture([])
     setElements(elements.filter(el => el.id !== id))
     setSelectedElement(null)
   }
@@ -147,6 +160,7 @@ export default function TemplateBuilderPage() {
         position: { x: element.position!.x + 20, y: element.position!.y + 20 }
       }
       setHistory((h) => [...h, elements])
+      setFuture([])
       setElements([...elements, newElement])
     }
   }
@@ -155,6 +169,7 @@ export default function TemplateBuilderPage() {
     setHistory((h) => {
       if (h.length === 0) return h
       const prev = h[h.length - 1]
+      setFuture((f) => [...f, elements])
       setElements(prev)
       const sel = selectedElement && prev.find((el) => el.id === selectedElement) ? selectedElement : null
       setSelectedElement(sel)
@@ -162,44 +177,77 @@ export default function TemplateBuilderPage() {
     })
   }
 
+  const redo = () => {
+    setFuture((f) => {
+      if (f.length === 0) return f
+      const next = f[f.length - 1]
+      setHistory((h) => [...h, elements])
+      setElements(next)
+      const sel = selectedElement && next.find((el) => el.id === selectedElement) ? selectedElement : null
+      setSelectedElement(sel)
+      return f.slice(0, -1)
+    })
+  }
+
   const selectedEl = elements.find(el => el.id === selectedElement)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedElement) return
-      const el = elements.find(x => x.id === selectedElement)
-      if (!el) return
+      const activeIds = selectedIds.length > 0 ? selectedIds : (selectedElement ? [selectedElement] : [])
+      if (activeIds.length === 0) return
+      const first = elements.find(x => x.id === activeIds[0])
+      if (!first) return
       const step = e.shiftKey ? 10 : 1
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+      const moveStep = snapEnabled ? snapSize : step
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
         undo()
         return
       }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && e.shiftKey) {
+        e.preventDefault()
+        redo()
+        return
+      }
       if (e.metaKey || e.ctrlKey) {
-        if (e.key === 'ArrowRight') {
-          updateElement(el.id, { size: { width: (el.size?.width || 200) + step, height: el.size?.height || 30 } })
-        } else if (e.key === 'ArrowLeft') {
-          updateElement(el.id, { size: { width: Math.max(50, (el.size?.width || 200) - step), height: el.size?.height || 30 } })
-        } else if (e.key === 'ArrowDown') {
-          updateElement(el.id, { size: { width: el.size?.width || 200, height: (el.size?.height || 30) + step } })
-        } else if (e.key === 'ArrowUp') {
-          updateElement(el.id, { size: { width: el.size?.width || 200, height: Math.max(20, (el.size?.height || 30) - step) } })
+        if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)) {
+          e.preventDefault()
+          for (const id of activeIds) {
+            const el = elements.find(x => x.id === id)
+            if (!el) continue
+            if (e.key === 'ArrowRight') {
+              updateElement(id, { size: { width: (el.size?.width || 200) + step, height: el.size?.height || 30 } })
+            } else if (e.key === 'ArrowLeft') {
+              updateElement(id, { size: { width: Math.max(50, (el.size?.width || 200) - step), height: el.size?.height || 30 } })
+            } else if (e.key === 'ArrowDown') {
+              updateElement(id, { size: { width: el.size?.width || 200, height: (el.size?.height || 30) + step } })
+            } else if (e.key === 'ArrowUp') {
+              updateElement(id, { size: { width: el.size?.width || 200, height: Math.max(20, (el.size?.height || 30) - step) } })
+            }
+          }
         }
       } else {
-        if (e.key === 'ArrowRight') {
-          updateElement(el.id, { position: { x: (el.position?.x || 0) + step, y: el.position?.y || 0 } })
-        } else if (e.key === 'ArrowLeft') {
-          updateElement(el.id, { position: { x: Math.max(0, (el.position?.x || 0) - step), y: el.position?.y || 0 } })
-        } else if (e.key === 'ArrowDown') {
-          updateElement(el.id, { position: { x: el.position?.x || 0, y: (el.position?.y || 0) + step } })
-        } else if (e.key === 'ArrowUp') {
-          updateElement(el.id, { position: { x: el.position?.x || 0, y: Math.max(0, (el.position?.y || 0) - step) } })
+        if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)) {
+          e.preventDefault()
+          for (const id of activeIds) {
+            const el = elements.find(x => x.id === id)
+            if (!el) continue
+            if (e.key === 'ArrowRight') {
+              updateElement(id, { position: { x: (el.position?.x || 0) + moveStep, y: el.position?.y || 0 } })
+            } else if (e.key === 'ArrowLeft') {
+              updateElement(id, { position: { x: Math.max(0, (el.position?.x || 0) - moveStep), y: el.position?.y || 0 } })
+            } else if (e.key === 'ArrowDown') {
+              updateElement(id, { position: { x: el.position?.x || 0, y: (el.position?.y || 0) + moveStep } })
+            } else if (e.key === 'ArrowUp') {
+              updateElement(id, { position: { x: el.position?.x || 0, y: Math.max(0, (el.position?.y || 0) - moveStep) } })
+            }
+          }
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedElement, elements])
+  }, [selectedElement, selectedIds, elements, snapEnabled, snapSize])
 
   if (loading) {
     return (
@@ -220,9 +268,9 @@ export default function TemplateBuilderPage() {
             <Palette className="w-5 h-5" />
             <span className="font-semibold">Template Builder</span>
           </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium">Type:</label>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium">Type:</label>
               <select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
@@ -234,14 +282,56 @@ export default function TemplateBuilderPage() {
                 <option value="email">Email</option>
               </select>
           </div>
-          <Button variant="outline" size="sm" onClick={undo} disabled={history.length === 0}>
-            <RotateCcw className="w-4 h-4 mr-1" />
-            Undo
-          </Button>
+            <div className="hidden md:flex items-center space-x-2">
+              <Input
+                placeholder="Search elements"
+                value={elementsFilter}
+                onChange={(e) => setElementsFilter(e.target.value)}
+                className="h-8 w-48"
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={redo} disabled={future.length === 0}>
+              <RotateCcw className="w-4 h-4 mr-1 rotate-180" />
+              Redo
+            </Button>
+            <Button variant="outline" size="sm" onClick={undo} disabled={history.length === 0}>
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Undo
+            </Button>
           <Button variant="outline" size="sm" onClick={resetToDefault}>
             <RotateCcw className="w-4 h-4 mr-1" />
             Reset
           </Button>
+            <div className="hidden md:flex items-center space-x-3">
+              <div className="flex items-center space-x-1">
+                <label className="text-sm">Zoom</label>
+                <Input
+                  type="number"
+                  value={zoom}
+                  onChange={(e) => setZoom(Math.max(10, Math.min(200, Number(e.target.value) || 85)))}
+                  className="h-8 w-20"
+                />
+                <span className="text-sm">%</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="text-sm">Snap</label>
+                <select
+                  value={snapEnabled ? 'on' : 'off'}
+                  onChange={(e) => setSnapEnabled(e.target.value === 'on')}
+                  className="h-8 text-sm border rounded px-2"
+                >
+                  <option value="on">On</option>
+                  <option value="off">Off</option>
+                </select>
+                <Input
+                  type="number"
+                  value={snapSize}
+                  onChange={(e) => setSnapSize(Math.max(1, Number(e.target.value) || 5))}
+                  className="h-8 w-16"
+                />
+                <span className="text-sm">px</span>
+              </div>
+            </div>
             <Button onClick={saveTemplate} disabled={saving} size="sm">
               <Save className="w-4 h-4 mr-1" />
               {saving ? 'Saving...' : 'Save'}
@@ -346,9 +436,15 @@ export default function TemplateBuilderPage() {
                                 <SelectItem value="{{tenant.email}}">Store Email</SelectItem>
                                 <SelectItem value="{{tenant.gst}}">GST Number</SelectItem>
                                 <SelectItem value="{{invoice.billNo}}">Bill Number</SelectItem>
+                                <SelectItem value="{{invoice.series}}">Invoice Series</SelectItem>
+                                <SelectItem value="{{invoice.number}}">Invoice Number</SelectItem>
                                 <SelectItem value="{{invoice.date}}">Bill Date</SelectItem>
                                 <SelectItem value="{{invoice.total}}">Total Amount</SelectItem>
                                 <SelectItem value="{{invoice.subtotal}}">Subtotal</SelectItem>
+                                <SelectItem value="{{invoice.taxBreakup.cgst}}">CGST</SelectItem>
+                                <SelectItem value="{{invoice.taxBreakup.sgst}}">SGST</SelectItem>
+                                <SelectItem value="{{invoice.taxBreakup.igst}}">IGST</SelectItem>
+                                <SelectItem value="{{invoice.taxBreakup.cess}}">CESS</SelectItem>
                                 <SelectItem value="{{customer.name}}">Customer Name</SelectItem>
                                 <SelectItem value="{{customer.phone}}">Customer Phone</SelectItem>
                               </SelectContent>
@@ -487,6 +583,16 @@ export default function TemplateBuilderPage() {
                                     <SelectItem value="price">price</SelectItem>
                                     <SelectItem value="total">total</SelectItem>
                                     <SelectItem value="sku">sku</SelectItem>
+                                    <SelectItem value="unit">unit</SelectItem>
+                                    <SelectItem value="itemCode">itemCode</SelectItem>
+                                    <SelectItem value="hsn">hsn</SelectItem>
+                                    <SelectItem value="gstRate">gstRate</SelectItem>
+                                    <SelectItem value="gstAmount">gstAmount</SelectItem>
+                                    <SelectItem value="cgst">cgst</SelectItem>
+                                    <SelectItem value="sgst">sgst</SelectItem>
+                                    <SelectItem value="igst">igst</SelectItem>
+                                    <SelectItem value="discountRate">discountRate</SelectItem>
+                                    <SelectItem value="discountAmount">discountAmount</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -892,6 +998,57 @@ export default function TemplateBuilderPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
+                              <Label className="text-sm">Font Family</Label>
+                              <select
+                                value={selectedEl.style?.fontFamily || 'system-ui'}
+                                onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, fontFamily: e.target.value } })}
+                                className="h-8 text-sm border rounded px-2 w-full"
+                              >
+                                <option value="system-ui">System</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Roboto">Roboto</option>
+                              </select>
+                            </div>
+                            <div>
+                              <Label className="text-sm">Line Height</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={selectedEl.style?.lineHeight || 1.2}
+                                onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, lineHeight: Number(e.target.value) } })}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-sm">Letter Spacing</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={selectedEl.style?.letterSpacing || 0}
+                                onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, letterSpacing: Number(e.target.value) } })}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm">Transform</Label>
+                              <select
+                                value={selectedEl.style?.textTransform || 'none'}
+                                onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, textTransform: e.target.value as any } })}
+                                className="h-8 text-sm border rounded px-2 w-full"
+                              >
+                                <option value="none">None</option>
+                                <option value="uppercase">Uppercase</option>
+                                <option value="lowercase">Lowercase</option>
+                                <option value="capitalize">Capitalize</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
                               <Label className="text-sm">Align</Label>
                               <Select
                                 value={selectedEl.style?.textAlign || 'left'}
@@ -923,6 +1080,111 @@ export default function TemplateBuilderPage() {
                           </div>
                         </>
                       )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-sm">Background</Label>
+                          <Input
+                            type="color"
+                            value={selectedEl.style?.backgroundColor || '#ffffff'}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, backgroundColor: e.target.value } })}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Padding</Label>
+                          <Input
+                            type="number"
+                            value={selectedEl.style?.padding ?? 8}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, padding: Number(e.target.value) } })}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-sm">Border Color</Label>
+                          <Input
+                            type="color"
+                            value={selectedEl.style?.borderColor || '#000000'}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, borderColor: e.target.value } })}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Border Width</Label>
+                          <Input
+                            type="number"
+                            value={selectedEl.style?.borderWidth ?? 0}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, borderWidth: Number(e.target.value) } })}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-sm">Border Style</Label>
+                          <select
+                            value={selectedEl.style?.borderStyle || 'solid'}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, borderStyle: e.target.value as any } })}
+                            className="h-8 text-sm border rounded px-2 w-full"
+                          >
+                            <option value="solid">Solid</option>
+                            <option value="dashed">Dashed</option>
+                            <option value="dotted">Dotted</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Border Radius</Label>
+                          <Input
+                            type="number"
+                            value={selectedEl.style?.borderRadius ?? 0}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, borderRadius: Number(e.target.value) } })}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-sm">Opacity</Label>
+                          <Input
+                            type="number"
+                            step="0.05"
+                            min="0"
+                            max="1"
+                            value={selectedEl.style?.opacity ?? 1}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, opacity: Number(e.target.value) } })}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Z Index</Label>
+                          <Input
+                            type="number"
+                            value={selectedEl.style?.zIndex ?? 0}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, zIndex: Number(e.target.value) } })}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      {selectedEl.type === 'image' && (
+                        <div>
+                          <Label className="text-sm">Fit</Label>
+                          <select
+                            value={selectedEl.style?.objectFit || 'contain'}
+                            onChange={(e) => updateElement(selectedEl.id, { style: { ...selectedEl.style!, objectFit: e.target.value as any } })}
+                            className="h-8 text-sm border rounded px-2 w-full"
+                          >
+                            <option value="contain">Contain</option>
+                            <option value="cover">Cover</option>
+                          </select>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => updateElement(selectedEl.id, { locked: !selectedEl.locked })}>Lock</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateElement(selectedEl.id, { hidden: !selectedEl.hidden })}>Hide</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateElement(selectedEl.id, { style: { ...selectedEl.style!, zIndex: (selectedEl.style?.zIndex ?? 0) + 1 } })}>Bring Forward</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateElement(selectedEl.id, { style: { ...selectedEl.style!, zIndex: Math.max(0, (selectedEl.style?.zIndex ?? 0) - 1) } })}>Send Backward</Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -950,16 +1212,68 @@ export default function TemplateBuilderPage() {
                         style={{
                           width: '210mm',
                           height: '297mm',
-                          transform: 'scale(0.85)',
+                          transform: `scale(${zoom/100})`,
                           transformOrigin: 'top center',
                           marginTop: '20px'
                         }}
+                        onMouseDown={(e) => {
+                          if (e.target === e.currentTarget) {
+                            setSelectedElement(null)
+                            const rect = canvasRef.current?.getBoundingClientRect()
+                            const startX = e.clientX - (rect?.left || 0)
+                            const startY = e.clientY - (rect?.top || 0)
+                            setSelectionRect({ x: startX, y: startY, w: 0, h: 0 })
+                            const startIds = e.shiftKey || e.ctrlKey || e.metaKey ? new Set(selectedIds) : new Set<string>()
+                            const handleMove = (ev: MouseEvent) => {
+                              const curX = ev.clientX - (rect?.left || 0)
+                              const curY = ev.clientY - (rect?.top || 0)
+                              const x = Math.min(startX, curX)
+                              const y = Math.min(startY, curY)
+                              const w = Math.abs(curX - startX)
+                              const h = Math.abs(curY - startY)
+                              setSelectionRect({ x, y, w, h })
+                              const nextIds = new Set(startIds)
+                              elements.forEach((el) => {
+                                const ex = el.position?.x || 0
+                                const ey = el.position?.y || 0
+                                const ew = el.size?.width || 200
+                                const eh = el.size?.height || 30
+                                const intersects = !(ex + ew < x || ex > x + w || ey + eh < y || ey > y + h)
+                                if (intersects) nextIds.add(el.id)
+                              })
+                              setSelectedIds(Array.from(nextIds))
+                            }
+                            const handleUp = () => {
+                              setSelectionRect(null)
+                              document.removeEventListener('mousemove', handleMove)
+                              document.removeEventListener('mouseup', handleUp)
+                            }
+                            document.addEventListener('mousemove', handleMove)
+                            document.addEventListener('mouseup', handleUp)
+                          }
+                        }}
                       >
-                        {elements.map((element) => (
+                        <div ref={canvasRef} className="absolute inset-0 pointer-events-none">
+                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-red-300 opacity-40" />
+                          <div className="absolute top-1/2 left-0 right-0 h-px bg-red-300 opacity-40" />
+                          {guideV !== null && (
+                            <div className="absolute top-0 bottom-0 w-px bg-blue-500" style={{ left: guideV }} />
+                          )}
+                          {guideH !== null && (
+                            <div className="absolute left-0 right-0 h-px bg-blue-500" style={{ top: guideH }} />
+                          )}
+                          {selectionRect && (
+                            <div
+                              className="absolute border-2 border-blue-400 bg-blue-200/20"
+                              style={{ left: selectionRect.x, top: selectionRect.y, width: selectionRect.w, height: selectionRect.h }}
+                            />
+                          )}
+                        </div>
+                        {elements.map((element) => element.hidden ? null : (
                           <div
                             key={element.id}
                             className={`absolute cursor-pointer border-2 ${
-                              selectedElement === element.id ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-400'
+                              (selectedElement === element.id || selectedIds.includes(element.id)) ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-400'
                             }`}
                             style={{
                               left: element.position?.x || 0,
@@ -970,25 +1284,91 @@ export default function TemplateBuilderPage() {
                               fontWeight: element.style?.fontWeight || 'normal',
                               textAlign: element.style?.textAlign || 'left',
                               color: element.style?.color || '#000000',
+                              backgroundColor: element.style?.backgroundColor,
+                              borderColor: element.style?.borderColor,
+                              borderWidth: element.style?.borderWidth,
+                              borderStyle: element.style?.borderStyle || 'solid',
+                              borderRadius: element.style?.borderRadius,
+                              opacity: element.style?.opacity ?? 1,
+                              zIndex: element.style?.zIndex ?? 0,
                               display: 'flex',
                               alignItems: 'center',
-                              padding: '4px'
+                              padding: `${element.style?.padding ?? 4}px`
                             }}
-                            onClick={() => setSelectedElement(element.id)}
+                            onClick={(e) => {
+                              if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                                setSelectedIds((prev) => prev.includes(element.id) ? prev.filter(id => id !== element.id) : [...prev, element.id])
+                              } else {
+                                setSelectedElement(element.id)
+                                setSelectedIds([element.id])
+                              }
+                            }}
                             onMouseDown={(e) => {
+                              if (element.locked) return
                               const startX = e.clientX - (element.position?.x || 0)
                               const startY = e.clientY - (element.position?.y || 0)
+                              const pageRect = canvasRef.current?.getBoundingClientRect()
+                              const pageW = pageRect?.width || 0
+                              const pageH = pageRect?.height || 0
+                              const activeIds = selectedIds.length > 0 ? selectedIds : [element.id]
+                              const startPositions = new Map<string, {x:number,y:number}>()
+                              activeIds.forEach((id) => {
+                                const el = elements.find(x => x.id === id)
+                                if (el) startPositions.set(id, { x: el.position?.x || 0, y: el.position?.y || 0 })
+                              })
                               const handleMouseMove = (e: MouseEvent) => {
-                                updateElement(element.id, {
-                                  position: {
-                                    x: Math.max(0, e.clientX - startX),
-                                    y: Math.max(0, e.clientY - startY)
+                                const newX = Math.max(0, snapEnabled ? Math.round((e.clientX - startX) / snapSize) * snapSize : (e.clientX - startX))
+                                const newY = Math.max(0, snapEnabled ? Math.round((e.clientY - startY) / snapSize) * snapSize : (e.clientY - startY))
+                                let snappedX = newX
+                                let snappedY = newY
+                                setGuideV(null); setGuideH(null)
+                                if (pageW && pageH) {
+                                  const centerX = pageW / 2
+                                  const centerY = pageH / 2
+                                  const elCenterX = newX + (element.size?.width || 200) / 2
+                                  const elCenterY = newY + (element.size?.height || 30) / 2
+                                  if (Math.abs(centerX - elCenterX) <= 5) {
+                                    snappedX = Math.max(0, centerX - (element.size?.width || 200) / 2)
+                                    setGuideV(centerX)
                                   }
+                                  if (Math.abs(centerY - elCenterY) <= 5) {
+                                    snappedY = Math.max(0, centerY - (element.size?.height || 30) / 2)
+                                    setGuideH(centerY)
+                                  }
+                                  for (const other of elements) {
+                                    if (other.id === element.id) continue
+                                    const oLeft = other.position?.x || 0
+                                    const oTop = other.position?.y || 0
+                                    const oRight = oLeft + (other.size?.width || 200)
+                                    const oBottom = oTop + (other.size?.height || 30)
+                                    const oCenterX = oLeft + (other.size?.width || 200) / 2
+                                    const oCenterY = oTop + (other.size?.height || 30) / 2
+                                    const eLeft = newX
+                                    const eTop = newY
+                                    const eRight = eLeft + (element.size?.width || 200)
+                                    const eBottom = eTop + (element.size?.height || 30)
+                                    const eCenterX = eLeft + (element.size?.width || 200) / 2
+                                    const eCenterY = eTop + (element.size?.height || 30) / 2
+                                    if (Math.abs(eLeft - oLeft) <= 5) { snappedX = oLeft; setGuideV(oLeft) }
+                                    if (Math.abs(eRight - oRight) <= 5) { snappedX = oRight - (element.size?.width || 200); setGuideV(oRight) }
+                                    if (Math.abs(eCenterX - oCenterX) <= 5) { snappedX = oCenterX - (element.size?.width || 200)/2; setGuideV(oCenterX) }
+                                    if (Math.abs(eTop - oTop) <= 5) { snappedY = oTop; setGuideH(oTop) }
+                                    if (Math.abs(eBottom - oBottom) <= 5) { snappedY = oBottom - (element.size?.height || 30); setGuideH(oBottom) }
+                                    if (Math.abs(eCenterY - oCenterY) <= 5) { snappedY = oCenterY - (element.size?.height || 30)/2; setGuideH(oCenterY) }
+                                  }
+                                }
+                                activeIds.forEach((id) => {
+                                  const start = startPositions.get(id)
+                                  if (!start) return
+                                  const dx = snappedX - (element.position?.x || 0)
+                                  const dy = snappedY - (element.position?.y || 0)
+                                  updateElement(id, { position: { x: Math.max(0, (start.x + dx)), y: Math.max(0, (start.y + dy)) } })
                                 })
                               }
                               const handleMouseUp = () => {
                                 document.removeEventListener('mousemove', handleMouseMove)
                                 document.removeEventListener('mouseup', handleMouseUp)
+                                setGuideV(null); setGuideH(null)
                               }
                               document.addEventListener('mousemove', handleMouseMove)
                               document.addEventListener('mouseup', handleMouseUp)
@@ -1002,7 +1382,7 @@ export default function TemplateBuilderPage() {
                               <img 
                                 src={element.content} 
                                 alt="Template Image" 
-                                className="w-full h-full object-contain"
+                                className={`w-full h-full ${element.style?.objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none'
                                 }}
@@ -1047,14 +1427,16 @@ export default function TemplateBuilderPage() {
                                     <tr key={rowIndex}>
                                       {Array.from({ length: element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4) }).map((_, colIndex) => {
                                         const keys = element.tableConfig?.columnKeys || ['name','quantity','price','total']
-                                        const sampleValues: any = { name: rowIndex === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100 }
+                                        const sampleValues: any = { name: rowIndex === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100, sku: 'SKU123', unit: 'pcs', itemCode: 'ITM-001', hsn: '6201', gstRate: 18, gstAmount: 18, cgst: 9, sgst: 9, igst: 0, discountRate: 0, discountAmount: 0 }
                                         const v = sampleValues[keys[colIndex] as keyof typeof sampleValues]
-                                        const val = typeof v === 'number' && (keys[colIndex] === 'price' || keys[colIndex] === 'total') ? `₹${(v || 0).toFixed(0)}` : String(v ?? '')
+                                        const numericCurrency = ['price','total','cgst','sgst','igst','gstAmount','discountAmount']
+                                        const numericPercent = ['gstRate','discountRate']
+                                        const val = typeof v === 'number' ? (numericCurrency.includes(keys[colIndex]) ? `₹${(v || 0).toFixed(0)}` : (numericPercent.includes(keys[colIndex]) ? `${(v || 0).toFixed(0)}%` : String(v))) : String(v ?? '')
                                         return (
                                           <td
                                             key={colIndex}
-                                            className="border p-1"
-                                            style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[colIndex] || 'left') as any, width: element.tableConfig?.columnWidths?.[colIndex] ? `${element.tableConfig?.columnWidths?.[colIndex]}%` : undefined }}
+                                            className="border"
+                                            style={{ borderColor: element.style?.borderColor, padding: `${element.tableConfig?.cellPadding ?? 8}px`, textAlign: (element.tableConfig?.align?.[colIndex] || 'left') as any, width: element.tableConfig?.columnWidths?.[colIndex] ? `${element.tableConfig?.columnWidths?.[colIndex]}%` : undefined }}
                                           >
                                             {val}
                                           </td>
@@ -1111,7 +1493,7 @@ export default function TemplateBuilderPage() {
                               })()}
                             </div>
                           )}
-                          {selectedElement === element.id && (
+                          {selectedElement === element.id && !element.locked && (
                             <div
                               onMouseDown={(e) => {
                                 e.stopPropagation()
@@ -1145,7 +1527,7 @@ export default function TemplateBuilderPage() {
                           )}
                           </div>
                         ))}
-                      </div>
+                        </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1161,13 +1543,30 @@ export default function TemplateBuilderPage() {
                   </CardHeader>
                   <CardContent className="flex-1 overflow-y-auto overscroll-contain">
                     <div className="space-y-2">
-                      {elements.map((element, index) => (
+                      {elements
+                        .filter((el) => {
+                          const q = elementsFilter.toLowerCase()
+                          if (!q) return true
+                          return (
+                            el.type.toLowerCase().includes(q) ||
+                            (el.content || '').toLowerCase().includes(q) ||
+                            (el.placeholder || '').toLowerCase().includes(q)
+                          )
+                        })
+                        .map((element, index) => (
                         <div
                           key={element.id}
                           className={`p-2 border rounded cursor-pointer text-sm ${
                             selectedElement === element.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-400'
                           }`}
-                          onClick={() => setSelectedElement(element.id)}
+                          onClick={(e) => {
+                            if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                              setSelectedIds((prev) => prev.includes(element.id) ? prev.filter(id => id !== element.id) : [...prev, element.id])
+                            } else {
+                              setSelectedElement(element.id)
+                              setSelectedIds([element.id])
+                            }
+                          }}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
@@ -1217,9 +1616,9 @@ export default function TemplateBuilderPage() {
               <div className="bg-gray-100 p-4 rounded-lg flex-1 overflow-auto">
                 <div 
                   className="relative bg-white border mx-auto shadow-lg"
-                  style={{ width: '210mm', height: '297mm', transform: 'scale(0.5)', transformOrigin: 'top center' }}
+                  style={{ width: '210mm', height: '297mm', transform: `scale(${zoom/100})`, transformOrigin: 'top center' }}
                 >
-                  {elements.map((element) => {
+                  {elements.filter((el) => !el.hidden).map((element) => {
                     let content = element.content || ''
                     if (element.placeholder) {
                       content = element.placeholder
@@ -1257,9 +1656,16 @@ export default function TemplateBuilderPage() {
                           fontWeight: element.style?.fontWeight || 'normal',
                           textAlign: element.style?.textAlign || 'left',
                           color: element.style?.color || '#000000',
+                          backgroundColor: element.style?.backgroundColor,
+                          borderColor: element.style?.borderColor,
+                          borderWidth: element.style?.borderWidth,
+                          borderStyle: element.style?.borderStyle || 'solid',
+                          borderRadius: element.style?.borderRadius,
+                          opacity: element.style?.opacity ?? 1,
+                          zIndex: element.style?.zIndex ?? 0,
                           display: 'flex',
                           alignItems: 'center',
-                          padding: '4px'
+                          padding: `${element.style?.padding ?? 4}px`
                         }}
                       >
                         {element.type === 'text' && <span>{content || 'Sample Text'}</span>}
@@ -1268,7 +1674,7 @@ export default function TemplateBuilderPage() {
                             <img 
                               src={element.content} 
                               alt="Logo" 
-                              className="w-full h-full object-contain"
+                              className={`w-full h-full ${element.style?.objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none'
                               }}
@@ -1288,8 +1694,8 @@ export default function TemplateBuilderPage() {
                                     {(element.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((header, i) => (
                                       <th
                                         key={i}
-                                        className="border p-1"
-                                        style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                        className="border"
+                                        style={{ borderColor: element.style?.borderColor, padding: `${element.tableConfig?.cellPadding ?? 8}px`, textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
                                       >
                                         {header}
                                       </th>
@@ -1307,8 +1713,8 @@ export default function TemplateBuilderPage() {
                                       return (
                                         <td
                                           key={i}
-                                          className="border p-1"
-                                          style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                          className="border"
+                                          style={{ borderColor: element.style?.borderColor, padding: `${element.tableConfig?.cellPadding ?? 8}px`, textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
                                         >
                                           {val}
                                         </td>

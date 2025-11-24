@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Receipt, Search, Eye, Printer, MessageCircle, Download, X, Upload, FileDown, Trash2, Plus } from "lucide-react"
+import { Receipt, Search, Eye, Pencil, MessageCircle, Download, X, Upload, FileDown, Trash2, Plus } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
 import { showToast } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
@@ -55,6 +55,16 @@ export default function BillsPage() {
   const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false)
   const [customerDetails, setCustomerDetails] = useState<any>(null)
   const [customerFields, setCustomerFields] = useState<any[]>([])
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editForm, setEditForm] = useState<any>({})
+  const recalcTotals = (form: any) => {
+    const items = Array.isArray(form.items) ? form.items : []
+    const subtotal = items.reduce((sum: number, it: any) => sum + ((parseFloat(it.price) || 0) * (parseInt(it.quantity) || 0)), 0)
+    const discountAmount = parseFloat(form.discountAmount) || 0
+    const tax = parseFloat(form.tax) || 0
+    const total = subtotal - discountAmount + tax
+    return { subtotal, discountAmount, tax, total }
+  }
 
   const fetchBills = async (page = 1) => {
     try {
@@ -139,6 +149,52 @@ export default function BillsPage() {
     }
     
     setIsViewModalOpen(true)
+  }
+
+  const openEditModal = (bill: Bill) => {
+    setSelectedBill(bill)
+    setEditForm({
+      customerName: bill.customerName || '',
+      customerPhone: bill.customerPhone || '',
+      paymentMethod: bill.paymentMethod || 'cash',
+      cashier: bill.cashier || 'Admin',
+      terms: bill.terms || '',
+      storeName: bill.storeName || '',
+      address: bill.address || '',
+      phone: bill.phone || '',
+      email: bill.email || '',
+      gst: bill.gst || '',
+      items: bill.items.map(it => ({ ...it })),
+      subtotal: bill.subtotal || 0,
+      discount: bill.discount || 0,
+      discountAmount: bill.discountAmount || 0,
+      tax: bill.tax || 0,
+      total: bill.total || 0
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const saveBillEdits = async () => {
+    if (!selectedBill) return
+    try {
+      const billId = (selectedBill as any)._id || selectedBill.id
+      const response = await fetch(`/api/pos/sales/${billId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      })
+      if (response.ok) {
+        setIsEditModalOpen(false)
+        setSelectedBill(null)
+        setEditForm({})
+        showToast.success('✅ Bill updated')
+        fetchBills(currentPage)
+      } else {
+        showToast.error('❌ Failed to update bill')
+      }
+    } catch (error) {
+      showToast.error('❌ Error updating bill')
+    }
   }
 
   const handleDeleteBill = async () => {
@@ -658,6 +714,13 @@ Contact: ${storePhone}`
                           </Button>
                           <Button 
                             variant="ghost" 
+                            size="sm"
+                            onClick={() => openEditModal(bill)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
                             size="sm" 
                             onClick={async () => {
                               try {
@@ -1085,6 +1148,210 @@ Contact: ${storePhone}`
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Bill Modal */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Bill - {selectedBill?.billNo}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Customer Name</Label>
+                  <Input
+                    value={editForm.customerName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Customer Phone</Label>
+                  <Input
+                    value={editForm.customerPhone || ''}
+                    onChange={(e) => setEditForm({ ...editForm, customerPhone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <Input
+                    value={editForm.paymentMethod || ''}
+                    onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cashier</Label>
+                  <Input
+                    value={editForm.cashier || ''}
+                    onChange={(e) => setEditForm({ ...editForm, cashier: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="border rounded p-3 space-y-3">
+                <div className="font-medium">Items</div>
+                <div className="space-y-2">
+                  {(editForm.items || []).map((it: any, idx: number) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-5">
+                        <Input
+                          value={it.name || ''}
+                          onChange={(e) => {
+                            const items = [...editForm.items]
+                            items[idx] = { ...items[idx], name: e.target.value }
+                            setEditForm({ ...editForm, items })
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          value={it.quantity || 0}
+                          onChange={(e) => {
+                            const qty = Math.max(0, parseInt(e.target.value || '0'))
+                            const items = [...editForm.items]
+                            const price = parseFloat(items[idx].price) || 0
+                            items[idx] = { ...items[idx], quantity: qty, total: qty * price }
+                            const totals = recalcTotals({ ...editForm, items })
+                            setEditForm({ ...editForm, items, ...totals })
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          value={it.price || 0}
+                          onChange={(e) => {
+                            const price = Math.max(0, parseFloat(e.target.value || '0'))
+                            const items = [...editForm.items]
+                            const qty = parseInt(items[idx].quantity) || 0
+                            items[idx] = { ...items[idx], price, total: qty * price }
+                            const totals = recalcTotals({ ...editForm, items })
+                            setEditForm({ ...editForm, items, ...totals })
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-2 text-right">
+                        ₹{(((parseFloat(it.price) || 0) * (parseInt(it.quantity) || 0)) || 0).toFixed(2)}
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          className="text-red-500"
+                          onClick={() => {
+                            const items = (editForm.items || []).filter((_: any, i: number) => i !== idx)
+                            const totals = recalcTotals({ ...editForm, items })
+                            setEditForm({ ...editForm, items, ...totals })
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Subtotal</Label>
+                  <Input
+                    type="number"
+                    value={editForm.subtotal || 0}
+                    onChange={(e) => {
+                      const subtotal = parseFloat(e.target.value || '0')
+                      const total = subtotal - (parseFloat(editForm.discountAmount) || 0) + (parseFloat(editForm.tax) || 0)
+                      setEditForm({ ...editForm, subtotal, total })
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Discount Amount</Label>
+                  <Input
+                    type="number"
+                    value={editForm.discountAmount || 0}
+                    onChange={(e) => {
+                      const discountAmount = parseFloat(e.target.value || '0')
+                      const total = (parseFloat(editForm.subtotal) || 0) - discountAmount + (parseFloat(editForm.tax) || 0)
+                      setEditForm({ ...editForm, discountAmount, total })
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tax</Label>
+                  <Input
+                    type="number"
+                    value={editForm.tax || 0}
+                    onChange={(e) => {
+                      const tax = parseFloat(e.target.value || '0')
+                      const total = (parseFloat(editForm.subtotal) || 0) - (parseFloat(editForm.discountAmount) || 0) + tax
+                      setEditForm({ ...editForm, tax, total })
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Total</Label>
+                  <Input
+                    type="number"
+                    value={editForm.total || 0}
+                    onChange={(e) => setEditForm({ ...editForm, total: parseFloat(e.target.value || '0') })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Store Name</Label>
+                  <Input
+                    value={editForm.storeName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, storeName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>GST</Label>
+                  <Input
+                    value={editForm.gst || ''}
+                    onChange={(e) => setEditForm({ ...editForm, gst: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input
+                  value={editForm.address || ''}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    value={editForm.phone || ''}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    value={editForm.email || ''}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Terms</Label>
+                <Input
+                  value={editForm.terms || ''}
+                  onChange={(e) => setEditForm({ ...editForm, terms: e.target.value })}
+                />
+              </div>
+              <div className="flex space-x-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setIsEditModalOpen(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button className="flex-1" onClick={saveBillEdits}>
+                  Update Bill
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
