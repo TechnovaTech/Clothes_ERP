@@ -62,6 +62,7 @@ interface CartItem {
   price: number
   quantity: number
   total: number
+  gstRate?: number
 }
 
 
@@ -113,6 +114,8 @@ export default function POSPage() {
   const [qrCode, setQrCode] = useState('')
   const [includeTax, setIncludeTax] = useState(true)
   const [includeCess, setIncludeCess] = useState(true)
+  const [gstRateOverride, setGstRateOverride] = useState(false)
+  const [billGstRate, setBillGstRate] = useState<number | ''>('')
 
 
   // Fetch settings
@@ -406,7 +409,7 @@ export default function POSPage() {
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
   const discountPercent = Number(discount) || 0
-  const taxRatePercent = Number(settings.taxRate) || 0
+  const taxRatePercent = Number(gstRateOverride ? (billGstRate === '' ? settings.taxRate : billGstRate) : settings.taxRate) || 0
   const cessRatePercent = Number(settings.cessRate) || 0
   const discountAmount = (subtotal * discountPercent) / 100
   const tax = includeTax ? (subtotal - discountAmount) * (taxRatePercent / 100) : 0
@@ -680,6 +683,25 @@ export default function POSPage() {
                               ₹ {(Number(item.price) || 0).toFixed(2)} {t('each')}
                             </p>
                           )}
+                          <div className="mt-2 flex items-center space-x-2">
+                            <Label className="text-xs">GST</Label>
+                            <Select
+                              value={item.gstRate != null ? String(item.gstRate) : 'inherit'}
+                              onValueChange={(val) => {
+                                setCart(cart.map(ci => ci.id === item.id ? { ...ci, gstRate: (val === 'inherit' ? undefined : Number(val)) } : ci))
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-28 text-xs" />
+                              <SelectContent>
+                                <SelectItem value="inherit">Inherit</SelectItem>
+                                <SelectItem value="0">0%</SelectItem>
+                                <SelectItem value="5">5%</SelectItem>
+                                <SelectItem value="9">9%</SelectItem>
+                                <SelectItem value="12">12%</SelectItem>
+                                <SelectItem value="18">18%</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-sm">₹ {Number(item.total || 0).toFixed(2)}</p>
@@ -759,28 +781,75 @@ export default function POSPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="includeTax"
-                    checked={includeTax}
-                    onCheckedChange={(checked) => setIncludeTax(checked as boolean)}
-                  />
-                  <Label htmlFor="includeTax" className="text-sm font-medium">
-                    Include Tax ({settings.taxRate}%)
-                  </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="includeTax"
+                      checked={includeTax}
+                      onCheckedChange={(checked) => setIncludeTax(checked as boolean)}
+                    />
+                    <Label htmlFor="includeTax" className="text-sm font-medium">
+                      Include Tax ({settings.taxRate}%)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="includeCess"
+                      checked={includeCess}
+                      onCheckedChange={(checked) => setIncludeCess(checked as boolean)}
+                    />
+                    <Label htmlFor="includeCess" className="text-sm font-medium">
+                      Include CESS ({settings.cessRate}%)
+                    </Label>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="includeCess"
-                    checked={includeCess}
-                    onCheckedChange={(checked) => setIncludeCess(checked as boolean)}
-                  />
-                  <Label htmlFor="includeCess" className="text-sm font-medium">
-                    Include CESS ({settings.cessRate}%)
-                  </Label>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="gstOverride"
+                      checked={gstRateOverride}
+                      onCheckedChange={(checked) => setGstRateOverride(checked as boolean)}
+                    />
+                    <Label htmlFor="gstOverride" className="text-sm font-medium">
+                      Override Bill GST
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-sm">Bill GST (%)</Label>
+                    <Select
+                      value={(billGstRate === '' ? 'custom' : String(billGstRate))}
+                      onValueChange={(val) => {
+                        if (val === 'custom') {
+                          setBillGstRate('')
+                        } else {
+                          setBillGstRate(Number(val))
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-28 text-xs" />
+                      <SelectContent>
+                        <SelectItem value="custom">Custom</SelectItem>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="9">9%</SelectItem>
+                        <SelectItem value="12">12%</SelectItem>
+                        <SelectItem value="18">18%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={billGstRate === '' ? '' : billGstRate}
+                      onChange={(e) => setBillGstRate((e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value) || 0))))}
+                      placeholder={String(settings.taxRate)}
+                      className="h-8 w-24 text-xs"
+                      disabled={!gstRateOverride}
+                    />
+                  </div>
                 </div>
-              </div>
 
               <Separator />
 
@@ -909,7 +978,8 @@ export default function POSPage() {
                                 name: item.name,
                                 price: item.price,
                                 quantity: item.quantity,
-                                total: item.total
+                                total: item.total,
+                                gstRate: item.gstRate
                               })),
                               customerName,
                               customerPhone,
@@ -920,12 +990,14 @@ export default function POSPage() {
                               cess,
                               total,
                               paymentMethod: selectedPaymentMethod,
-                              taxRate: includeTax ? settings.taxRate : 0,
+                              taxRate: includeTax ? (gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : settings.taxRate) : 0,
                               cessRate: includeCess ? settings.cessRate : 0,
                               storeName: settings.storeName,
                               staffMember: selectedStaff || 'admin',
                               includeTax,
-                              includeCess
+                              includeCess,
+                              gstRateOverride,
+                              billGstRate: gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : undefined
                             }
                             
                             const response = await fetch('/api/pos/sales', {

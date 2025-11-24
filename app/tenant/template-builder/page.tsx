@@ -1701,6 +1701,47 @@ export default function TemplateBuilderPage() {
                           )}
                           </div>
                         ))}
+                        {selectedIds.length > 1 && (() => {
+                          const selected = elements.filter(el => selectedIds.includes(el.id))
+                          const left = Math.min(...selected.map(el => el.position?.x || 0))
+                          const top = Math.min(...selected.map(el => el.position?.y || 0))
+                          const right = Math.max(...selected.map(el => (el.position?.x || 0) + (el.size?.width || 200)))
+                          const bottom = Math.max(...selected.map(el => (el.position?.y || 0) + (el.size?.height || 30)))
+                          const width = Math.max(0, right - left)
+                          const height = Math.max(0, bottom - top)
+                          return (
+                            <div
+                              style={{ position: 'absolute', left, top, width, height, border: '2px dashed #3b82f6', background: 'transparent', zIndex: 9999 }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation()
+                                const startX = e.clientX
+                                const startY = e.clientY
+                                const startPositions = new Map<string, {x:number,y:number}>()
+                                selectedIds.forEach((id) => {
+                                  const el = elements.find(x => x.id === id)
+                                  if (el) startPositions.set(id, { x: el.position?.x || 0, y: el.position?.y || 0 })
+                                })
+                                const handleMove = (ev: MouseEvent) => {
+                                  const dx = ev.clientX - startX
+                                  const dy = ev.clientY - startY
+                                  const snappedDx = snapEnabled ? Math.round(dx / snapSize) * snapSize : dx
+                                  const snappedDy = snapEnabled ? Math.round(dy / snapSize) * snapSize : dy
+                                  selectedIds.forEach((id) => {
+                                    const start = startPositions.get(id)
+                                    if (!start) return
+                                    updateElement(id, { position: { x: Math.max(0, start.x + snappedDx), y: Math.max(0, start.y + snappedDy) } })
+                                  })
+                                }
+                                const handleUp = () => {
+                                  document.removeEventListener('mousemove', handleMove)
+                                  document.removeEventListener('mouseup', handleUp)
+                                }
+                                document.addEventListener('mousemove', handleMove)
+                                document.addEventListener('mouseup', handleUp)
+                              }}
+                            />
+                          )
+                        })()}
                         </div>
                     </div>
                   </CardContent>
