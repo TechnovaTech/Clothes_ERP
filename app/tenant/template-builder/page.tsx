@@ -17,6 +17,7 @@ import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 
 export default function TemplateBuilderPage() {
   const [elements, setElements] = useState<TemplateElement[]>([])
+  const [history, setHistory] = useState<TemplateElement[][]>([])
   const [templateType, setTemplateType] = useState('invoice')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -121,15 +122,18 @@ export default function TemplateBuilderPage() {
       } : undefined,
       dividerType: type === 'divider' ? (subType || 'horizontal') : undefined
     }
+    setHistory((h) => [...h, elements])
     setElements([...elements, newElement])
     setSelectedElement(newElement.id)
   }
 
   const updateElement = (id: string, updates: Partial<TemplateElement>) => {
+    setHistory((h) => [...h, elements])
     setElements(elements.map(el => el.id === id ? { ...el, ...updates } : el))
   }
 
   const deleteElement = (id: string) => {
+    setHistory((h) => [...h, elements])
     setElements(elements.filter(el => el.id !== id))
     setSelectedElement(null)
   }
@@ -142,8 +146,20 @@ export default function TemplateBuilderPage() {
         id: `element-${Date.now()}`,
         position: { x: element.position!.x + 20, y: element.position!.y + 20 }
       }
+      setHistory((h) => [...h, elements])
       setElements([...elements, newElement])
     }
+  }
+
+  const undo = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h
+      const prev = h[h.length - 1]
+      setElements(prev)
+      const sel = selectedElement && prev.find((el) => el.id === selectedElement) ? selectedElement : null
+      setSelectedElement(sel)
+      return h.slice(0, -1)
+    })
   }
 
   const selectedEl = elements.find(el => el.id === selectedElement)
@@ -154,6 +170,11 @@ export default function TemplateBuilderPage() {
       const el = elements.find(x => x.id === selectedElement)
       if (!el) return
       const step = e.shiftKey ? 10 : 1
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        undo()
+        return
+      }
       if (e.metaKey || e.ctrlKey) {
         if (e.key === 'ArrowRight') {
           updateElement(el.id, { size: { width: (el.size?.width || 200) + step, height: el.size?.height || 30 } })
@@ -199,9 +220,9 @@ export default function TemplateBuilderPage() {
             <Palette className="w-5 h-5" />
             <span className="font-semibold">Template Builder</span>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium">Type:</label>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium">Type:</label>
               <select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
@@ -212,11 +233,15 @@ export default function TemplateBuilderPage() {
                 <option value="certificate">Certificate</option>
                 <option value="email">Email</option>
               </select>
-            </div>
-            <Button variant="outline" size="sm" onClick={resetToDefault}>
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Reset
-            </Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={undo} disabled={history.length === 0}>
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Undo
+          </Button>
+          <Button variant="outline" size="sm" onClick={resetToDefault}>
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Reset
+          </Button>
             <Button onClick={saveTemplate} disabled={saving} size="sm">
               <Save className="w-4 h-4 mr-1" />
               {saving ? 'Saving...' : 'Save'}
@@ -506,26 +531,26 @@ export default function TemplateBuilderPage() {
                                   />
                                 </div>
                               </div>
-                              <div className="col-span-2">
-                                <Label className="text-xs">Align</Label>
-                                <Select
-                                  value={(selectedEl.tableConfig?.align || ['left'])[i] || 'left'}
-                                  onValueChange={(value) => {
-                                    const align = [...(selectedEl.tableConfig?.align || [])]
-                                    align[i] = value as any
-                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, align } })
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="left">left</SelectItem>
-                                    <SelectItem value="center">center</SelectItem>
-                                    <SelectItem value="right">right</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+            <div className="col-span-2">
+              <Label className="text-xs">Text Align</Label>
+              <Select
+                value={(selectedEl.tableConfig?.align || ['left'])[i] || 'left'}
+                onValueChange={(value) => {
+                  const align = [...(selectedEl.tableConfig?.align || [])]
+                  align[i] = value as any
+                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, align } })
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">left</SelectItem>
+                  <SelectItem value="center">center</SelectItem>
+                  <SelectItem value="right">right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
                               <div className="col-span-1 flex items-end gap-1">
                                 <Button
                                   size="sm"
@@ -1255,43 +1280,45 @@ export default function TemplateBuilderPage() {
                           )
                         )}
                         {element.type === 'table' && (
-                          <table className="w-full text-xs border-collapse">
-                            {element.tableConfig?.showHeader !== false && (
-                              <thead>
-                                <tr className="border-b" style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
-                                  {(element.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((header, i) => (
-                                    <th
-                                      key={i}
-                                      className="p-1 border"
-                                      style={{ textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
-                                    >
-                                      {header}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                            )}
-                            <tbody>
-                              {Array.from({ length: (element.tableConfig?.showHeader !== false) ? Math.max(1, (element.tableConfig?.rows || 3) - 1) : (element.tableConfig?.rows || 3) }).map((_, r) => (
-                                <tr key={r} className="border-b">
-                                  {(element.tableConfig?.columnKeys || ['name','quantity','price','total']).map((k, i) => {
-                                    const sample: any = { name: r === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100 }
-                                    const v = sample[k as keyof typeof sample]
-                                    const val = typeof v === 'number' && (k === 'price' || k === 'total') ? `₹${(v as number).toFixed(0)}` : String(v ?? '')
-                                    return (
-                                      <td
+                          <div className="w-full h-full border text-xs overflow-hidden" style={{ borderColor: element.style?.borderColor }}>
+                            <table className="w-full h-full border-collapse">
+                              {element.tableConfig?.showHeader !== false && (
+                                <thead>
+                                  <tr style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
+                                    {(element.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((header, i) => (
+                                      <th
                                         key={i}
-                                        className="p-1 border"
-                                        style={{ textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                        className="border p-1"
+                                        style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[i] || 'left') as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
                                       >
-                                        {val}
-                                      </td>
-                                    )
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                                        {header}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                              )}
+                              <tbody>
+                                {Array.from({ length: (element.tableConfig?.showHeader !== false) ? Math.max(1, (element.tableConfig?.rows || 3) - 1) : (element.tableConfig?.rows || 3) }).map((_, r) => (
+                                  <tr key={r}>
+                                    {(element.tableConfig?.columnKeys || ['name','quantity','price','total']).map((k, i) => {
+                                      const sample: any = { name: r === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100 }
+                                      const v = sample[k as keyof typeof sample]
+                                      const val = typeof v === 'number' && (k === 'price' || k === 'total') ? `₹${(v as number).toFixed(0)}` : String(v ?? '')
+                                      return (
+                                        <td
+                                          key={i}
+                                          className="border p-1"
+                                          style={{ borderColor: element.style?.borderColor, textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                        >
+                                          {val}
+                                        </td>
+                                      )
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         )}
                         {element.type === 'divider' && (
                           <div 
