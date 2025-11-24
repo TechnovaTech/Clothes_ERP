@@ -261,8 +261,16 @@ export class TemplateEngine {
           ${keys.map((k, i) => {
             const kk = (k === 'gst' ? 'gstRate' : (k === 'gstamt' || k === 'gst_amount' ? 'gstAmount' : k))
             let v = item?.[kk]
-            if (v === undefined && kk === 'gstRate') {
-              v = (data.invoice as any)?.taxBreakup?.gstRate
+            if (kk === 'gstRate') {
+              const fallbackRate = (data.invoice as any)?.taxBreakup?.gstRate
+              if (v === undefined || (typeof v === 'number' && v === 0) || (typeof v === 'string' && Number(v) === 0)) {
+                v = fallbackRate
+              }
+            } else if (kk === 'gstAmount' && v === undefined) {
+              const qty = Number(item?.quantity || 0)
+              const price = Number(item?.price || 0)
+              const rate = (typeof item?.gstRate === 'number' ? item!.gstRate : (data.invoice as any)?.taxBreakup?.gstRate) || 0
+              v = qty * price * rate / 100
             }
             let val = v ?? ''
             if (typeof v === 'number') {
