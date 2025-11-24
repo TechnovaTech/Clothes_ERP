@@ -950,3 +950,62 @@ Clothes_ERP/
 **Last Updated**: January 2024
 **Version**: 1.0.0
 **Maintained By**: Fashion ERP Team
+
+---
+
+## GST Mapping & Overrides
+
+### Column Keys for Item Table
+
+- Use `gstRate` to display GST percentage per item (formatted like `5.00%`).
+- Use `gstAmount` to display GST amount per item (formatted like `₹85.00`).
+- Aliases supported in the template engine:
+  - `gst` → `gstRate`
+  - `gstamt` / `gst_amount` → `gstAmount`
+
+### Data Flow
+
+- POS saves per-item tax fields when a bill is created:
+  - `app/api/pos/sales/route.ts:56` sets `item.gstRate` and `item.gstAmount` based on override or item/bill/store rate.
+  - Stores tax breakup in `sale.taxBreakup` including `gstRate` and totals.
+- Custom HTML bill generation uses the saved data and applies sensible fallbacks:
+  - `app/api/bill-pdf-custom/route.ts:83` normalizes override rate and falls back to `settings.taxRate` as needed.
+  - `lib/template-engine.ts:262` renders item table cells with formatting and fallbacks.
+
+### Fallback Rules in Template Rendering
+
+- When an item’s `gstRate` is missing or `0`, the template engine falls back to `invoice.taxBreakup.gstRate` before formatting (`lib/template-engine.ts:262–272`).
+- When an item’s `gstAmount` is missing, the template engine computes it as `quantity × price × rate` using the item’s rate or `invoice.taxBreakup.gstRate` (`lib/template-engine.ts:262–272`).
+- Percentage formatting: keys `gstRate` and `discountRate` render as `X.XX%`.
+- Currency formatting: keys `price`, `total`, `cgst`, `sgst`, `igst`, `gstAmount`, `taxAmount`, `discountAmount` render as `₹X.XX`.
+
+### Override Bill GST Behavior
+
+- The system treats a blank override input as “unset” and uses bill/store tax rate instead of `0%`.
+- Effective rate selection:
+  - If `gstRateOverride` is ON and a value is entered, use that value.
+  - If `gstRateOverride` is ON and blank, fall back to bill-level `gstRate` or `settings.taxRate`.
+  - If `gstRateOverride` is OFF, use item-level `gstRate` if present; otherwise bill/store tax rate.
+- References:
+  - `app/api/pos/sales/route.ts:51–60` – normalization and final rate selection.
+  - `app/api/bill-pdf-custom/route.ts:83–91` – same normalization used for custom HTML bill.
+
+### Bills List vs HTML Bill
+
+- Bills list shows GST Rate from `bill.taxBreakup.gstRate` or `bill.taxRate` and GST Amount from `bill.tax` (`app/tenant/bills/page.tsx:705–707`).
+- Custom HTML bill uses template-defined item table keys. Ensure the GST column Key is set to `gstRate` or `gstAmount` in Template Builder (`app/tenant/template-builder/page.tsx:751–758`).
+
+### Template Builder Steps
+
+- Open Template Builder and select your item table element.
+- For the GST column:
+  - Set Key to `gstRate` for percentage, or `gstAmount` for currency.
+  - You may use aliases `gst`, `gstamt`, or `gst_amount` (engine will map them).
+- Optional: if you do not include tax for a bill and want to hide GST columns, add conditional rendering in your template or remove the GST column.
+
+### Troubleshooting
+
+- If item GST shows `0.00%` but totals are correct:
+  - Verify column Key is `gstRate` or alias `gst`.
+  - Ensure the override field in Customer & Billing is set correctly; blank values now fall back to bill/store rate.
+  - Confirm the latest code paths referenced above are deployed.
