@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Trash2, Settings, Users, Package, Lock } from "lucide-react"
+import { Plus, Trash2, Settings, Users, Package, Lock, X } from "lucide-react"
 import { showToast } from "@/lib/toast"
 
 interface CustomerField {
@@ -190,7 +190,7 @@ export default function FieldSettingsPage() {
   if (!isAuthenticated) {
     return (
       <MainLayout title="Field Settings">
-        <Dialog open={isPasswordDialogOpen} onOpenChange={() => {}}>
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">

@@ -438,6 +438,8 @@ export default function CustomersPage() {
                         {customerFields.map((field) => (
                           <TableHead key={field.name} className="text-center">{field.label}</TableHead>
                         ))}
+                        <TableHead className="text-center">Orders</TableHead>
+                        <TableHead className="text-center">Total Spent</TableHead>
                         <TableHead className="text-center">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -468,6 +470,12 @@ export default function CustomersPage() {
                               </div>
                             </TableCell>
                           ))}
+                          <TableCell className="text-center text-sm">
+                            <Badge variant="outline">{customer.orderCount || 0}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center font-medium">
+                            ₹{(customer.totalSpent || 0).toFixed(2)}
+                          </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-2">
                               <Button 
