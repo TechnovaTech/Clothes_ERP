@@ -74,19 +74,30 @@ export async function POST(request: NextRequest) {
 
     // Compute tax breakup if not provided
     const items = Array.isArray(billData.items) ? billData.items : []
+    const storeState = settings?.state || body.storeState
+    const taxMode = billData.taxMode || ((billData.customerState && storeState && billData.customerState !== storeState) ? 'inter' : 'intra')
     const taxAgg = items.reduce((acc: any, it: any) => {
       const qty = Number(it.quantity || 0)
       const price = Number(it.price || 0)
       const line = qty * price
-      const rate = Number(it.gstRate || billData.gstRate || 0)
-      const taxType = it.taxType || billData.taxType || 'intra' // intra: cgst+sgst, inter: igst
+      const rate = Number((billData.gstRateOverride ? (billData.billGstRate ?? billData.gstRate) : (it.gstRate ?? billData.billGstRate ?? billData.gstRate)) ?? 0)
+      const taxType = it.taxType || billData.taxType || taxMode || 'intra' // intra: cgst+sgst, inter: igst
       const gstAmount = it.gstAmount != null ? Number(it.gstAmount) : (line * rate / 100)
       if (taxType === 'inter') {
-        acc.igst += it.igst != null ? Number(it.igst) : gstAmount
+        const igstVal = it.igst != null ? Number(it.igst) : gstAmount
+        acc.igst += igstVal
+        it.igst = igstVal
+        it.cgst = 0
+        it.sgst = 0
       } else {
         const half = gstAmount / 2
-        acc.cgst += it.cgst != null ? Number(it.cgst) : half
-        acc.sgst += it.sgst != null ? Number(it.sgst) : half
+        const cgstVal = it.cgst != null ? Number(it.cgst) : half
+        const sgstVal = it.sgst != null ? Number(it.sgst) : half
+        acc.cgst += cgstVal
+        acc.sgst += sgstVal
+        it.cgst = cgstVal
+        it.sgst = sgstVal
+        it.igst = 0
       }
       acc.cess += it.cess != null ? Number(it.cess) : 0
       acc.gstAmount += gstAmount
@@ -119,7 +130,8 @@ export async function POST(request: NextRequest) {
         discount: billData.discountAmount || billData.discount,
         date: new Date(billData.createdAt || Date.now()).toLocaleDateString('en-IN'),
         items,
-        taxBreakup: taxAgg
+        taxBreakup: taxAgg,
+        taxMode
       },
       customer: {
         name: billData.customerName || 'Walk-in Customer',

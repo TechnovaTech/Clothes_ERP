@@ -35,6 +35,94 @@ export default function TemplateBuilderPage() {
   const [guideH, setGuideH] = useState<number | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const [selectionRect, setSelectionRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const alignSelection = (mode: 'left' | 'right' | 'top' | 'bottom' | 'centerX' | 'centerY' | 'distributeX') => {
+    const ids = selectedIds.length > 0 ? selectedIds : (selectedElement ? [selectedElement] : [])
+    if (ids.length === 0) return
+    const rect = canvasRef.current?.getBoundingClientRect()
+    const pageW = rect?.width || 0
+    const pageH = rect?.height || 0
+    const els = ids.map(id => elements.find(e => e.id === id)).filter(Boolean) as TemplateElement[]
+    if (els.length === 0) return
+    const minX = Math.min(...els.map(e => e.position?.x || 0))
+    const minY = Math.min(...els.map(e => e.position?.y || 0))
+    const maxRight = Math.max(...els.map(e => (e.position?.x || 0) + (e.size?.width || 0)))
+    const maxBottom = Math.max(...els.map(e => (e.position?.y || 0) + (e.size?.height || 0)))
+    const groupW = maxRight - minX
+    const groupH = maxBottom - minY
+    if (mode === 'left') {
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        const dx = (el.position?.x || 0) - minX
+        updateElement(id, { position: { x: dx, y: el.position?.y || 0 } })
+      })
+      return
+    }
+    if (mode === 'right' && pageW) {
+      const targetLeft = Math.max(0, pageW - groupW)
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        const dx = (el.position?.x || 0) - minX
+        updateElement(id, { position: { x: targetLeft + dx, y: el.position?.y || 0 } })
+      })
+      return
+    }
+    if (mode === 'top') {
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        const dy = (el.position?.y || 0) - minY
+        updateElement(id, { position: { x: el.position?.x || 0, y: dy } })
+      })
+      return
+    }
+    if (mode === 'bottom' && pageH) {
+      const targetTop = Math.max(0, pageH - groupH)
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        const dy = (el.position?.y || 0) - minY
+        updateElement(id, { position: { x: el.position?.x || 0, y: targetTop + dy } })
+      })
+      return
+    }
+    if (mode === 'centerX' && pageW) {
+      const groupCenter = minX + groupW / 2
+      const pageCenter = pageW / 2
+      const dxAll = Math.max(0, pageCenter - groupCenter)
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        updateElement(id, { position: { x: Math.max(0, (el.position?.x || 0) + dxAll), y: el.position?.y || 0 } })
+      })
+      return
+    }
+    if (mode === 'centerY' && pageH) {
+      const groupCenter = minY + groupH / 2
+      const pageCenter = pageH / 2
+      const dyAll = Math.max(0, pageCenter - groupCenter)
+      ids.forEach(id => {
+        const el = elements.find(e => e.id === id)
+        if (!el) return
+        updateElement(id, { position: { x: el.position?.x || 0, y: Math.max(0, (el.position?.y || 0) + dyAll) } })
+      })
+      return
+    }
+    if (mode === 'distributeX') {
+      const sorted = els.slice().sort((a,b) => (a.position?.x || 0) - (b.position?.x || 0))
+      const totalWidth = sorted.reduce((acc,e) => acc + (e.size?.width || 0), 0)
+      const gapCount = Math.max(1, sorted.length - 1)
+      const available = Math.max(0, groupW - totalWidth)
+      const gap = Math.floor(available / gapCount)
+      let cursor = minX
+      sorted.forEach(e => {
+        updateElement(e.id, { position: { x: cursor, y: e.position?.y || 0 } })
+        cursor += (e.size?.width || 0) + gap
+      })
+      return
+    }
+  }
 
   // Load template on mount and type change
   useEffect(() => {
@@ -290,6 +378,15 @@ export default function TemplateBuilderPage() {
                 className="h-8 w-48"
               />
             </div>
+            <div className="hidden lg:flex items-center space-x-1">
+              <Button variant="outline" size="sm" onClick={() => alignSelection('left')}>Align Left</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('centerX')}>Center X</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('right')}>Align Right</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('top')}>Align Top</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('centerY')}>Center Y</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('bottom')}>Align Bottom</Button>
+              <Button variant="outline" size="sm" onClick={() => alignSelection('distributeX')}>Distribute X</Button>
+            </div>
             <Button variant="outline" size="sm" onClick={redo} disabled={future.length === 0}>
               <RotateCcw className="w-4 h-4 mr-1 rotate-180" />
               Redo
@@ -310,6 +407,14 @@ export default function TemplateBuilderPage() {
                   value={zoom}
                   onChange={(e) => setZoom(Math.max(10, Math.min(200, Number(e.target.value) || 85)))}
                   className="h-8 w-20"
+                />
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-24"
                 />
                 <span className="text-sm">%</span>
               </div>
@@ -515,9 +620,21 @@ export default function TemplateBuilderPage() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
+                                  const deriveCols = () => {
+                                    const c = selectedEl.tableConfig?.columns
+                                    if (c && c > 0) return c
+                                    const lengths = [
+                                      selectedEl.tableConfig?.headers?.length || 0,
+                                      selectedEl.tableConfig?.columnKeys?.length || 0,
+                                      selectedEl.tableConfig?.align?.length || 0,
+                                      selectedEl.tableConfig?.columnWidths?.length || 0,
+                                    ]
+                                    const m = Math.max(...lengths)
+                                    return m > 0 ? m : 4
+                                  }
+                                  const cols = deriveCols()
                                   const equal = Array(cols).fill(Math.round(100 / cols))
-                                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: equal } })
+                                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columns: cols, columnWidths: equal } })
                                 }}
                                 className="h-7 px-2 text-xs"
                               >
@@ -525,35 +642,54 @@ export default function TemplateBuilderPage() {
                               </Button>
                               <Button
                                 size="sm"
+                                variant="outline"
                                 onClick={() => {
-                                  const prevCols = selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 0)
+                                  const defaultHeaders = ['Item','Qty','Rate','Amount']
+                                  const prevCols = selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || defaultHeaders.length)
+                                  if (prevCols <= 1) return
+                                  const headers = (selectedEl.tableConfig?.headers && selectedEl.tableConfig.headers.length > 0) ? [...selectedEl.tableConfig.headers] : defaultHeaders.slice()
+                                  const keys = (selectedEl.tableConfig?.columnKeys && selectedEl.tableConfig.columnKeys.length > 0) ? [...selectedEl.tableConfig.columnKeys] : Array(headers.length).fill('')
+                                  const align = (selectedEl.tableConfig?.align && selectedEl.tableConfig.align.length > 0) ? [...(selectedEl.tableConfig.align as any)] : Array(headers.length).fill('left')
+                                  let widths = (selectedEl.tableConfig?.columnWidths && selectedEl.tableConfig.columnWidths.length === prevCols) ? [...selectedEl.tableConfig.columnWidths] : Array(prevCols).fill(Math.round(100 / prevCols))
+                                  // Remove last column
+                                  headers.pop()
+                                  keys.pop()
+                                  align.pop()
+                                  widths = widths.slice(0, prevCols - 1)
+                                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columns: prevCols - 1, headers, columnKeys: keys, align, columnWidths: widths } })
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Remove Column
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const defaultHeaders = ['Item','Qty','Rate','Amount']
+                                  const headersBase = (selectedEl.tableConfig?.headers && selectedEl.tableConfig.headers.length > 0)
+                                    ? [...selectedEl.tableConfig.headers]
+                                    : defaultHeaders.slice()
+                                  const prevCols = selectedEl.tableConfig?.columns || headersBase.length
                                   const cols = prevCols + 1
-                                  // Normalize existing arrays to prevCols
-                                  const prevHeaders = (selectedEl.tableConfig?.headers || []).slice()
-                                  while (prevHeaders.length < prevCols) prevHeaders.push(`Col ${prevHeaders.length + 1}`)
-                                  const prevKeys = (selectedEl.tableConfig?.columnKeys || []).slice()
-                                  while (prevKeys.length < prevCols) prevKeys.push('')
-                                  const prevAligns = (selectedEl.tableConfig?.align || []).slice() as any
-                                  while (prevAligns.length < prevCols) prevAligns.push('left')
-                                  let prevWidths = (selectedEl.tableConfig?.columnWidths || []).slice()
-                                  if (prevWidths.length !== prevCols) {
-                                    // Distribute existing or set equal for prevCols
-                                    prevWidths = Array(prevCols).fill(Math.round(100 / prevCols))
-                                  }
-                                  // Append new column values
-                                  const headers = [...prevHeaders, `Col ${cols}`]
-                                  const keys = [...prevKeys, '']
-                                  const aligns = [...prevAligns, 'left'] as any
-                                  // Keep previous widths and add a new width while keeping sum 100
-                                  const remaining = Math.max(5, Math.round(100 / cols))
-                                  let widths = prevWidths.slice()
-                                  // Reduce each existing width slightly to make room
-                                  const reduceTotal = remaining
-                                  const perReduce = Math.floor(reduceTotal / prevCols)
-                                  widths = widths.map(w => Math.max(5, w - perReduce))
-                                  const sum = widths.reduce((a,b)=>a+b,0)
-                                  const newWidth = Math.max(5, 100 - sum)
-                                  widths.push(newWidth)
+                                  const defaultKeys = ['name','quantity','price','total']
+                                  const keysBase = Array.from({ length: prevCols }, (_, i) => {
+                                    const k = selectedEl.tableConfig?.columnKeys?.[i]
+                                    return k !== undefined ? k : (defaultKeys[i] ?? '')
+                                  })
+                                  const alignBase = (selectedEl.tableConfig?.align && selectedEl.tableConfig.align.length > 0)
+                                    ? [...(selectedEl.tableConfig.align as any)]
+                                    : Array(headersBase.length).fill('left')
+                                  let widthsBase = (selectedEl.tableConfig?.columnWidths && selectedEl.tableConfig.columnWidths.length === prevCols)
+                                    ? [...selectedEl.tableConfig.columnWidths]
+                                    : Array(prevCols).fill(Math.round(100 / prevCols))
+                                  // Append new column without touching existing values
+                                  const headers = [...headersBase, `Col ${cols}`]
+                                  const keys = [...keysBase, '']
+                                  const aligns = [...alignBase, 'left'] as any
+                                  // Add a new width using remaining percentage
+                                  const used = widthsBase.reduce((a,b)=>a+b,0)
+                                  const leftover = Math.max(5, 100 - used)
+                                  const widths = [...widthsBase, leftover]
                                   updateElement(selectedEl.id, {
                                     tableConfig: {
                                       ...selectedEl.tableConfig!,
@@ -620,44 +756,27 @@ export default function TemplateBuilderPage() {
                               </div>
                               <div className="col-span-3">
                                 <Label className="text-xs">Width (%)</Label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="range"
-                                    min={5}
-                                    max={80}
-                                    value={(selectedEl.tableConfig?.columnWidths || [])[i] ?? Math.round(100 / ((selectedEl.tableConfig?.columns) || 4))}
-                                    onChange={(e) => {
-                                      const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
-                                      let widths = [...(selectedEl.tableConfig?.columnWidths || Array(cols).fill(Math.round(100 / cols)))]
-                                      widths[i] = Number(e.target.value)
-                                      const sum = widths.reduce((a,b) => a + b, 0)
-                                      if (sum !== 100) {
-                                        const diff = 100 - sum
-                                        const j = i === 0 ? 1 : 0
-                                        widths[j] = Math.max(5, widths[j] + diff)
-                                      }
-                                      updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: widths } })
-                                    }}
-                                    className="flex-1"
-                                  />
-                                  <Input
-                                    type="number"
-                                    value={(selectedEl.tableConfig?.columnWidths || [])[i] ?? Math.round(100 / ((selectedEl.tableConfig?.columns) || 4))}
-                                    onChange={(e) => {
-                                      const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
-                                      let widths = [...(selectedEl.tableConfig?.columnWidths || Array(cols).fill(Math.round(100 / cols)))]
-                                      widths[i] = Number(e.target.value) || 0
-                                      const sum = widths.reduce((a,b) => a + b, 0)
-                                      if (sum !== 100) {
-                                        const diff = 100 - sum
-                                        const j = i === 0 ? 1 : 0
-                                        widths[j] = Math.max(5, widths[j] + diff)
-                                      }
-                                      updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: widths } })
-                                    }}
-                                    className="h-8 w-16 text-xs"
-                                  />
-                                </div>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={100}
+                                  step={1}
+                                  value={(selectedEl.tableConfig?.columnWidths || [])[i] ?? Math.round(100 / ((selectedEl.tableConfig?.columns) || 4))}
+                                  onChange={(e) => {
+                                    const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
+                                    let widths = [...(selectedEl.tableConfig?.columnWidths || Array(cols).fill(Math.round(100 / cols)))]
+                                    const entered = Math.max(1, Math.min(100, Number(e.target.value) || 0))
+                                    widths[i] = entered
+                                    const sum = widths.reduce((a,b) => a + b, 0)
+                                    if (sum !== 100) {
+                                      const diff = 100 - sum
+                                      const j = i === 0 ? 1 : 0
+                                      widths[j] = Math.max(1, Math.min(100, widths[j] + diff))
+                                    }
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: widths } })
+                                  }}
+                                  className="h-8 w-24 text-xs"
+                                />
                               </div>
             <div className="col-span-2">
               <Label className="text-xs">Text Align</Label>
@@ -751,9 +870,42 @@ export default function TemplateBuilderPage() {
                                 min="2"
                                 max="10"
                                 value={selectedEl.tableConfig?.columns || 4}
-                                onChange={(e) => updateElement(selectedEl.id, {
-                                  tableConfig: { ...selectedEl.tableConfig!, columns: Number(e.target.value) }
-                                })}
+                                onChange={(e) => {
+                                  const defaultHeaders = ['Item','Qty','Rate','Amount']
+                                  const prevCols = selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || defaultHeaders.length)
+                                  const nextCols = Math.max(1, Math.min(10, Number(e.target.value) || prevCols))
+                                  if (nextCols === prevCols) return
+                                  const headers = (selectedEl.tableConfig?.headers && selectedEl.tableConfig.headers.length > 0)
+                                    ? [...selectedEl.tableConfig.headers]
+                                    : defaultHeaders.slice()
+                                  const defaultKeys = ['name','quantity','price','total']
+                                  const keys = Array.from({ length: prevCols }, (_, i) => {
+                                    const k = selectedEl.tableConfig?.columnKeys?.[i]
+                                    return k !== undefined ? k : (defaultKeys[i] ?? '')
+                                  })
+                                  const align = (selectedEl.tableConfig?.align && selectedEl.tableConfig.align.length > 0)
+                                    ? [...(selectedEl.tableConfig.align as any)]
+                                    : Array(headers.length).fill('left')
+                                  let widths = (selectedEl.tableConfig?.columnWidths && selectedEl.tableConfig.columnWidths.length === prevCols)
+                                    ? [...selectedEl.tableConfig.columnWidths]
+                                    : Array(prevCols).fill(Math.round(100 / prevCols))
+                                  if (nextCols > prevCols) {
+                                    for (let i = prevCols; i < nextCols; i++) {
+                                      headers.push(`Col ${i+1}`)
+                                      keys.push('')
+                                      align.push('left' as any)
+                                    }
+                                    const used = widths.reduce((a,b)=>a+b,0)
+                                    const leftover = Math.max(5, 100 - used)
+                                    widths.push(leftover)
+                                  } else {
+                                    headers.splice(nextCols)
+                                    keys.splice(nextCols)
+                                    align.splice(nextCols)
+                                    widths = widths.slice(0, nextCols)
+                                  }
+                                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columns: nextCols, headers, columnKeys: keys, align, columnWidths: widths } })
+                                }}
                                 className="h-8 text-sm"
                               />
                             </div>

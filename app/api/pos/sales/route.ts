@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, taxRate, cessRate, storeName, staffMember, includeTax, includeCess } = body
+    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState } = body
     
     console.log('=== SALE REQUEST START ===')
     console.log('Tenant ID:', session.user.tenantId)
@@ -42,19 +42,34 @@ export async function POST(request: NextRequest) {
 
     // Compute tax breakup from items
     const itemsArr = Array.isArray(items) ? items : []
+    const storeState = storeSettings.state || bodyStoreState
+    const taxMode = bodyTaxMode || ((customerState && storeState && customerState !== storeState) ? 'inter' : 'intra')
     const taxBreakup = itemsArr.reduce((acc: any, it: any) => {
       const qty = Number(it.quantity || 0)
       const price = Number(it.price || 0)
       const line = qty * price
-      const rate = Number(it.gstRate || taxRate || storeSettings.taxRate || 0)
-      const taxType = it.taxType || 'intra'
+      const rate = Number(
+        (gstRateOverride ? (billGstRate ?? taxRate) : (it.gstRate ?? billGstRate ?? taxRate))
+        ?? storeSettings.taxRate
+        ?? 0
+      )
+      const taxType = it.taxType || taxMode || 'intra'
       const gstAmount = it.gstAmount != null ? Number(it.gstAmount) : (line * rate / 100)
       if (taxType === 'inter') {
-        acc.igst += it.igst != null ? Number(it.igst) : gstAmount
+        const igstVal = it.igst != null ? Number(it.igst) : gstAmount
+        acc.igst += igstVal
+        it.igst = igstVal
+        it.cgst = 0
+        it.sgst = 0
       } else {
         const half = gstAmount / 2
-        acc.cgst += it.cgst != null ? Number(it.cgst) : half
-        acc.sgst += it.sgst != null ? Number(it.sgst) : half
+        const cgstVal = it.cgst != null ? Number(it.cgst) : half
+        const sgstVal = it.sgst != null ? Number(it.sgst) : half
+        acc.cgst += cgstVal
+        acc.sgst += sgstVal
+        it.cgst = cgstVal
+        it.sgst = sgstVal
+        it.igst = 0
       }
       acc.cess += it.cess != null ? Number(it.cess) : 0
       acc.gstAmount += gstAmount
@@ -62,20 +77,36 @@ export async function POST(request: NextRequest) {
       return acc
     }, { cgst: 0, sgst: 0, igst: 0, cess: 0, gstAmount: 0, gstRate: taxRate || storeSettings.taxRate || 0 })
 
+    // Compute subtotal/discount totals if not provided, supporting item-level discountRate/discountAmount
+    let computedSubtotal = 0
+    let computedDiscount = 0
+    for (const it of itemsArr) {
+      const qty = Number(it.quantity || 0)
+      const price = Number(it.price || 0)
+      const line = qty * price
+      const dRate = Number(it.discountRate || 0)
+      const dAmountExplicit = it.discountAmount != null ? Number(it.discountAmount) : undefined
+      const dAmountFromRate = dRate ? (line * dRate / 100) : 0
+      const dAmount = dAmountExplicit != null ? dAmountExplicit : dAmountFromRate
+      computedSubtotal += (line - dAmount)
+      computedDiscount += dAmount
+      it.discountAmount = dAmount
+    }
+
     // Create sale record with all data
     const sale = {
       billNo,
       series,
       number,
-      items: items || [],
+      items: itemsArr,
       customerName: customerName || 'Walk-in Customer',
       customerPhone: customerPhone || null,
-      subtotal: parseFloat(subtotal) || 0,
+      subtotal: subtotal != null ? parseFloat(subtotal) : computedSubtotal,
       discount: parseFloat(discount) || 0,
-      discountAmount: parseFloat(discountAmount) || 0,
+      discountAmount: discountAmount != null ? parseFloat(discountAmount) : computedDiscount,
       tax: parseFloat(tax) || taxBreakup.gstAmount || 0,
       cess: parseFloat(cess) || taxBreakup.cess || 0,
-      total: parseFloat(total) || 0,
+      total: total != null ? parseFloat(total) : ((subtotal != null ? parseFloat(subtotal) : computedSubtotal) + (tax != null ? parseFloat(tax) : taxBreakup.gstAmount || 0) + (cess != null ? parseFloat(cess) : taxBreakup.cess || 0)),
       paymentMethod: paymentMethod || 'cash',
       storeName: storeName || storeSettings.storeName || 'Store',
       address: storeSettings.address || '',
@@ -92,6 +123,7 @@ export async function POST(request: NextRequest) {
       includeTax: includeTax !== undefined ? includeTax : true,
       includeCess: includeCess !== undefined ? includeCess : true,
       taxBreakup,
+      taxMode,
       createdAt: new Date(),
       updatedAt: new Date()
     }
