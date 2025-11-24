@@ -387,6 +387,196 @@ export default function TemplateBuilderPage() {
                       
                       {selectedEl.type === 'table' && (
                         <>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium">Column Manager</div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
+                                  const equal = Array(cols).fill(Math.round(100 / cols))
+                                  updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: equal } })
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Distribute Widths
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const cols = (selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 0)) + 1
+                                  const headers = [...(selectedEl.tableConfig?.headers || []), `Col ${cols}`]
+                                  const keys = [...(selectedEl.tableConfig?.columnKeys || []), '']
+                                  const aligns = [...(selectedEl.tableConfig?.align || []), 'left'] as any
+                                  const widths = [...(selectedEl.tableConfig?.columnWidths || [])]
+                                  const equal = Array(cols).fill(Math.round(100 / cols))
+                                  updateElement(selectedEl.id, {
+                                    tableConfig: {
+                                      ...selectedEl.tableConfig!,
+                                      columns: cols,
+                                      headers,
+                                      columnKeys: keys,
+                                      align: aligns,
+                                      columnWidths: widths.length === cols ? widths : equal
+                                    }
+                                  })
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Add Column
+                              </Button>
+                            </div>
+                          </div>
+                          {(selectedEl.tableConfig?.headers || ['Item','Qty','Rate','Amount']).map((h, i) => (
+                            <div key={`col-${i}`} className="grid grid-cols-12 gap-2 items-center mb-2">
+                              <div className="col-span-3">
+                                <Label className="text-xs">Header</Label>
+                                <Input
+                                  value={h}
+                                  onChange={(e) => {
+                                    const headers = [...(selectedEl.tableConfig?.headers || [])]
+                                    headers[i] = e.target.value
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, headers } })
+                                  }}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="col-span-3">
+                                <Label className="text-xs">Key</Label>
+                                <Select
+                                  value={((selectedEl.tableConfig?.columnKeys || ['name','quantity','price','total'])[i] || 'none') as any}
+                                  onValueChange={(value) => {
+                                    const keys = [...(selectedEl.tableConfig?.columnKeys || [])]
+                                    keys[i] = value === 'none' ? '' : value
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnKeys: keys } })
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Select key" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="name">name</SelectItem>
+                                    <SelectItem value="quantity">quantity</SelectItem>
+                                    <SelectItem value="price">price</SelectItem>
+                                    <SelectItem value="total">total</SelectItem>
+                                    <SelectItem value="sku">sku</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="col-span-3">
+                                <Label className="text-xs">Width (%)</Label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="range"
+                                    min={5}
+                                    max={80}
+                                    value={(selectedEl.tableConfig?.columnWidths || [])[i] ?? Math.round(100 / ((selectedEl.tableConfig?.columns) || 4))}
+                                    onChange={(e) => {
+                                      const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
+                                      let widths = [...(selectedEl.tableConfig?.columnWidths || Array(cols).fill(Math.round(100 / cols)))]
+                                      widths[i] = Number(e.target.value)
+                                      const sum = widths.reduce((a,b) => a + b, 0)
+                                      if (sum !== 100) {
+                                        const diff = 100 - sum
+                                        const j = i === 0 ? 1 : 0
+                                        widths[j] = Math.max(5, widths[j] + diff)
+                                      }
+                                      updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: widths } })
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  <Input
+                                    type="number"
+                                    value={(selectedEl.tableConfig?.columnWidths || [])[i] ?? Math.round(100 / ((selectedEl.tableConfig?.columns) || 4))}
+                                    onChange={(e) => {
+                                      const cols = Math.max(1, selectedEl.tableConfig?.columns || (selectedEl.tableConfig?.headers?.length || 4))
+                                      let widths = [...(selectedEl.tableConfig?.columnWidths || Array(cols).fill(Math.round(100 / cols)))]
+                                      widths[i] = Number(e.target.value) || 0
+                                      const sum = widths.reduce((a,b) => a + b, 0)
+                                      if (sum !== 100) {
+                                        const diff = 100 - sum
+                                        const j = i === 0 ? 1 : 0
+                                        widths[j] = Math.max(5, widths[j] + diff)
+                                      }
+                                      updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columnWidths: widths } })
+                                    }}
+                                    className="h-8 w-16 text-xs"
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-span-2">
+                                <Label className="text-xs">Align</Label>
+                                <Select
+                                  value={(selectedEl.tableConfig?.align || ['left'])[i] || 'left'}
+                                  onValueChange={(value) => {
+                                    const align = [...(selectedEl.tableConfig?.align || [])]
+                                    align[i] = value as any
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, align } })
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="left">left</SelectItem>
+                                    <SelectItem value="center">center</SelectItem>
+                                    <SelectItem value="right">right</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="col-span-1 flex items-end gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={() => {
+                                    if (i === 0) return
+                                    const headers = [...(selectedEl.tableConfig?.headers || [])]
+                                    const keys = [...(selectedEl.tableConfig?.columnKeys || [])]
+                                    const align = [...(selectedEl.tableConfig?.align || [])]
+                                    const widths = [...(selectedEl.tableConfig?.columnWidths || [])]
+                                    ;[headers[i-1], headers[i]] = [headers[i], headers[i-1]]
+                                    ;[keys[i-1], keys[i]] = [keys[i], keys[i-1]]
+                                    ;[align[i-1], align[i]] = [align[i], align[i-1]]
+                                    ;[widths[i-1], widths[i]] = [widths[i], widths[i-1]]
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, headers, columnKeys: keys, align, columnWidths: widths } })
+                                  }}
+                                >↑</Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={() => {
+                                    const headers = [...(selectedEl.tableConfig?.headers || [])]
+                                    const keys = [...(selectedEl.tableConfig?.columnKeys || [])]
+                                    const align = [...(selectedEl.tableConfig?.align || [])]
+                                    const widths = [...(selectedEl.tableConfig?.columnWidths || [])]
+                                    if (i >= headers.length - 1) return
+                                    ;[headers[i+1], headers[i]] = [headers[i], headers[i+1]]
+                                    ;[keys[i+1], keys[i]] = [keys[i], keys[i+1]]
+                                    ;[align[i+1], align[i]] = [align[i], align[i+1]]
+                                    ;[widths[i+1], widths[i]] = [widths[i], widths[i+1]]
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, headers, columnKeys: keys, align, columnWidths: widths } })
+                                  }}
+                                >↓</Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={() => {
+                                    const headers = (selectedEl.tableConfig?.headers || []).filter((_, idx) => idx !== i)
+                                    const keys = (selectedEl.tableConfig?.columnKeys || []).filter((_, idx) => idx !== i)
+                                    const align = (selectedEl.tableConfig?.align || []).filter((_, idx) => idx !== i)
+                                    const widths = (selectedEl.tableConfig?.columnWidths || []).filter((_, idx) => idx !== i)
+                                    const cols = Math.max(1, (selectedEl.tableConfig?.columns || headers.length) - 1)
+                                    updateElement(selectedEl.id, { tableConfig: { ...selectedEl.tableConfig!, columns: cols, headers, columnKeys: keys, align, columnWidths: widths } })
+                                  }}
+                                >✕</Button>
+                              </div>
+                            </div>
+                          ))}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-sm">Rows</Label>
@@ -490,7 +680,7 @@ export default function TemplateBuilderPage() {
                           <div>
                             <Label className="text-sm">Column Headers (comma separated)</Label>
                             <Input
-                              value={selectedEl.tableConfig?.headers.join(', ') || 'Item, Qty, Rate, Amount'}
+                              value={selectedEl.tableConfig?.headers?.join(', ') || 'Item, Qty, Rate, Amount'}
                               onChange={(e) => {
                                 const headers = e.target.value.split(',').map(h => h.trim()).filter(h => h)
                                 updateElement(selectedEl.id, {
@@ -798,11 +988,7 @@ export default function TemplateBuilderPage() {
                               </div>
                             )
                           )}
-                          {element.type === 'table' && (
-                            <div className="w-full h-full border border-gray-300 flex items-center justify-center text-xs">
-                              Table
-                            </div>
-                          )}
+                          
                           {element.type === 'divider' && (
                             <div 
                               className="bg-gray-400"
@@ -832,7 +1018,7 @@ export default function TemplateBuilderPage() {
                                   </thead>
                                 )}
                                 <tbody>
-                                  {Array.from({ length: Math.max(1, (element.tableConfig?.rows || 3) - 1) }).map((_, rowIndex) => (
+                                  {Array.from({ length: (element.tableConfig?.showHeader !== false) ? Math.max(1, (element.tableConfig?.rows || 3) - 1) : (element.tableConfig?.rows || 3) }).map((_, rowIndex) => (
                                     <tr key={rowIndex}>
                                       {Array.from({ length: element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4) }).map((_, colIndex) => {
                                         const keys = element.tableConfig?.columnKeys || ['name','quantity','price','total']
@@ -853,6 +1039,51 @@ export default function TemplateBuilderPage() {
                                   ))}
                                 </tbody>
                               </table>
+                              {(() => {
+                                const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
+                                const widths = element.tableConfig?.columnWidths && element.tableConfig.columnWidths.length === cols
+                                  ? element.tableConfig.columnWidths
+                                  : Array(cols).fill(Math.round(100/cols))
+                                const containerWidth = element.size?.width || 200
+                                let acc = 0
+                                return Array.from({ length: cols - 1 }).map((_, idx) => {
+                                  acc += (widths[idx] / 100) * containerWidth
+                                  const leftPos = acc - 3
+                                  return (
+                                    <div
+                                      key={`resizer-${idx}`}
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation()
+                                        const startX = e.clientX
+                                        const startWidths = widths.slice()
+                                        const handleMove = (ev: MouseEvent) => {
+                                          const deltaX = ev.clientX - startX
+                                          const deltaPct = (deltaX / containerWidth) * 100
+                                          let w1 = Math.max(5, startWidths[idx] + deltaPct)
+                                          let w2 = Math.max(5, startWidths[idx+1] - deltaPct)
+                                          const rest = widths.map((w, i) => i === idx ? w1 : i === idx+1 ? w2 : w)
+                                          const sum = rest.reduce((a,b) => a + b, 0)
+                                          const diff = 100 - sum
+                                          if (Math.abs(diff) > 0.01) {
+                                            const j = idx > 1 ? 0 : (idx+2 < cols ? idx+2 : 0)
+                                            rest[j] = Math.max(5, rest[j] + diff)
+                                          }
+                                          updateElement(element.id, { tableConfig: { ...element.tableConfig!, columnWidths: rest } })
+                                        }
+                                        const handleUp = () => {
+                                          document.removeEventListener('mousemove', handleMove)
+                                          document.removeEventListener('mouseup', handleUp)
+                                        }
+                                        document.addEventListener('mousemove', handleMove)
+                                        document.addEventListener('mouseup', handleUp)
+                                      }}
+                                      style={{ position: 'absolute', top: 0, left: leftPos, height: '100%', width: 6, cursor: 'col-resize', background: 'transparent' }}
+                                    >
+                                      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 2, width: 2, background: '#3b82f6', opacity: selectedElement === element.id ? 0.8 : 0.4 }} />
+                                    </div>
+                                  )
+                                })
+                              })()}
                             </div>
                           )}
                           {selectedElement === element.id && (
@@ -1041,17 +1272,22 @@ export default function TemplateBuilderPage() {
                               </thead>
                             )}
                             <tbody>
-                              {[{ name: 'T-Shirt', quantity: 2, price: 250, total: 500 }, { name: 'Jeans', quantity: 1, price: 500, total: 500 }].map((it, r) => (
+                              {Array.from({ length: (element.tableConfig?.showHeader !== false) ? Math.max(1, (element.tableConfig?.rows || 3) - 1) : (element.tableConfig?.rows || 3) }).map((_, r) => (
                                 <tr key={r} className="border-b">
-                                  {(element.tableConfig?.columnKeys || ['name','quantity','price','total']).map((k, i) => (
-                                    <td
-                                      key={i}
-                                      className="p-1 border"
-                                      style={{ textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
-                                    >
-                                      {typeof it[k as keyof typeof it] === 'number' && (k === 'price' || k === 'total') ? `₹${(it[k as keyof typeof it] as number).toFixed(0)}` : String(it[k as keyof typeof it])}
-                                    </td>
-                                  ))}
+                                  {(element.tableConfig?.columnKeys || ['name','quantity','price','total']).map((k, i) => {
+                                    const sample: any = { name: r === 0 ? 'Sample' : 'Item', quantity: 1, price: 100, total: 100 }
+                                    const v = sample[k as keyof typeof sample]
+                                    const val = typeof v === 'number' && (k === 'price' || k === 'total') ? `₹${(v as number).toFixed(0)}` : String(v ?? '')
+                                    return (
+                                      <td
+                                        key={i}
+                                        className="p-1 border"
+                                        style={{ textAlign: (element.tableConfig?.align?.[i] || (k === 'quantity' ? 'center' : (k === 'price' || k === 'total' ? 'right' : 'left'))) as any, width: element.tableConfig?.columnWidths?.[i] ? `${element.tableConfig?.columnWidths?.[i]}%` : undefined }}
+                                      >
+                                        {val}
+                                      </td>
+                                    )
+                                  })}
                                 </tr>
                               ))}
                             </tbody>
@@ -1067,29 +1303,7 @@ export default function TemplateBuilderPage() {
                             }}
                           ></div>
                         )}
-                        {element.type === 'table' && (
-                          <table className="w-full text-xs border-collapse" style={{ borderColor: element.style?.borderColor }}>
-                            <thead>
-                              <tr style={{ backgroundColor: element.tableConfig?.headerBg, color: element.tableConfig?.headerColor }}>
-                                {element.tableConfig?.headers.map((header, i) => (
-                                  <th key={i} className="text-left p-1 border" style={{ borderColor: element.style?.borderColor }}>{header}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Array.from({ length: (element.tableConfig?.rows || 3) - 1 }).map((_, rowIndex) => (
-                                <tr key={rowIndex}>
-                                  {Array.from({ length: element.tableConfig?.columns || 4 }).map((_, colIndex) => (
-                                    <td key={colIndex} className="p-1 border" style={{ borderColor: element.style?.borderColor }}>
-                                      {rowIndex === 0 && colIndex === 0 ? 'T-Shirt' : rowIndex === 0 && colIndex === 1 ? '2' : rowIndex === 0 && colIndex === 2 ? '₹250' : rowIndex === 0 && colIndex === 3 ? '₹500' : 
-                                       rowIndex === 1 && colIndex === 0 ? 'Jeans' : rowIndex === 1 && colIndex === 1 ? '1' : rowIndex === 1 && colIndex === 2 ? '₹500' : rowIndex === 1 && colIndex === 3 ? '₹500' : ''}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
+                        
                       </div>
                     )
                   })}

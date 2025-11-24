@@ -201,7 +201,15 @@ export class TemplateEngine {
     const bw = element.tableConfig?.borderWidth ?? 1
     const pad = element.tableConfig?.cellPadding ?? 8
     const align = element.tableConfig?.align || []
-    const widths = element.tableConfig?.columnWidths || []
+    const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
+    let widths = element.tableConfig?.columnWidths && element.tableConfig.columnWidths.length === cols
+      ? element.tableConfig.columnWidths.slice()
+      : Array(cols).fill(Math.round(100 / cols))
+    const sum = widths.reduce((a,b) => a + b, 0)
+    if (sum !== 100) {
+      const diff = 100 - sum
+      widths[0] = Math.max(5, widths[0] + diff)
+    }
     const showHeader = element.tableConfig?.showHeader !== false
     const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
     const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
