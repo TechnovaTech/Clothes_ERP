@@ -35,6 +35,7 @@ export default function TemplateBuilderPage() {
   const [guideH, setGuideH] = useState<number | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const [selectionRect, setSelectionRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [pageMode, setPageMode] = useState<'full' | 'half'>('full')
   const alignSelection = (mode: 'left' | 'right' | 'top' | 'bottom' | 'centerX' | 'centerY' | 'distributeX') => {
     const ids = selectedIds.length > 0 ? selectedIds : (selectedElement ? [selectedElement] : [])
     if (ids.length === 0) return
@@ -136,6 +137,8 @@ export default function TemplateBuilderPage() {
       if (response.ok) {
         const template = await response.json()
         setElements(template.canvasJSON?.elements || [])
+        const pm = template.canvasJSON?.settings?.pageMode
+        setPageMode(pm === 'half' ? 'half' : 'full')
       } else {
         showToast.error('Failed to load template')
       }
@@ -160,7 +163,8 @@ export default function TemplateBuilderPage() {
             settings: {
               pageSize: 'A4',
               orientation: 'portrait',
-              margins: { top: 20, right: 20, bottom: 20, left: 20 }
+              margins: { top: 20, right: 20, bottom: 20, left: 20 },
+              pageMode
             }
           },
           name: `${templateType} Template`
@@ -1370,9 +1374,19 @@ export default function TemplateBuilderPage() {
               <Panel defaultSize={60} minSize={40} className="px-2 overflow-hidden">
                 <Card className="h-full flex flex-col">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Canvas</CardTitle>
+                  <CardTitle className="text-base">Canvas</CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 p-4 overflow-hidden">
+                    <div className="flex items-center gap-2 pb-2">
+                      <Label className="text-sm">Bill Page Size</Label>
+                      <Select value={pageMode} onValueChange={(v) => setPageMode((v as 'full' | 'half'))}>
+                        <SelectTrigger className="h-8 w-40 text-xs" />
+                        <SelectContent>
+                          <SelectItem value="full">Full Page (A4)</SelectItem>
+                          <SelectItem value="half">Half Page (A4 Half)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div 
                       className="relative bg-white border-2 border-dashed border-gray-300 w-full h-full overflow-auto rounded-lg"
                       style={{ 
@@ -1385,7 +1399,7 @@ export default function TemplateBuilderPage() {
                         className="relative bg-white mx-auto"
                         style={{
                           width: '210mm',
-                          height: '297mm',
+                          height: pageMode === 'full' ? '297mm' : '148.5mm',
                           transform: `scale(${zoom/100})`,
                           transformOrigin: 'top center',
                           marginTop: '20px'
@@ -1829,10 +1843,10 @@ export default function TemplateBuilderPage() {
           <TabsContent value="preview" className="flex-1 p-4">
             <div className="h-full flex flex-col">
               <div className="bg-gray-100 p-4 rounded-lg flex-1 overflow-auto">
-                <div 
-                  className="relative bg-white border mx-auto shadow-lg"
-                  style={{ width: '210mm', height: '297mm', transform: `scale(${zoom/100})`, transformOrigin: 'top center' }}
-                >
+              <div 
+                className="relative bg-white border mx-auto shadow-lg"
+                style={{ width: '210mm', height: pageMode === 'full' ? '297mm' : '148.5mm', transform: `scale(${zoom/100})`, transformOrigin: 'top center' }}
+              >
                   {elements.filter((el) => !el.hidden).map((element) => {
                     let content = element.content || ''
                     if (element.placeholder) {

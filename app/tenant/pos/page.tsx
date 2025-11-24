@@ -109,9 +109,6 @@ export default function POSPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [barcodeBuffer, setBarcodeBuffer] = useState('')
   const [lastKeyTime, setLastKeyTime] = useState(0)
-  const [whatsappMessage, setWhatsappMessage] = useState('')
-  const [whatsappStatus, setWhatsappStatus] = useState({ ready: false, hasQR: false })
-  const [qrCode, setQrCode] = useState('')
   const [includeTax, setIncludeTax] = useState(true)
   const [includeCess, setIncludeCess] = useState(true)
   const [gstRateOverride, setGstRateOverride] = useState(false)
@@ -734,33 +731,7 @@ export default function POSPage() {
             </CardContent>
           </Card>
 
-          {/* WhatsApp */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Smartphone className="w-5 h-5" />
-                <span>WhatsApp Login</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {whatsappStatus.ready ? (
-                <div className="text-center space-y-2">
-                  <div className="text-green-600 font-medium">✅ Logged In</div>
-                  <p className="text-xs text-muted-foreground">Ready to send messages</p>
-                </div>
-              ) : qrCode ? (
-                <div className="text-center space-y-2">
-                  <img src={qrCode} alt="WhatsApp QR" className="mx-auto max-w-40" />
-                  <p className="text-xs text-muted-foreground">Scan with WhatsApp</p>
-                </div>
-              ) : (
-                <div className="text-center space-y-2">
-                  <div className="text-yellow-600 font-medium">⏳ Loading QR...</div>
-                  <p className="text-xs text-muted-foreground">Starting WhatsApp service</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* WhatsApp section removed as requested */}
 
           {/* Customer & Billing */}
           <Card>
@@ -817,26 +788,6 @@ export default function POSPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Label className="text-sm">Bill GST (%)</Label>
-                    <Select
-                      value={(billGstRate === '' ? 'custom' : String(billGstRate))}
-                      onValueChange={(val) => {
-                        if (val === 'custom') {
-                          setBillGstRate('')
-                        } else {
-                          setBillGstRate(Number(val))
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-28 text-xs" />
-                      <SelectContent>
-                        <SelectItem value="custom">Custom</SelectItem>
-                        <SelectItem value="0">0%</SelectItem>
-                        <SelectItem value="5">5%</SelectItem>
-                        <SelectItem value="9">9%</SelectItem>
-                        <SelectItem value="12">12%</SelectItem>
-                        <SelectItem value="18">18%</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <Input
                       type="number"
                       min={0}
@@ -845,7 +796,7 @@ export default function POSPage() {
                       value={billGstRate === '' ? '' : billGstRate}
                       onChange={(e) => setBillGstRate((e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value) || 0))))}
                       placeholder={String(settings.taxRate)}
-                      className="h-8 w-24 text-xs"
+                      className="h-8 w-28 text-xs"
                       disabled={!gstRateOverride}
                     />
                   </div>

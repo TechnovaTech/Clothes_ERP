@@ -662,6 +662,8 @@ Contact: ${storePhone}`
                     <TableHead className="text-center">{t('billNo')}</TableHead>
                     <TableHead className="text-center">{t('customer')}</TableHead>
                     <TableHead className="text-center">{t('items')}</TableHead>
+                    <TableHead className="text-center">GST Rate</TableHead>
+                    <TableHead className="text-center">GST Amount</TableHead>
                     <TableHead className="text-center">{t('total')}</TableHead>
                     <TableHead className="text-center">{t('payment')}</TableHead>
                     <TableHead className="text-center">{t('date')}</TableHead>
@@ -700,6 +702,9 @@ Contact: ${storePhone}`
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{bill.items.length} {t('items')}</TableCell>
+                      <TableCell className="text-center">{typeof (bill as any).taxBreakup?.gstRate === 'number' ? ((bill as any).taxBreakup.gstRate || 0) + '%' : ((bill as any).taxRate || 0) + '%'}
+                      </TableCell>
+                      <TableCell className="text-center">₹  {(((bill as any).includeTax === false) ? 0 : ((bill as any).tax ?? (bill as any).taxBreakup?.gstAmount ?? 0)).toFixed(2)}</TableCell>
                       <TableCell className="text-center">₹  {(bill.total || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline">{bill.paymentMethod}</Badge>

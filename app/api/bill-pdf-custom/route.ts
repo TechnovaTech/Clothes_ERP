@@ -80,9 +80,20 @@ export async function POST(request: NextRequest) {
       const qty = Number(it.quantity || 0)
       const price = Number(it.price || 0)
       const line = qty * price
-      const rate = Number((billData.gstRateOverride ? (billData.billGstRate ?? billData.gstRate) : (it.gstRate ?? billData.billGstRate ?? billData.gstRate)) ?? 0)
+      const normalizeRate = (r: any) => {
+        return r === undefined || r === null || r === '' ? undefined : Number(r)
+      }
+      const overrideRate = normalizeRate(billData.billGstRate)
+      const fallbackTaxRate = normalizeRate(billData.gstRate) ?? 0
+      const effectiveRate = billData.gstRateOverride
+        ? (overrideRate ?? fallbackTaxRate)
+        : (normalizeRate(it.gstRate) ?? overrideRate ?? fallbackTaxRate)
+      const rate = Number(effectiveRate ?? 0)
       const taxType = it.taxType || billData.taxType || taxMode || 'intra' // intra: cgst+sgst, inter: igst
       const gstAmount = it.gstAmount != null ? Number(it.gstAmount) : (line * rate / 100)
+      it.gstAmount = gstAmount
+      it.gstRate = rate
+      it.taxType = taxType
       if (taxType === 'inter') {
         const igstVal = it.igst != null ? Number(it.igst) : gstAmount
         acc.igst += igstVal
