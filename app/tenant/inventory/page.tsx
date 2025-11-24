@@ -1021,10 +1021,14 @@ export default function InventoryPage() {
                         />
                       </TableHead>
                       <TableHead className="text-center w-16">Sr. No.</TableHead>
-                      {tenantFields.map((field) => (
+                      {tenantFields.filter(field => !['price', 'costprice', 'cost_price', 'stock', 'minstock', 'min_stock'].includes(field.name.toLowerCase().replace(/\s+/g, '_'))).map((field) => (
                         <TableHead key={field.name} className="text-center">{field.name}</TableHead>
                       ))}
-                      <TableHead className="text-center">{t('stock')}</TableHead>
+                      <TableHead className="text-center">Price</TableHead>
+                      <TableHead className="text-center">Cost Price</TableHead>
+                      <TableHead className="text-center">Stock</TableHead>
+                      <TableHead className="text-center">Min Stock</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-center">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1049,7 +1053,7 @@ export default function InventoryPage() {
                         <TableCell className="text-center font-medium">
                           {((currentPage - 1) * itemsPerPage) + index + 1}
                         </TableCell>
-                        {tenantFields.map((field) => {
+                        {tenantFields.filter(field => !['price', 'costprice', 'cost_price', 'stock', 'minstock', 'min_stock'].includes(field.name.toLowerCase().replace(/\s+/g, '_'))).map((field) => {
                           const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
                           let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()]
                           
@@ -1072,6 +1076,18 @@ export default function InventoryPage() {
                             </TableCell>
                           )
                         })}
+                        <TableCell className="text-center font-medium">
+                          ₹{(item.price || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center font-medium">
+                          ₹{(item.costPrice || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center font-medium">
+                          {item.stock || 0}
+                        </TableCell>
+                        <TableCell className="text-center font-medium">
+                          {item.minStock || 0}
+                        </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center">
                             {(() => {

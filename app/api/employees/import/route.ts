@@ -16,6 +16,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
+    const parseCSVLine = (line: string): string[] => {
+      const result = []
+      let current = ''
+      let inQuotes = false
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        if (char === '"') {
+          inQuotes = !inQuotes
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      result.push(current.trim())
+      return result
+    }
+
     const text = await file.text()
     const lines = text.split('\n').filter(line => line.trim())
     
@@ -28,7 +48,7 @@ export async function POST(request: Request) {
 
     let imported = 0
     for (const line of dataLines) {
-      const values = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(v => v.trim().replace(/^"|"$/g, '')) || []
+      const values = parseCSVLine(line).map(v => v.replace(/"/g, '').trim())
       
       if (values.length < 2 || !values[0]) continue
 

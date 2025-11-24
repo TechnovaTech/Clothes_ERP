@@ -620,6 +620,9 @@ export const translations = {
     insufficientStock: "Insufficient Stock",
     available: "Available",
     termsConditions: "Terms & Conditions",
+    showing: "Showing",
+    previous: "Previous",
+    next: "Next",
   },
   
   gu: {
@@ -1243,6 +1246,9 @@ export const translations = {
     insufficientStock: "અપૂરતો સ્ટોક",
     available: "ઉપલબ્ધ",
     termsConditions: "નિયમો અને શરતો",
+    showing: "બતાવી રહ્યા છે",
+    previous: "પાછલું",
+    next: "આગલું",
   },
   
   hi: {
@@ -1866,6 +1872,9 @@ export const translations = {
     insufficientStock: "अपर्याप्त स्टॉक",
     available: "उपलब्ध",
     termsConditions: "नियम और शर्तें",
+    showing: "दिखा रहे हैं",
+    previous: "पिछला",
+    next: "अगला",
   }
 }
 

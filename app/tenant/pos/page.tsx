@@ -114,6 +114,7 @@ export default function POSPage() {
   const [includeTax, setIncludeTax] = useState(true)
   const [includeCess, setIncludeCess] = useState(true)
 
+
   // Fetch settings
   const fetchSettings = async () => {
     try {
@@ -197,7 +198,7 @@ export default function POSPage() {
   // Fetch products from inventory API
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/inventory')
+      const response = await fetch('/api/inventory?limit=10000')
       if (response.ok) {
         const result = await response.json()
         const data = result.data || result || []
@@ -563,21 +564,7 @@ export default function POSPage() {
                       >
                         <div className="flex-1">
                           <h4 className="font-medium">
-                            {(() => {
-                              // If tenant fields not loaded yet, use productname field directly
-                              if (tenantFields.length === 0) {
-                                return (product as any).productname || product.name || 'No Name'
-                              }
-                              // Look for the actual product name field, not just any field with 'name'
-                              const nameField = tenantFields.find(f => 
-                                f.name.toLowerCase() === 'medicine' || 
-                                f.name.toLowerCase() === 'product name' ||
-                                f.name.toLowerCase() === 'name' ||
-                                (f.name.toLowerCase().includes('name') && !f.name.toLowerCase().includes('id'))
-                              )
-                              const result = nameField ? getFieldValue(product, nameField.name) || 'No Name' : (product as any).productname || product.name || 'No Name'
-                              return result
-                            })()}
+                            {product.name || (product as any).productname || (product as any).medicine || 'No Name'}
                           </h4>
                           <p className={`text-sm ${(product.stock || 0) <= 0 ? 'text-red-500 font-medium' : (product.stock || 0) <= 5 ? 'text-orange-500' : 'text-muted-foreground'}`}>
                             {t('stock')}: {product.stock || 0} {(product.stock || 0) <= 0 ? '(Out of Stock)' : (product.stock || 0) <= 5 ? '(Low Stock)' : ''}

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'CSV must have header and at least one data row' }, { status: 400 })
     }
 
-    const headers = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''))
+    const headers = parseCSVLine(lines[0]).map(h => h.replace(/"/g, '').trim())
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
     
     let imported = 0
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = parseCSVLine(lines[i]).map(v => v.replace(/"/g, ''))
+        const values = parseCSVLine(lines[i]).map(v => v.replace(/"/g, '').trim())
         
         if (values.length === 0 || values.every(v => !v.trim())) continue
         
