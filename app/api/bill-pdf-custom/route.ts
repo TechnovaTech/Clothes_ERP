@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectDB } from '@/lib/database'
-import { TemplateEngine, TemplateData } from '@/lib/template-engine'
+import { TemplateEngine, TemplateData, Template } from '@/lib/template-engine'
 import { getDefaultTemplate } from '@/lib/default-templates'
+import puppeteer from 'puppeteer'
 
 // POST - Generate custom bill PDF using template
 export async function POST(request: NextRequest) {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { billId, billData } = body
+    const { billData } = body
 
     if (!billData) {
       return NextResponse.json({ error: 'Bill data required' }, { status: 400 })
@@ -141,8 +142,7 @@ export async function POST(request: NextRequest) {
         discount: billData.discountAmount || billData.discount,
         date: new Date(billData.createdAt || Date.now()).toLocaleDateString('en-IN'),
         items,
-        taxBreakup: taxAgg,
-        taxMode
+        taxBreakup: taxAgg
       },
       customer: {
         name: billData.customerName || 'Walk-in Customer',
@@ -152,10 +152,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Render template to HTML
-    const html = TemplateEngine.renderToHTML(template, templateData)
+    // Render template to HTML - convert MongoDB document to Template interface
+    const templateForRender: Template = {
+      id: template._id.toString(),
+      tenantId: template.tenantId,
+      templateType: template.templateType,
+      name: template.name,
+      canvasJSON: template.canvasJSON,
+      isDefault: template.isDefault,
+      createdAt: template.createdAt,
+      updatedAt: template.updatedAt
+    }
+    const html = TemplateEngine.renderToHTML(templateForRender, templateData)
 
-    // Return HTML for PDF generation (can be enhanced with puppeteer for actual PDF)
+    // Generate PDF using puppeteer
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -163,11 +173,52 @@ export async function POST(request: NextRequest) {
           <meta charset="utf-8">
           <title>Invoice ${billData.billNo}</title>
           <style>
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            .template-container { margin: 0; }
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; max-width: 794px; }
+            .template-container { margin: 0; overflow: hidden; max-width: 794px; }
+            table { width: 100%; max-width: 100%; table-layout: fixed; word-wrap: break-word; border-collapse: collapse; }
+            table td, table th { overflow: hidden; text-overflow: ellipsis; }
+            
+            /* Specific table constraints */
+            .template-container table { 
+              max-width: 794px !important; 
+              width: auto !important;
+            }
+            
+            /* Print styles for PDF generation */
             @media print {
-              body { margin: 0; padding: 0; }
-              .template-container { margin: 0; page-break-inside: avoid; }
+              * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+              body { margin: 0 !important; padding: 0 !important; max-width: 794px !important; width: 794px !important; }
+              .template-container { margin: 0 !important; page-break-inside: avoid !important; max-width: 794px !important; width: 794px !important; }
+              
+              /* Force tables to respect container bounds */
+              table { 
+                width: 100% !important; 
+                max-width: 794px !important;
+                table-layout: fixed !important;
+              }
+              
+              /* Ensure table cells don't overflow */
+              table td, table th { 
+                overflow: hidden !important; 
+                text-overflow: ellipsis !important;
+                word-wrap: break-word !important;
+              }
+              
+              /* Ensure all elements are visible */
+              .template-container * { visibility: visible !important; }
+              
+              /* Remove any background colors that might not print well */
+              body { background: white !important; }
+              
+              /* Force page breaks to avoid content cutting */
+              .page-break { page-break-after: always !important; }
+            }
+            
+            /* Page settings */
+            @page {
+              margin: 0 !important;
+              size: A4 portrait;
             }
           </style>
         </head>
@@ -177,10 +228,33 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    return new NextResponse(fullHtml, {
+    // Launch puppeteer and generate PDF
+    const browser = await puppeteer.launch({ headless: true })
+    const page = await browser.newPage()
+    
+    // Set the HTML content
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0' })
+    
+    // Generate PDF buffer
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '0px',
+        right: '0px',
+        bottom: '0px',
+        left: '0px'
+      }
+    })
+    
+    await browser.close()
+
+    // Return PDF as response
+    return new NextResponse(pdfBuffer as any, {
       headers: {
-        'Content-Type': 'text/html',
-        'Content-Disposition': `inline; filename="invoice-${billData.billNo}.html"`
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="invoice-${billData.billNo}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString()
       }
     })
   } catch (error) {

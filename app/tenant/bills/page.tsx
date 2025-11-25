@@ -736,21 +736,20 @@ Contact: ${storePhone}`
                                 })
                                 
                                 if (response.ok) {
-                                  const html = await response.text()
-                                  const blob = new Blob([html], { type: 'text/html' })
-                                  const url = URL.createObjectURL(blob)
+                                  const pdfBlob = await response.blob()
+                                  const url = URL.createObjectURL(pdfBlob)
                                   const a = document.createElement('a')
                                   a.href = url
-                                  a.download = `Bill-${bill.billNo}.html`
+                                  a.download = `invoice-${bill.billNo}.pdf`
                                   document.body.appendChild(a)
                                   a.click()
                                   document.body.removeChild(a)
-                                  URL.revokeObjectURL(url)
+                                  setTimeout(() => URL.revokeObjectURL(url), 1000)
                                 } else {
-                                  showToast.error('Failed to generate custom bill')
+                                  showToast.error('Failed to generate bill')
                                 }
                               } catch (error) {
-                                showToast.error('Error generating custom bill')
+                                showToast.error('Error generating bill')
                               }
                             }}
                           >
@@ -1118,21 +1117,20 @@ Contact: ${storePhone}`
                         })
                         
                         if (response.ok) {
-                          const html = await response.text()
-                          const blob = new Blob([html], { type: 'text/html' })
-                          const url = URL.createObjectURL(blob)
+                          const pdfBlob = await response.blob()
+                          const url = URL.createObjectURL(pdfBlob)
                           const a = document.createElement('a')
                           a.href = url
-                          a.download = `Bill-${selectedBill.billNo}.html`
+                          a.download = `invoice-${selectedBill.billNo}.pdf`
                           document.body.appendChild(a)
                           a.click()
                           document.body.removeChild(a)
-                          URL.revokeObjectURL(url)
+                          setTimeout(() => URL.revokeObjectURL(url), 1000)
                         } else {
-                          showToast.error('Failed to generate custom bill')
+                          showToast.error('Failed to generate bill')
                         }
                       } catch (error) {
-                        showToast.error('Error generating custom bill')
+                        showToast.error('Error generating bill')
                       }
                     }}
                     className="flex-1"
