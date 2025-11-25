@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { connectToDatabase } from '@/lib/mongodb'
+import clientPromise from '@/lib/mongodb'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     const base64 = `data:${file.type};base64,${buffer.toString('base64')}`
 
     // Save to database
-    const { db } = await connectToDatabase()
+    const client = await clientPromise
+    const db = client.db('erp_system')
     const collection = db.collection('settings')
 
     const updateField = type === 'logo' ? { logo: base64 } : { signature: base64 }

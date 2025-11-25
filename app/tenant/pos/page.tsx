@@ -113,6 +113,8 @@ export default function POSPage() {
   const [includeCess, setIncludeCess] = useState(true)
   const [gstRateOverride, setGstRateOverride] = useState(false)
   const [billGstRate, setBillGstRate] = useState<number | ''>('')
+  const [whatsappStatus, setWhatsappStatus] = useState<any>(null)
+  const [qrCode, setQrCode] = useState<string>('')
 
 
   // Fetch settings
@@ -238,11 +240,6 @@ export default function POSPage() {
     checkWhatsAppStatus()
     
     const interval = setInterval(checkWhatsAppStatus, 5000)
-    
-    // Set default WhatsApp message from settings
-    if (settings.whatsappMessage) {
-      setWhatsappMessage(settings.whatsappMessage)
-    }
     
     // Listen for physical barcode scanner input
     const handleKeyPress = (e: KeyboardEvent) => {
