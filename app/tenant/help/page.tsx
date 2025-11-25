@@ -103,7 +103,7 @@ export default function HelpPage() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tutorials.map((tutorial: Tutorial) => (
-            <Card key={tutorial._id} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card key={tutorial._id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden p-0">
               <CardContent className="p-0">
                 <div 
                   className="relative aspect-video bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden"

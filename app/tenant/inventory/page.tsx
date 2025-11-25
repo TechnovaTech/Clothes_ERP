@@ -907,10 +907,10 @@ export default function InventoryPage() {
                     <DialogHeader>
                       <DialogTitle className="flex items-center space-x-2">
                         <AlertTriangle className="w-5 h-5 text-red-500" />
-                        <span>Clear All Inventory</span>
+                        <span>{t('clearAllInventory')}</span>
                       </DialogTitle>
                       <DialogDescription>
-                        Are you sure you want to delete <strong>ALL inventory items</strong>? This action cannot be undone and will permanently remove all products from your inventory!
+                        {t('confirmClearAllInventory')}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end space-x-2 pt-4">
@@ -925,7 +925,7 @@ export default function InventoryPage() {
                           
                           if (response.ok) {
                             const result = await response.json()
-                            showToast.success(`🗑️ Successfully cleared ${result.count} products from inventory!`)
+                            showToast.success(`🗑️ ${language === 'en' ? `Successfully cleared ${result.count} products from inventory!` : language === 'gu' ? `${result.count} પ્રોડક્ટ્સ સફળતાપૂર્વક ડિલીટ થયા!` : `${result.count} उत्पाद सफलतापूर्वक हटाए गए!`}`)
                             const inventoryData = await fetchInventory()
                             setInventory(inventoryData)
                             setSelectedItems([])
@@ -938,7 +938,7 @@ export default function InventoryPage() {
                         }
                         setIsClearAllDialogOpen(false)
                       }}>
-                        Clear All Inventory
+                        {t('clearAllInventory')}
                       </Button>
                     </div>
                   </DialogContent>

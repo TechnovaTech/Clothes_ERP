@@ -398,8 +398,7 @@ export default function LeavesPage() {
                             <SelectItem value="Casual Leave">{t('casualLeave')}</SelectItem>
                             <SelectItem value="Annual Leave">{t('annualLeave')}</SelectItem>
                             <SelectItem value="Emergency Leave">{t('emergencyLeave')}</SelectItem>
-                            <SelectItem value="Maternity Leave">{t('maternityLeave')}</SelectItem>
-                            <SelectItem value="Paternity Leave">{t('paternityLeave')}</SelectItem>
+                           
                           </SelectContent>
                         </Select>
                       </div>

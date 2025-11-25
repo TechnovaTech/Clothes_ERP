@@ -138,7 +138,7 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
         return (
           <Input
             type="number"
-            step="0.01"
+            step="1"
             value={fieldValue}
             onChange={(e) => updateFormData(field.name, e.target.value)}
             placeholder={`Enter ${field.name}`}

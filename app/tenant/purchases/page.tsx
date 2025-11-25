@@ -149,9 +149,9 @@ export default function PurchasesPage() {
         fetchPurchases(currentPage)
         setIsCreateDialogOpen(false)
         resetForm()
-        showToast.success('Purchase order created successfully!')
+        showToast.success(`✅ ${t('billUpdated')}`)
       } else {
-        showToast.error('Failed to create purchase order')
+        showToast.error(`❌ ${t('failedToUpdateBill')}`)
       }
     } catch (error) {
       console.error('Failed to create purchase:', error)
@@ -177,13 +177,13 @@ export default function PurchasesPage() {
         fetchPurchases(currentPage)
         setIsCompleteDialogOpen(false)
         setPurchaseToComplete(null)
-        showToast.success('Purchase order completed successfully! Stock has been updated.')
+        showToast.success(`✅ ${t('billUpdated')}`)
       } else {
-        showToast.error('Failed to complete purchase order')
+        showToast.error(`❌ ${t('failedToUpdateBill')}`)
       }
     } catch (error) {
       console.error('Failed to complete purchase order:', error)
-      showToast.error('Error completing purchase order')
+      showToast.error(`❌ ${t('errorUpdatingBill')}`)
     }
   }
 
@@ -221,13 +221,13 @@ export default function PurchasesPage() {
         fetchPurchases(currentPage)
         setIsEditDialogOpen(false)
         resetForm()
-        showToast.success('Purchase order updated successfully!')
+        showToast.success(`✅ ${t('billUpdated')}`)
       } else {
-        showToast.error('Failed to update purchase order')
+        showToast.error(`❌ ${t('failedToUpdateBill')}`)
       }
     } catch (error) {
       console.error('Failed to update purchase:', error)
-      showToast.error('Error updating purchase order')
+      showToast.error(`❌ ${t('errorUpdatingBill')}`)
     }
   }
 
@@ -248,13 +248,13 @@ export default function PurchasesPage() {
         fetchPurchases(currentPage)
         setIsDeleteDialogOpen(false)
         setPurchaseToDelete(null)
-        showToast.success('Purchase order deleted successfully!')
+        showToast.success(`✅ ${t('billDeletedSuccess')}`)
       } else {
-        showToast.error('Failed to delete purchase order')
+        showToast.error(`❌ ${t('failedToDeleteBill')}`)
       }
     } catch (error) {
       console.error('Failed to delete purchase:', error)
-      showToast.error('Error deleting purchase order')
+      showToast.error(`❌ ${t('errorDeletingBill')}`)
     }
   }
 
@@ -412,13 +412,13 @@ export default function PurchasesPage() {
                 {selectedPurchases.length > 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete ({selectedPurchases.length})
+                    {t('delete')} ({selectedPurchases.length})
                   </Button>
                 )}
                 {selectedPurchases.length === 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsClearAllOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Clear All
+                    {t('clearAll')}
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={async () => {
@@ -431,18 +431,18 @@ export default function PurchasesPage() {
                       a.href = url
                       a.download = `purchases_${new Date().toISOString().split('T')[0]}.csv`
                       a.click()
-                      showToast.success('✅ Purchases exported successfully!')
+                      showToast.success(`✅ ${t('billsExportedSuccess').replace('{0}', 'Purchases')}`)
                     }
                   } catch (error) {
-                    showToast.error('❌ Failed to export purchases')
+                    showToast.error(`❌ ${t('failedToExportBills')}`)
                   }
                 }}>
                   <Upload className="w-4 h-4 mr-2" />
-                  Export
+                  {t('exportCSV')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('purchaseImportInput')?.click()} disabled={isImporting}>
                   <Download className="w-4 h-4 mr-2" />
-                  {isImporting ? 'Importing...' : 'Import'}
+                  {isImporting ? t('importing') : t('importCSV')}
                 </Button>
                 <input
                   id="purchaseImportInput"
@@ -462,13 +462,13 @@ export default function PurchasesPage() {
                       })
                       const result = await response.json()
                       if (response.ok) {
-                        showToast.success(`✅ Imported ${result.imported} purchases successfully!`)
+                        showToast.success(`✅ ${t('billsImportedSuccess').replace('{0}', String(result.imported))}`)
                         fetchPurchases(1)
                       } else {
-                        showToast.error(result.error || '❌ Failed to import purchases')
+                        showToast.error(result.error || `❌ ${t('failedToImportBills')}`)
                       }
                     } catch (error) {
-                      showToast.error('❌ Error importing purchases')
+                      showToast.error(`❌ ${t('errorImportingBills')}`)
                     } finally {
                       setIsImporting(false)
                       e.target.value = ''
@@ -500,7 +500,7 @@ export default function PurchasesPage() {
                         <Input 
                           value={formData.supplierName}
                           onChange={(e) => setFormData(prev => ({...prev, supplierName: e.target.value}))}
-                          placeholder="Enter supplier name" 
+                          placeholder={t('supplierName')} 
                         />
                       </div>
                       <div className="space-y-2">
@@ -609,7 +609,8 @@ export default function PurchasesPage() {
                               <Label>{t('quantity')}</Label>
                               <Input 
                                 type="number" 
-                                value={item.quantity === 0 ? '' : item.quantity}
+                                step="1"
+                                value={item.quantity === 0 ? '' : String(item.quantity)}
                                 onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
                                 placeholder="0" 
                               />
@@ -618,16 +619,16 @@ export default function PurchasesPage() {
                               <Label>{t('unitPrice')} (₹)</Label>
                               <Input 
                                 type="number" 
-                                step="0.01"
-                                value={item.unitPrice === 0 ? '' : item.unitPrice}
+                                step="1"
+                                value={item.unitPrice === 0 ? '' : String(item.unitPrice)}
                                 onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                placeholder="0.00" 
+                                placeholder="0" 
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>{t('total')} (₹)</Label>
                               <Input 
-                                type="number" 
+                                type="text" 
                                 value={item.total.toFixed(2)}
                                 readOnly
                                 className="bg-gray-50"
@@ -678,41 +679,41 @@ export default function PurchasesPage() {
               }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Edit Purchase Order</DialogTitle>
-                    <DialogDescription>Update purchase order details</DialogDescription>
+                    <DialogTitle>{t('editBill')}</DialogTitle>
+                    <DialogDescription>{t('addNewInventoryPurchaseOrder')}</DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-6 py-4">
                     {/* Same form fields as create dialog */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Supplier Name</Label>
+                        <Label>{t('supplierName')}</Label>
                         <Input 
                           value={formData.supplierName}
                           onChange={(e) => setFormData(prev => ({...prev, supplierName: e.target.value}))}
-                          placeholder="Enter supplier name" 
+                          placeholder={t('supplierName')} 
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Contact Person</Label>
+                        <Label>{t('contactPerson')}</Label>
                         <Input 
                           value={formData.supplierContact}
                           onChange={(e) => setFormData(prev => ({...prev, supplierContact: e.target.value}))}
-                          placeholder="Contact person name" 
+                          placeholder={t('contactPersonName')} 
                         />
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Contact Number</Label>
+                        <Label>{t('contactNumber')}</Label>
                         <Input 
                           value={formData.supplierContactNo}
                           onChange={(e) => setFormData(prev => ({...prev, supplierContactNo: e.target.value}))}
-                          placeholder="Supplier contact number" 
+                          placeholder={t('supplierContactNumber')} 
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Order Date</Label>
+                        <Label>{t('orderDate')}</Label>
                         <Input 
                           type="date" 
                           value={formData.orderDate}
@@ -724,62 +725,63 @@ export default function PurchasesPage() {
                     {/* Items Section */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <Label className="text-base font-medium">Order Items</Label>
+                        <Label className="text-base font-medium">{t('orderItems')}</Label>
                         <Button variant="outline" size="sm" onClick={addItem}>
                           <Plus className="w-4 h-4 mr-2" />
-                          Add Product
+                          {t('addProduct')}
                         </Button>
                       </div>
                       
                       {formData.items.map((item, index) => (
                         <div key={index} className="border rounded-lg p-4 space-y-4">
                           <div className="mb-4">
-                            <h4 className="font-medium">Item {index + 1}</h4>
+                            <h4 className="font-medium">{t('item')} {index + 1}</h4>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Product Name</Label>
+                              <Label>{t('productName')}</Label>
                               <Input 
                                 value={item.name}
                                 onChange={(e) => updateItem(index, 'name', e.target.value)}
-                                placeholder="Enter product name" 
+                                placeholder={t('enterProductName')} 
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>SKU</Label>
+                              <Label>{t('sku')}</Label>
                               <Input 
                                 value={item.sku}
                                 onChange={(e) => updateItem(index, 'sku', e.target.value)}
-                                placeholder="Enter SKU" 
+                                placeholder={t('enterSKU')} 
                               />
                             </div>
                           </div>
                           
                           <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label>Quantity</Label>
+                              <Label>{t('quantity')}</Label>
                               <Input 
                                 type="number" 
-                                value={item.quantity === 0 ? '' : item.quantity}
+                                step="1"
+                                value={item.quantity === 0 ? '' : String(item.quantity)}
                                 onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
                                 placeholder="0" 
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Unit Price (₹)</Label>
+                              <Label>{t('unitPrice')} (₹)</Label>
                               <Input 
                                 type="number" 
-                                step="0.01"
-                                value={item.unitPrice === 0 ? '' : item.unitPrice}
+                                step="1"
+                                value={item.unitPrice === 0 ? '' : String(item.unitPrice)}
                                 onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                placeholder="0.00" 
+                                placeholder="0" 
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Total (₹)</Label>
+                              <Label>{t('total')} (₹)</Label>
                               <Input 
-                                type="number" 
+                                type="text" 
                                 value={item.total.toFixed(2)}
                                 readOnly
                                 className="bg-gray-50"
@@ -791,17 +793,17 @@ export default function PurchasesPage() {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>Notes</Label>
+                      <Label>{t('notes')}</Label>
                       <Textarea 
                         value={formData.notes}
                         onChange={(e) => setFormData(prev => ({...prev, notes: e.target.value}))}
-                        placeholder="Additional notes" 
+                        placeholder={t('additionalNotes')} 
                       />
                     </div>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={updatePurchase}>Update Purchase Order</Button>
+                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>{t('cancel')}</Button>
+                    <Button onClick={updatePurchase}>{t('updateBill')}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -810,17 +812,17 @@ export default function PurchasesPage() {
               <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Delete Purchase Order</DialogTitle>
+                    <DialogTitle>{t('deleteBill')}</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to delete purchase order {purchaseToDelete?.poNumber}? This action cannot be undone.
+                      {t('confirmDeleteCustomer')} {purchaseToDelete?.poNumber}? {t('actionCannotBeUndone')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex justify-end space-x-2 pt-4">
                     <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button variant="destructive" onClick={deletePurchase}>
-                      Delete
+                      {t('delete')}
                     </Button>
                   </div>
                 </DialogContent>
@@ -830,9 +832,9 @@ export default function PurchasesPage() {
               <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Delete Selected Purchases</DialogTitle>
+                    <DialogTitle>{t('deleteSelectedCustomers')}</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to delete {selectedPurchases.length} purchase orders? This action cannot be undone.
+                      {t('confirmDeleteSelectedCustomers').replace('{0}', selectedPurchases.length.toString())}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex justify-end space-x-2 pt-4">
@@ -840,7 +842,7 @@ export default function PurchasesPage() {
                       setIsBulkDeleteOpen(false)
                       setSelectedPurchases([])
                     }}>
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button
                       variant="destructive"
@@ -851,16 +853,16 @@ export default function PurchasesPage() {
                               fetch(`/api/purchases/${id}`, { method: 'DELETE' })
                             )
                           )
-                          showToast.success(`✅ Deleted ${selectedPurchases.length} purchases`)
+                          showToast.success(`✅ ${t('billsDeletedSuccess').replace('{0}', selectedPurchases.length.toString())}`)
                           setSelectedPurchases([])
                           fetchPurchases(currentPage)
                         } catch (error) {
-                          showToast.error('❌ Failed to delete purchases')
+                          showToast.error(`❌ ${t('failedToDeleteBills')}`)
                         }
                         setIsBulkDeleteOpen(false)
                       }}
                     >
-                      Delete
+                      {t('delete')}
                     </Button>
                   </div>
                 </DialogContent>
@@ -872,32 +874,32 @@ export default function PurchasesPage() {
                   <DialogHeader>
                     <DialogTitle className="flex items-center space-x-2">
                       <Trash2 className="w-5 h-5 text-red-500" />
-                      <span>Clear All Purchases</span>
+                      <span>{t('clearAllBills')}</span>
                     </DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to delete <strong>ALL purchase orders</strong>? This action cannot be undone!
+                      {t('confirmClearAllBills')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex justify-end space-x-2 pt-4">
                     <Button variant="outline" onClick={() => setIsClearAllOpen(false)}>
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button variant="destructive" onClick={async () => {
                       try {
                         const response = await fetch('/api/purchases/clear', { method: 'DELETE' })
                         if (response.ok) {
-                          showToast.success('✅ All purchases deleted!')
+                          showToast.success(`✅ ${t('allBillsDeletedSuccess')}`)
                           setSelectedPurchases([])
                           fetchPurchases(1)
                         } else {
-                          showToast.error('❌ Failed to clear purchases')
+                          showToast.error(`❌ ${t('failedToClearBills')}`)
                         }
                       } catch (error) {
-                        showToast.error('❌ Error clearing purchases')
+                        showToast.error(`❌ ${t('errorClearingBills')}`)
                       }
                       setIsClearAllOpen(false)
                     }}>
-                      Delete All
+                      {t('deleteAllBills')}
                     </Button>
                   </div>
                 </DialogContent>
@@ -907,20 +909,19 @@ export default function PurchasesPage() {
               <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Complete Purchase Order</DialogTitle>
+                    <DialogTitle>{t('updateBill')}</DialogTitle>
                     <DialogDescription>
-                      Complete purchase order {purchaseToComplete?.poNumber}? 
+                      {t('confirmDeleteCustomer')} {purchaseToComplete?.poNumber}? 
                       <br /><br />
-                      <strong>Stock Update:</strong> Quantities will be added to existing inventory items that match by SKU or product name. 
-                      Items not found in inventory will be skipped.
+                      <strong>{t('stock')} {t('update')}:</strong> {t('multiplePhoneNumbersHint')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex justify-end space-x-2 pt-4">
                     <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button onClick={completePurchaseOrder}>
-                      Complete & Update Stock
+                      {t('updateBill')}
                     </Button>
                   </div>
                 </DialogContent>
@@ -941,13 +942,13 @@ export default function PurchasesPage() {
             {filteredPurchases.length === 0 ? (
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No purchase orders found</h3>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noPurchaseOrdersFound')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {purchases.length === 0 ? 'Start by creating your first purchase order' : 'Try adjusting your search or filters'}
+                  {purchases.length === 0 ? t('startByCreatingFirstPurchaseOrder') : t('tryAdjustingSearchOrFilters')}
                 </p>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create First Purchase Order
+                  {t('createFirstPurchaseOrder')}
                 </Button>
               </div>
             ) : (
@@ -967,7 +968,7 @@ export default function PurchasesPage() {
                         }}
                       />
                     </TableHead>
-                    <TableHead className="text-center w-16">Sr. No.</TableHead>
+                    <TableHead className="text-center w-16">{t('srNo')}</TableHead>
                     <TableHead className="text-center">{t('orderId')}</TableHead>
                     <TableHead className="text-center">{t('supplier')}</TableHead>
                     <TableHead className="text-center">{t('items')}</TableHead>
@@ -1070,7 +1071,7 @@ export default function PurchasesPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} purchases
+                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} purchases
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -1079,7 +1080,7 @@ export default function PurchasesPage() {
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    {t('previous')}
                   </Button>
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -1111,7 +1112,7 @@ export default function PurchasesPage() {
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>

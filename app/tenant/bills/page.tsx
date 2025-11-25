@@ -187,13 +187,13 @@ export default function BillsPage() {
         setIsEditModalOpen(false)
         setSelectedBill(null)
         setEditForm({})
-        showToast.success('✅ Bill updated')
+        showToast.success(`✅ ${t('billUpdated')}`)
         fetchBills(currentPage)
       } else {
-        showToast.error('❌ Failed to update bill')
+        showToast.error(`❌ ${t('failedToUpdateBill')}`)
       }
     } catch (error) {
-      showToast.error('❌ Error updating bill')
+      showToast.error(`❌ ${t('errorUpdatingBill')}`)
     }
   }
 
@@ -202,7 +202,7 @@ export default function BillsPage() {
     
     const correctPassword = settings.deletePassword || 'admin123'
     if (password !== correctPassword) {
-      showToast.error('❌ Incorrect password!')
+      showToast.error(`❌ ${t('incorrectPassword')}`)
       return
     }
     
@@ -219,13 +219,13 @@ export default function BillsPage() {
         setIsPasswordModalOpen(false)
         setPassword('')
         setBillToDelete(null)
-        showToast.success('✅ Bill deleted successfully!')
+        showToast.success(`✅ ${t('billDeletedSuccess')}`)
         fetchBills(currentPage)
       } else {
-        showToast.error('❌ Failed to delete bill')
+        showToast.error(`❌ ${t('failedToDeleteBill')}`)
       }
     } catch (error) {
-      showToast.error('❌ Error deleting bill')
+      showToast.error(`❌ ${t('errorDeletingBill')}`)
     }
   }
 
@@ -233,7 +233,7 @@ export default function BillsPage() {
     const correctPassword = settings.deletePassword || 'admin123'
     
     if (password !== correctPassword) {
-      showToast.error('❌ Incorrect password!')
+      showToast.error(`❌ ${t('incorrectPassword')}`)
       return
     }
 
@@ -249,20 +249,20 @@ export default function BillsPage() {
       setSelectedBills([])
       
       if (successCount > 0) {
-        showToast.success(`✅ ${successCount} bills deleted successfully!`)
+        showToast.success(`✅ ${t('billsDeletedSuccess').replace('{0}', successCount.toString())}`)
         fetchBills(currentPage)
       } else {
-        showToast.error('❌ Failed to delete bills')
+        showToast.error(`❌ ${t('failedToDeleteBills')}`)
       }
     } catch (error) {
       console.error('Bulk delete error:', error)
-      showToast.error('❌ Error deleting bills')
+      showToast.error(`❌ ${t('errorDeletingBills')}`)
     }
   }
 
   const sendBillViaWhatsApp = (bill: Bill) => {
     if (!bill.customerPhone) {
-      showToast.error('Customer phone number required')
+      showToast.error(t('customerPhoneRequired'))
       return
     }
 
@@ -311,10 +311,10 @@ Contact: ${storePhone}`
 
   const exportBills = async () => {
     try {
-      showToast.success('Fetching all bills...')
+      showToast.success(t('fetchingAllBills'))
       const response = await fetch('/api/pos/sales?limit=999999')
       if (!response.ok) {
-        showToast.error('Failed to fetch bills')
+        showToast.error(t('failedToFetchBills'))
         return
       }
       const result = await response.json()
@@ -359,10 +359,10 @@ Contact: ${storePhone}`
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      showToast.success(`${allBills.length} bills exported successfully!`)
+      showToast.success(t('billsExportedSuccess').replace('{0}', allBills.length.toString()))
     } catch (error) {
       console.error('Export error:', error)
-      showToast.error('Failed to export bills')
+      showToast.error(t('failedToExportBills'))
     }
   }
 
@@ -376,7 +376,7 @@ Contact: ${storePhone}`
         const csv = event.target?.result as string
         const lines = csv.split('\n').filter(line => line.trim())
         if (lines.length < 2) {
-          showToast.error('CSV file is empty')
+          showToast.error(t('csvFileEmpty'))
           return
         }
 
@@ -457,7 +457,7 @@ Contact: ${storePhone}`
         }
 
         if (importedBills.length === 0) {
-          showToast.error('No valid bills found in CSV')
+          showToast.error(t('noValidBillsInCSV'))
           return
         }
 
@@ -468,15 +468,15 @@ Contact: ${storePhone}`
         })
 
         if (response.ok) {
-          showToast.success(`${importedBills.length} bills imported successfully!`)
+          showToast.success(t('billsImportedSuccess').replace('{0}', importedBills.length.toString()))
           fetchBills(currentPage)
         } else {
           const error = await response.json()
-          showToast.error(error.error || 'Failed to import bills')
+          showToast.error(error.error || t('failedToImportBills'))
         }
       } catch (error) {
         console.error('Import error:', error)
-        showToast.error('Error importing bills')
+        showToast.error(t('errorImportingBills'))
       }
     }
     reader.readAsText(file)
@@ -588,7 +588,7 @@ Contact: ${storePhone}`
                     size="sm"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete ({selectedBills.length})
+                    {t('delete')} ({selectedBills.length})
                   </Button>
                 )}
                 <Button 
@@ -597,15 +597,15 @@ Contact: ${storePhone}`
                   size="sm"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All
+                  {t('clearAll')}
                 </Button>
                 <Button onClick={exportBills} variant="outline" size="sm">
                   <Upload className="w-4 h-4 mr-2" />
-                  Export
+                  {t('export')}
                 </Button>
                 <Button onClick={() => document.getElementById('import-bills')?.click()} variant="outline" size="sm">
                   <Download className="w-4 h-4 mr-2" />
-                  Import
+                  {t('importCSV')}
                 </Button>
                 <input
                   id="import-bills"
@@ -631,13 +631,13 @@ Contact: ${storePhone}`
             {filteredBills.length === 0 ? (
               <div className="text-center py-12">
                 <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No bills found</h3>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noBillsFound')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {bills.length === 0 ? 'No bills have been generated yet' : 'Try adjusting your search filters'}
+                  {bills.length === 0 ? t('noBillsGenerated') : t('tryAdjustingSearchFilters')}
                 </p>
                 <Button onClick={() => window.location.href = '/tenant/pos'}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create First Bill
+                  {t('createFirstBill')}
                 </Button>
               </div>
             ) : (
@@ -658,12 +658,12 @@ Contact: ${storePhone}`
                         className="cursor-pointer"
                       />
                     </TableHead>
-                    <TableHead className="text-center w-16">Sr. No.</TableHead>
+                    <TableHead className="text-center w-16">{t('srNo')}</TableHead>
                     <TableHead className="text-center">{t('billNo')}</TableHead>
                     <TableHead className="text-center">{t('customer')}</TableHead>
                     <TableHead className="text-center">{t('items')}</TableHead>
-                    <TableHead className="text-center">GST Rate</TableHead>
-                    <TableHead className="text-center">GST Amount</TableHead>
+                    <TableHead className="text-center">{t('gstRate')}</TableHead>
+                    <TableHead className="text-center">{t('gstAmount')}</TableHead>
                     <TableHead className="text-center">{t('total')}</TableHead>
                     <TableHead className="text-center">{t('payment')}</TableHead>
                     <TableHead className="text-center">{t('date')}</TableHead>
@@ -747,10 +747,10 @@ Contact: ${storePhone}`
                                   document.body.removeChild(a)
                                   URL.revokeObjectURL(url)
                                 } else {
-                                  showToast.error('Failed to generate custom bill')
+                                  showToast.error(t('failedToGenerateBill'))
                                 }
                               } catch (error) {
-                                showToast.error('Error generating custom bill')
+                                showToast.error(t('errorGeneratingBill'))
                               }
                             }}
                           >
@@ -788,7 +788,7 @@ Contact: ${storePhone}`
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} bills
+                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} {t('bills')}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -797,7 +797,7 @@ Contact: ${storePhone}`
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    {t('previous')}
                   </Button>
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -829,7 +829,7 @@ Contact: ${storePhone}`
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>
@@ -843,12 +843,12 @@ Contact: ${storePhone}`
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <Trash2 className="w-5 h-5 text-red-500" />
-                <span>Clear All Bills</span>
+                <span>{t('clearAllBills')}</span>
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Enter password to delete <strong>ALL bills</strong>. This action cannot be undone!
+                {t('confirmClearAllBills')}
               </p>
               <div className="space-y-2">
                 <Label htmlFor="clearAllPassword">{t('password')}</Label>
@@ -878,7 +878,7 @@ Contact: ${storePhone}`
                   onClick={async () => {
                     const correctPassword = settings.deletePassword || 'admin123'
                     if (password !== correctPassword) {
-                      showToast.error('❌ Incorrect password!')
+                      showToast.error(`❌ ${t('incorrectPassword')}`)
                       return
                     }
                     try {
@@ -886,18 +886,18 @@ Contact: ${storePhone}`
                       if (response.ok) {
                         setIsClearAllModalOpen(false)
                         setPassword('')
-                        showToast.success('✅ All bills deleted successfully!')
+                        showToast.success(`✅ ${t('allBillsDeletedSuccess')}`)
                         fetchBills(1)
                         setSelectedBills([])
                       } else {
-                        showToast.error('❌ Failed to clear bills')
+                        showToast.error(`❌ ${t('failedToClearBills')}`)
                       }
                     } catch (error) {
-                      showToast.error('❌ Error clearing bills')
+                      showToast.error(`❌ ${t('errorClearingBills')}`)
                     }
                   }}
                 >
-                  Delete All
+                  {t('deleteAllBills')}
                 </Button>
               </div>
             </div>
@@ -918,7 +918,7 @@ Contact: ${storePhone}`
                 {billToDelete ? (
                   <>{t('enterPasswordToDelete')} <strong>{billToDelete.billNo}</strong></>
                 ) : (
-                  <>Enter password to delete <strong>{selectedBills.length} bills</strong></>
+                  <>{t('enterPasswordToDeleteBills').replace('{0}', selectedBills.length.toString())}</>
                 )}
               </p>
               <div className="space-y-2">
@@ -1008,11 +1008,11 @@ Contact: ${storePhone}`
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="font-medium">Cashier:</span>
+                      <span className="font-medium">{t('cashier')}:</span>
                       <span>{selectedBill.cashier || 'Admin'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium">Payment:</span>
+                      <span className="font-medium">{t('payment')}:</span>
                       <span className="capitalize">{selectedBill.paymentMethod}</span>
                     </div>
                   </div>
@@ -1020,7 +1020,7 @@ Contact: ${storePhone}`
 
                 {/* Customer Details */}
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-bold mb-3">Customer Details</h4>
+                  <h4 className="font-bold mb-3">{t('customerDetails')}</h4>
                   {customerDetails ? (
                     <div className="space-y-2">
                       {customerFields.map((field) => {
@@ -1101,7 +1101,7 @@ Contact: ${storePhone}`
                 {/* Terms */}
                 {(settings.terms || selectedBill.terms) && (
                   <div className="text-xs text-muted-foreground p-3 bg-gray-50 rounded">
-                    <div className="font-medium mb-1">Terms & Conditions:</div>
+                    <div className="font-medium mb-1">{t('termsConditions')}:</div>
                     <div>{settings.terms || selectedBill.terms}</div>
                   </div>
                 )}
@@ -1129,10 +1129,10 @@ Contact: ${storePhone}`
                           document.body.removeChild(a)
                           URL.revokeObjectURL(url)
                         } else {
-                          showToast.error('Failed to generate custom bill')
+                          showToast.error(t('failedToGenerateBill'))
                         }
                       } catch (error) {
-                        showToast.error('Error generating custom bill')
+                        showToast.error(t('errorGeneratingBill'))
                       }
                     }}
                     className="flex-1"
@@ -1147,7 +1147,7 @@ Contact: ${storePhone}`
                       className="flex-1"
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
-                      Send WhatsApp
+                      {t('sendWhatsApp')}
                     </Button>
                   )}
                 </div>
@@ -1158,9 +1158,9 @@ Contact: ${storePhone}`
 
         {/* Edit Bill Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Bill - {selectedBill?.billNo}</DialogTitle>
+              <DialogTitle>{t('editBill')} - {selectedBill?.billNo}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
               <div className="grid grid-cols-2 gap-4">
@@ -1353,7 +1353,7 @@ Contact: ${storePhone}`
                   {t('cancel')}
                 </Button>
                 <Button className="flex-1" onClick={saveBillEdits}>
-                  Update Bill
+                  {t('updateBill')}
                 </Button>
               </div>
             </div>
