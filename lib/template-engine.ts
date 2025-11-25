@@ -137,8 +137,16 @@ export class TemplateEngine {
   static renderToHTML(template: Template, data: TemplateData): string {
     const { elements, settings } = template.canvasJSON
 
-    const pageWidth = settings.pageSize === 'A4' ? '210mm' : '148mm'
-    const pageHeight = settings.pageSize === 'A4' ? '297mm' : '210mm'
+    const pxPerMm = 3.78
+    const sizeMap = {
+      A4: { w: Math.round(210 * pxPerMm), h: Math.round(297 * pxPerMm) },
+      A5: { w: Math.round(148 * pxPerMm), h: Math.round(210 * pxPerMm) },
+      Letter: { w: Math.round(216 * pxPerMm), h: Math.round(279 * pxPerMm) }
+    } as const
+    const chosen = sizeMap[settings.pageSize] || sizeMap.A4
+    const isLandscape = settings.orientation === 'landscape'
+    const pageWidth = (isLandscape ? chosen.h : chosen.w) + 'px'
+    const pageHeight = (isLandscape ? chosen.w : chosen.h) + 'px'
 
     const tableEl = elements.find(el => el.type === 'table' && el.placeholder === '{{items.table}}')
     const items = Array.isArray(data.invoice?.items) ? (data.invoice!.items as any[]) : []
@@ -190,6 +198,7 @@ export class TemplateEngine {
           min-height: ${pageHeight};
           background: white;
           position: relative;
+          overflow: hidden;
           font-family: Arial, sans-serif;
           page-break-after: ${p < pageCount - 1 ? 'always' : 'auto'};
         ">
@@ -258,6 +267,10 @@ export class TemplateEngine {
 
     if (position) {
       css += `position: absolute; left: ${position.x}px; top: ${position.y}px;`
+      // Don't apply max-width constraint to tables as they have fixed column widths
+      if (element.type !== 'table') {
+        css += `max-width: calc(100% - ${position.x}px);`
+      }
     }
 
     if (size) {
@@ -295,7 +308,9 @@ export class TemplateEngine {
     const bw = element.tableConfig?.borderWidth ?? (element.style?.borderWidth ?? 1)
     const pad = element.tableConfig?.cellPadding ?? 8
     const align = element.tableConfig?.align || []
-    const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
+    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
+    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
+    const cols = Math.max(headers.length, keys.length)
     let widths = element.tableConfig?.columnWidths && element.tableConfig.columnWidths.length === cols
       ? element.tableConfig.columnWidths.slice()
       : Array(cols).fill(Math.round(100 / cols))
@@ -305,22 +320,22 @@ export class TemplateEngine {
       widths[0] = Math.max(5, widths[0] + diff)
     }
     const showHeader = element.tableConfig?.showHeader !== false
-    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
-    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
 
     if (element.placeholder === '{{items.table}}' && Array.isArray(data.invoice?.items)) {
       const items = data.invoice!.items
+      const effectiveHeaders = Array.from({ length: cols }, (_, i) => headers[i] ?? (keys[i] || `Col ${i+1}`))
+      const colGroup = `<colgroup>${Array.from({ length: cols }, (_, i) => `<col style="width:${widths[i]}%">`).join('')}</colgroup>`
       const headerRow = showHeader ? `
         <thead>
           <tr style="background:${element.tableConfig?.headerBg || 'transparent'}; color:${element.tableConfig?.headerColor || 'inherit'}; border-bottom:${bw}px solid ${borderColor};">
-            ${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}
+            ${effectiveHeaders.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600;">${h}</th>`).join('')}
           </tr>
         </thead>
       ` : ''
 
       const rows = items.map((item: any) => `
         <tr>
-          ${keys.map((k, i) => {
+          ${keys.slice(0, cols).map((k, i) => {
             const kk = (k === 'gst' ? 'gstRate' : (k === 'gstamt' || k === 'gst_amount' ? 'gstAmount' : k))
             let v = item?.[kk]
             if (kk === 'gstRate') {
@@ -343,22 +358,26 @@ export class TemplateEngine {
               }
             }
             const defaultAlign = (kk === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk) ? 'right' : 'left'))
-            return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
+            return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign};">${val}</td>`
           }).join('')}
         </tr>
       `).join('')
 
-      return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor};">
+      return `<table style="${baseStyle}border-collapse: collapse; border:${bw}px solid ${borderColor}; table-layout: fixed;">
+        ${colGroup}
         ${headerRow}
         <tbody>
           ${rows}
         </tbody>
       </table>`
     }
-    return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor};">
-      ${showHeader ? `<thead><tr>${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}</tr></thead>` : ''}
+    const effectiveHeaders = Array.from({ length: cols }, (_, i) => headers[i] ?? (keys[i] || `Col ${i+1}`))
+    const colGroup = `<colgroup>${Array.from({ length: cols }, (_, i) => `<col style="width:${widths[i]}%">`).join('')}</colgroup>`
+    return `<table style="${baseStyle}border-collapse: collapse; border:${bw}px solid ${borderColor}; table-layout: fixed;">
+      ${colGroup}
+      ${showHeader ? `<thead><tr>${effectiveHeaders.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600;">${h}</th>`).join('')}</tr></thead>` : ''}
       <tbody>
-        <tr>${headers.map((_, i) => `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || 'left'}; ${widths[i] ? `width:${widths[i]}%;` : ''}"></td>`).join('')}</tr>
+        <tr>${effectiveHeaders.map((_, i) => `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || 'left'};"></td>`).join('')}</tr>
       </tbody>
     </table>`
   }
@@ -369,7 +388,9 @@ export class TemplateEngine {
     const bw = element.tableConfig?.borderWidth ?? (element.style?.borderWidth ?? 1)
     const pad = element.tableConfig?.cellPadding ?? 8
     const align = element.tableConfig?.align || []
-    const cols = element.tableConfig?.columns || (element.tableConfig?.headers?.length || 4)
+    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
+    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
+    const cols = Math.max(headers.length, keys.length)
     let widths = element.tableConfig?.columnWidths && element.tableConfig.columnWidths.length === cols
       ? element.tableConfig.columnWidths.slice()
       : Array(cols).fill(Math.round(100 / cols))
@@ -379,22 +400,22 @@ export class TemplateEngine {
       widths[0] = Math.max(5, widths[0] + diff)
     }
     const showHeader = element.tableConfig?.showHeader !== false
-    const headers = element.tableConfig?.headers?.length ? element.tableConfig.headers : ['Item', 'Qty', 'Rate', 'Amount']
-    const keys = element.tableConfig?.columnKeys?.length ? element.tableConfig.columnKeys : ['name', 'quantity', 'price', 'total']
 
     const baseStyle = this.buildElementStyle(element)
 
+    const effectiveHeaders = Array.from({ length: cols }, (_, i) => headers[i] ?? (keys[i] || `Col ${i+1}`))
+    const colGroup = `<colgroup>${Array.from({ length: cols }, (_, i) => `<col style="width:${widths[i]}%">`).join('')}</colgroup>`
     const headerRow = showHeader ? `
       <thead>
         <tr style="background:${element.tableConfig?.headerBg || 'transparent'}; color:${element.tableConfig?.headerColor || 'inherit'}; border-bottom:${bw}px solid ${borderColor};">
-          ${headers.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600; ${widths[i] ? `width:${widths[i]}%;` : ''}">${h}</th>`).join('')}
+          ${effectiveHeaders.map((h, i) => `<th style="padding:${pad}px; text-align:${align[i] || 'left'}; font-weight:600;">${h}</th>`).join('')}
         </tr>
       </thead>
     ` : ''
 
     const rows = pageItems.map((item: any) => `
       <tr>
-        ${keys.map((k, i) => {
+        ${keys.slice(0, cols).map((k, i) => {
           const kk = (k === 'gst' ? 'gstRate' : (k === 'gstamt' || k === 'gst_amount' ? 'gstAmount' : k))
           let v = item?.[kk]
           if (kk === 'gstRate') {
@@ -417,12 +438,13 @@ export class TemplateEngine {
             }
           }
           const defaultAlign = (kk === 'quantity' ? 'center' : (['price','total','cgst','sgst','igst','gstAmount','taxAmount','discountAmount'].includes(kk) ? 'right' : 'left'))
-          return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign}; ${widths[i] ? `width:${widths[i]}%;` : ''}">${val}</td>`
+          return `<td style="border-bottom:${bw}px solid ${borderColor}; padding:${pad}px; text-align:${align[i] || defaultAlign};">${val}</td>`
         }).join('')}
       </tr>
     `).join('')
 
-    return `<table style="${baseStyle}border-collapse: collapse; width: 100%; border:${bw}px solid ${borderColor}; page-break-inside: auto;">
+    return `<table style="${baseStyle}border-collapse: collapse; border:${bw}px solid ${borderColor}; page-break-inside: auto; table-layout: fixed;">
+      ${colGroup}
       ${headerRow}
       <tbody>
         ${rows}
