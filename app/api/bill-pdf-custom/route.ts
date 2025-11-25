@@ -174,9 +174,9 @@ export async function POST(request: NextRequest) {
           <title>Invoice ${billData.billNo}</title>
           <style>
             * { box-sizing: border-box; }
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; max-width: 794px; }
-            .template-container { margin: 0; overflow: hidden; max-width: 794px; }
-            table { width: 100%; max-width: 100%; table-layout: fixed; word-wrap: break-word; border-collapse: collapse; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; width: 210mm; max-width: 210mm; }
+            .template-container { margin: 0; overflow: hidden; width: 210mm; max-width: 210mm; }
+            table { width: auto; max-width: 100%; table-layout: fixed; word-wrap: break-word; border-collapse: collapse; }
             table td, table th { overflow: hidden; text-overflow: ellipsis; }
             
             /* Specific table constraints */
@@ -188,13 +188,12 @@ export async function POST(request: NextRequest) {
             /* Print styles for PDF generation */
             @media print {
               * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-              body { margin: 0 !important; padding: 0 !important; max-width: 794px !important; width: 794px !important; }
-              .template-container { margin: 0 !important; page-break-inside: avoid !important; max-width: 794px !important; width: 794px !important; }
+              body { margin: 0 !important; padding: 0 !important; max-width: 210mm !important; width: 210mm !important; }
+              .template-container { margin: 0 !important; page-break-inside: avoid !important; max-width: 210mm !important; width: 210mm !important; }
               
               /* Force tables to respect container bounds */
               table { 
-                width: 100% !important; 
-                max-width: 794px !important;
+                max-width: 210mm !important;
                 table-layout: fixed !important;
               }
               
