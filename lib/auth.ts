@@ -12,6 +12,7 @@ const superAdmin = {
   role: "super-admin"
 }
 
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
