@@ -215,14 +215,11 @@ export async function POST(request: NextRequest) {
           
           console.log(`✓ Found product, current stock: ${existingProduct.stock}`)
           
-          // Update stock - try multiple field names
+          // Update stock
           const updateResult = await inventoryCollection.updateOne(
             { _id: productId },
             { 
-              $inc: { 
-                stock: -quantitySold,
-                Stock: -quantitySold
-              },
+              $inc: { stock: -quantitySold },
               $set: { updatedAt: new Date() }
             }
           )

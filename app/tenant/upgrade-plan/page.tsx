@@ -62,7 +62,8 @@ export default function UpgradePlanPage() {
           allowedFeatures: data.allowedFeatures || [],
           maxUsers: 1,
           maxProducts: 100,
-          description: 'Your current subscription'
+          description: 'Your current subscription',
+          durationDays: 365
         })
       }
     } catch (error) {
@@ -111,9 +112,9 @@ export default function UpgradePlanPage() {
 
   const getPlanColor = (planName: string) => {
     switch (planName.toLowerCase()) {
-      case 'basic': return 'border-blue-200 bg-blue-50'
-      case 'standard': return 'border-green-200 bg-green-50'
-      case 'premium': return 'border-purple-200 bg-purple-50'
+      case 'basic': return 'border-gray-200 bg-gray-50'
+      case 'standard': return 'border-gray-200 bg-gray-50'
+      case 'premium': return 'border-gray-200 bg-gray-50'
       default: return 'border-gray-200 bg-gray-50'
     }
   }
@@ -140,7 +141,7 @@ export default function UpgradePlanPage() {
       <div className="space-y-8">
         {/* Current Plan */}
         {currentPlan && (
-          <Card className="border-2 border-primary">
+          <Card className="border-2 py-6 border-primary">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -167,7 +168,7 @@ export default function UpgradePlanPage() {
             const isCurrentPlan = currentPlan?.id === plan.id
             
             return (
-              <Card key={plan.id} className={`relative ${getPlanColor(plan.name)} ${isCurrentPlan ? 'ring-2 ring-primary' : ''}`}>
+              <Card key={plan.id}  className={`relative ${getPlanColor(plan.name)} ${isCurrentPlan ? 'ring-2 ring-primary py-6' : 'py-6'}`}>
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 p-3 rounded-full bg-white shadow-sm">
                     {getPlanIcon(plan.name)}
@@ -234,18 +235,7 @@ export default function UpgradePlanPage() {
           })}
         </div>
 
-        {/* Contact Support */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('needHelpChoosing')}</CardTitle>
-            <CardDescription>
-              {t('contactSupportDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline">{t('contactSupport')}</Button>
-          </CardContent>
-        </Card>
+
       </div>
     </MainLayout>
   )

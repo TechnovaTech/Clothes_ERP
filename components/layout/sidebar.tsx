@@ -163,7 +163,7 @@ export function Sidebar({ userType = "retail" }: SidebarProps) {
           <div className="flex items-center space-x-3">
             <Image src="/logo.png" alt="Retalians Logo" width={40} height={40} className="object-contain" />
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Retalians</h2>
+              <h2 className="text-lg font-bold text-gray-800">RetailOne</h2>
               <p className="text-xs text-gray-500">
                 {userType === "super-admin" ? "Super Admin Panel" : "Retail Dashboard"}
               </p>

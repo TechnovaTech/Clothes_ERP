@@ -1055,14 +1055,39 @@ export default function InventoryPage() {
                         </TableCell>
                         {tenantFields.filter(field => !['price', 'costprice', 'cost_price', 'stock', 'minstock', 'min_stock'].includes(field.name.toLowerCase().replace(/\s+/g, '_'))).map((field) => {
                           const fieldKey = field.name.toLowerCase().replace(/\s+/g, '_')
-                          let value = (item as any)[fieldKey] || (item as any)[field.name] || (item as any)[field.name.toLowerCase()]
+                          const fieldNameLower = field.name.toLowerCase()
+                          const fieldNameCamel = field.name.replace(/\s+/g, '')
+                          const fieldNameNoSpace = field.name.replace(/\s+/g, '')
+                          
+                          // Try all possible field name variations
+                          let value = (item as any)[field.name] || 
+                                     (item as any)[fieldKey] || 
+                                     (item as any)[fieldNameLower] || 
+                                     (item as any)[fieldNameCamel] ||
+                                     (item as any)[fieldNameNoSpace]
                           
                           if (field.name.toLowerCase().includes('name') && !value) {
                             value = item.name
                           }
                           
                           const isBarcode = field.name.toLowerCase() === 'barcode' || field.type === 'barcode'
-                          const displayValue = Array.isArray(value) ? value.join(', ') : (value || 'N/A')
+                          const isDate = field.type === 'date'
+                          let displayValue = Array.isArray(value) ? value.join(', ') : (value || 'N/A')
+                          
+                          // Format date if it's a date field
+                          if (isDate && value && value !== 'N/A') {
+                            // If already in dd-mm-yyyy format, use as is
+                            if (typeof value === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(value)) {
+                              displayValue = value
+                            } else {
+                              // Otherwise try to format it
+                              try {
+                                displayValue = formatDateToDDMMYYYY(new Date(value))
+                              } catch (e) {
+                                displayValue = value
+                              }
+                            }
+                          }
                           
                           return (
                             <TableCell key={field.name} className="text-center max-w-[150px] p-2">
@@ -1070,7 +1095,7 @@ export default function InventoryPage() {
                                 <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
                               ) : (
                                 <div className="break-words whitespace-normal text-sm">
-                                  {field.type === 'date' ? formatDateToDDMMYYYY(displayValue) : displayValue}
+                                  {displayValue}
                                 </div>
                               )}
                             </TableCell>

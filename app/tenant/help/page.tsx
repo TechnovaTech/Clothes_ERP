@@ -21,6 +21,32 @@ export default function HelpPage() {
   const [tutorials, setTutorials] = useState<Tutorial[]>([])
   const { t } = useLanguage()
 
+  const getEmbedUrl = (url: string) => {
+    if (!url) return ''
+    // Convert YouTube watch URL to embed URL
+    if (url.includes('youtube.com/watch?v=')) {
+      const videoId = url.split('v=')[1]?.split('&')[0]
+      return `https://www.youtube.com/embed/${videoId}`
+    }
+    if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0]
+      return `https://www.youtube.com/embed/${videoId}`
+    }
+    // If already embed URL or other format, return as is
+    return url
+  }
+
+  const getThumbnailUrl = (url: string) => {
+    if (!url) return ''
+    let videoId = ''
+    if (url.includes('youtube.com/watch?v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0]
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0]
+    }
+    return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : ''
+  }
+
   const fetchTutorials = async () => {
     try {
       const response = await fetch('/api/tutorials')
@@ -63,7 +89,7 @@ export default function HelpPage() {
                 <iframe
                   width="100%"
                   height="100%"
-                  src={selectedVideo.videoUrl}
+                  src={getEmbedUrl(selectedVideo.videoUrl)}
                   title={selectedVideo.title}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -80,15 +106,23 @@ export default function HelpPage() {
             <Card key={tutorial._id} className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardContent className="p-0">
                 <div 
-                  className="relative aspect-video bg-gray-100 rounded-t-lg flex items-center justify-center"
+                  className="relative aspect-video bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden"
                   onClick={() => setSelectedVideo(tutorial)}
                 >
-                  <div className="absolute inset-0 bg-black/20 rounded-t-lg flex items-center justify-center">
+                  {getThumbnailUrl(tutorial.videoUrl) ? (
+                    <img 
+                      src={getThumbnailUrl(tutorial.videoUrl)} 
+                      alt={tutorial.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Video className="h-16 w-16 text-gray-400" />
+                  )}
+                  <div className="absolute inset-0 bg-black/20 rounded-t-lg flex items-center justify-center hover:bg-black/30 transition-colors">
                     <Button size="lg" className="rounded-full">
                       <Play className="h-6 w-6 ml-1" />
                     </Button>
                   </div>
-                  <Video className="h-16 w-16 text-gray-400" />
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
