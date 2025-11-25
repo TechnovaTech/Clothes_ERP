@@ -87,7 +87,8 @@ export default function POSPage() {
     terms: '',
     whatsappMessage: '',
     deletePassword: 'admin123',
-    billFormat: 'professional'
+    billFormat: 'professional',
+    logo: ''
   })
   const [customerName, setCustomerName] = useState<string>("")
   const [customerPhone, setCustomerPhone] = useState<string>("")
@@ -516,11 +517,7 @@ export default function POSPage() {
                     <Scan className="w-4 h-4 mr-2" />
                     {t('scanBarcode')}
                   </Button>
-                  {barcodeBuffer && (
-                    <div className="flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                      {t('scanning')}: {barcodeBuffer}
-                    </div>
-                  )}
+                  
                 </div>
               </div>
             </CardHeader>

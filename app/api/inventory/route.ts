@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
     const formattedInventory = inventory.map(item => ({
       ...item,
       id: item._id.toString(),
-      minStock: item.minStock || item.min_stock || item['Min Stock'] || 0
+      minStock: item.minStock || item.min_stock || item['Min Stock'] || 0,
+      costPrice: item.costPrice || item.cost_price || item['Cost Price'] || 0
     }))
     
     return NextResponse.json({
