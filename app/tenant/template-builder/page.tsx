@@ -355,12 +355,12 @@ export default function TemplateBuilderPage() {
     <MainLayout title="Template Builder">
       <div className="h-[calc(100vh-120px)] flex flex-col">
         {/* Compact Header */}
-        <div className="flex items-center justify-between p-4 bg-white border-b">
+        <div className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-20">
           <div className="flex items-center space-x-2">
             <Palette className="w-5 h-5" />
             <span className="font-semibold">Template Builder</span>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 flex-wrap overflow-x-auto whitespace-nowrap">
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium">Type:</label>
               <select
@@ -374,7 +374,7 @@ export default function TemplateBuilderPage() {
                 <option value="email">Email</option>
               </select>
           </div>
-            <div className="hidden md:flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <Input
                 placeholder="Search elements"
                 value={elementsFilter}
@@ -382,7 +382,7 @@ export default function TemplateBuilderPage() {
                 className="h-8 w-48"
               />
             </div>
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => alignSelection('left')}>Align Left</Button>
               <Button variant="outline" size="sm" onClick={() => alignSelection('centerX')}>Center X</Button>
               <Button variant="outline" size="sm" onClick={() => alignSelection('right')}>Align Right</Button>
@@ -403,7 +403,7 @@ export default function TemplateBuilderPage() {
             <RotateCcw className="w-4 h-4 mr-1" />
             Reset
           </Button>
-            <div className="hidden md:flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-1">
                 <label className="text-sm">Zoom</label>
                 <Input
