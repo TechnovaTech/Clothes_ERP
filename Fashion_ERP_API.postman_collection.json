@@ -1,0 +1,133 @@
+{
+  "info": {
+    "name": "Fashion ERP - Public Plans API",
+    "description": "API collection for fetching subscription plans from Fashion ERP system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "fashion-erp"
+  },
+  "item": [
+    {
+      "name": "Get All Plans",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{API_KEY}}",
+            "type": "text",
+            "description": "Your ERP API Key"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/public/plans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["api", "public", "plans"]
+        },
+        "description": "Fetches all active subscription plans with details including pricing, limits, and features."
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/public/plans",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "public", "plans"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Basic\",\n      \"price\": 999,\n      \"description\": \"Perfect for small retail stores\",\n      \"maxProducts\": 1000,\n      \"durationDays\": 365,\n      \"features\": [\n        \"Inventory Management\",\n        \"POS System\",\n        \"Customer Management\"\n      ],\n      \"allowedFeatures\": [\n        \"dashboard\",\n        \"inventory\",\n        \"pos\",\n        \"customers\",\n        \"sales\"\n      ]\n    },\n    {\n      \"id\": \"507f1f77bcf86cd799439012\",\n      \"name\": \"Standard\",\n      \"price\": 2499,\n      \"description\": \"For growing fashion stores\",\n      \"maxProducts\": 5000,\n      \"durationDays\": 365,\n      \"features\": [\n        \"All Basic Features\",\n        \"Employee Management\",\n        \"Purchase Management\",\n        \"Reports & Analytics\"\n      ],\n      \"allowedFeatures\": [\n        \"dashboard\",\n        \"inventory\",\n        \"pos\",\n        \"customers\",\n        \"sales\",\n        \"employees\",\n        \"purchases\",\n        \"reports\"\n      ]\n    },\n    {\n      \"id\": \"507f1f77bcf86cd799439013\",\n      \"name\": \"Premium\",\n      \"price\": 4999,\n      \"description\": \"Complete solution for large stores\",\n      \"maxProducts\": 999999,\n      \"durationDays\": 365,\n      \"features\": [\n        \"All Standard Features\",\n        \"WhatsApp Integration\",\n        \"Advanced Analytics\",\n        \"Expense Management\",\n        \"Priority Support\"\n      ],\n      \"allowedFeatures\": [\n        \"dashboard\",\n        \"inventory\",\n        \"pos\",\n        \"customers\",\n        \"sales\",\n        \"employees\",\n        \"purchases\",\n        \"reports\",\n        \"expenses\",\n        \"settings\",\n        \"whatsapp\"\n      ]\n    }\n  ]\n}"
+        },
+        {
+          "name": "Unauthorized - Invalid API Key",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "invalid_key",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/public/plans",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "public", "plans"]
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Invalid API key\"\n}"
+        },
+        {
+          "name": "Server Error",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{API_KEY}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/public/plans",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "public", "plans"]
+            }
+          },
+          "status": "Internal Server Error",
+          "code": 500,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Failed to fetch plans\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "https://erp.fashionpos.space",
+      "type": "string"
+    },
+    {
+      "key": "API_KEY",
+      "value": "your_api_key_here",
+      "type": "string"
+    }
+  ]
+}

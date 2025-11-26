@@ -4,16 +4,36 @@ import { connectDB } from '@/lib/database'
 export async function GET(request: NextRequest) {
   try {
     const apiKey = request.headers.get('x-api-key')
-    const expectedApiKey = process.env.ERP_API_KEY
     
-    if (expectedApiKey && apiKey !== expectedApiKey) {
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: 'API key is required' },
+        { status: 401 }
+      )
+    }
+
+    const db = await connectDB()
+    const apiKeysCollection = db.collection('api_keys')
+    
+    // Validate API key from database
+    const validKey = await apiKeysCollection.findOne({ 
+      key: apiKey, 
+      status: 'active' 
+    })
+    
+    if (!validKey) {
       return NextResponse.json(
         { success: false, error: 'Invalid API key' },
         { status: 401 }
       )
     }
 
-    const db = await connectDB()
+    // Update last used timestamp
+    await apiKeysCollection.updateOne(
+      { _id: validKey._id },
+      { $set: { lastUsed: new Date() } }
+    )
+
     const plansCollection = db.collection('plans')
     
     const plans = await plansCollection
