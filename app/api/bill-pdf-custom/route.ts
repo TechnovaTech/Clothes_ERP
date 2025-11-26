@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getTenantCollection } from '@/lib/tenant-data'
-import { generateBillHTML } from '@/lib/bill-designs'
+import { generateBillHTML, BillData, StoreSettings } from '@/lib/bill-designs'
 import puppeteer from 'puppeteer'
 
 // POST - Generate custom bill PDF using template
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const settings = await settingsCollection.findOne({})
 
     // Prepare bill data
-    const bill = {
+    const bill: BillData = {
       billNo: billData.billNo,
       customerName: billData.customerName || 'Walk-in Customer',
       customerPhone: billData.customerPhone || '',
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare store settings
-    const storeSettings = {
+    const storeSettings: StoreSettings = {
       storeName: settings?.storeName || 'Store',
       address: settings?.address || '',
       phone: settings?.phone || '',
