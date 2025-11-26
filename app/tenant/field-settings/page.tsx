@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, Trash2, Settings, Users, Package, Lock, X } from "lucide-react"
 import { showToast } from "@/lib/toast"
+import { useLanguage } from "@/lib/language-context"
 
 interface CustomerField {
   name: string
@@ -29,6 +30,7 @@ interface ProductField {
 }
 
 export default function FieldSettingsPage() {
+  const { t } = useLanguage()
   const [customerFields, setCustomerFields] = useState<CustomerField[]>([])
   const [productFields, setProductFields] = useState<ProductField[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,10 +54,10 @@ export default function FieldSettingsPage() {
         setIsPasswordDialogOpen(false)
         fetchFields()
       } else {
-        showToast.error('Invalid password')
+        showToast.error(t('invalidPassword'))
       }
     } catch (error) {
-      showToast.error('Authentication failed')
+      showToast.error(t('authenticationFailed'))
     }
   }
 
@@ -189,29 +191,29 @@ export default function FieldSettingsPage() {
 
   if (!isAuthenticated) {
     return (
-      <MainLayout title="Field Settings">
+      <MainLayout title={t('fieldSettings')}>
         <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Lock className="w-5 h-5" />
-                Authentication Required
+                {t('authenticationRequired')}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Enter Password</Label>
+                <Label htmlFor="password">{t('enterPassword')}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter field settings password"
+                  placeholder={t('enterFieldSettingsPassword')}
                   onKeyPress={(e) => e.key === 'Enter' && verifyPassword()}
                 />
               </div>
               <Button onClick={verifyPassword} className="w-full">
-                Authenticate
+                {t('authenticate')}
               </Button>
             </div>
           </DialogContent>
@@ -222,23 +224,23 @@ export default function FieldSettingsPage() {
 
   if (loading) {
     return (
-      <MainLayout title="Field Settings">
+      <MainLayout title={t('fieldSettings')}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading...</div>
+          <div className="text-lg">{t('loading')}</div>
         </div>
       </MainLayout>
     )
   }
 
   return (
-    <MainLayout title="Field Settings">
+    <MainLayout title={t('fieldSettings')}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Settings className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">Field Settings</h1>
-              <p className="text-muted-foreground">Configure custom fields for customers and products</p>
+              <h1 className="text-3xl font-bold">{t('fieldSettings')}</h1>
+              <p className="text-muted-foreground">{t('configureCustomFields')}</p>
             </div>
           </div>
           <Button variant="outline" onClick={async () => {
@@ -255,7 +257,7 @@ export default function FieldSettingsPage() {
               showToast.error('Failed to sync template fields')
             }
           }}>
-            Refresh from Template
+            {t('refreshFromTemplate')}
           </Button>
         </div>
 
@@ -263,11 +265,11 @@ export default function FieldSettingsPage() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="customers" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Customer Fields
+              {t('customerFields')}
             </TabsTrigger>
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
-              Product Fields
+              {t('productFields')}
             </TabsTrigger>
           </TabsList>
 
@@ -275,22 +277,22 @@ export default function FieldSettingsPage() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Customer Fields Configuration</CardTitle>
+                  <CardTitle>{t('customerFieldsConfiguration')}</CardTitle>
                   <div className="flex space-x-2">
                     <Button variant="outline" onClick={() => {
                       const updated = customerFields.map(field => ({ ...field, enabled: true }))
                       setCustomerFields(updated)
                     }}>
-                      Enable All
+                      {t('enableAll')}
                     </Button>
                     <Button variant="outline" onClick={() => {
                       setRequestType('customer')
                       setIsRequestDialogOpen(true)
                     }}>
-                      Request Field
+                      {t('requestField')}
                     </Button>
                     <Button onClick={saveCustomerFields}>
-                      Save Changes
+                      {t('saveChanges')}
                     </Button>
                   </div>
                 </div>
@@ -300,13 +302,13 @@ export default function FieldSettingsPage() {
                   {customerFields.length === 0 ? (
                     <div className="text-center py-12">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No customer fields configured</h3>
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noCustomerFieldsConfigured')}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Add custom fields to collect additional customer information
+                        {t('addCustomFieldsForCustomers')}
                       </p>
                       <Button onClick={addCustomerField}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Field
+                        {t('addFirstField')}
                       </Button>
                     </div>
                   ) : (
@@ -390,22 +392,22 @@ export default function FieldSettingsPage() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Product Fields Configuration</CardTitle>
+                  <CardTitle>{t('productFieldsConfiguration')}</CardTitle>
                   <div className="flex space-x-2">
                     <Button variant="outline" onClick={() => {
                       const updated = productFields.map(field => ({ ...field, enabled: true }))
                       setProductFields(updated)
                     }}>
-                      Enable All
+                      {t('enableAll')}
                     </Button>
                     <Button variant="outline" onClick={() => {
                       setRequestType('product')
                       setIsRequestDialogOpen(true)
                     }}>
-                      Request Field
+                      {t('requestField')}
                     </Button>
                     <Button onClick={saveProductFields}>
-                      Save Changes
+                      {t('saveChanges')}
                     </Button>
                   </div>
                 </div>
@@ -415,13 +417,13 @@ export default function FieldSettingsPage() {
                   {productFields.length === 0 ? (
                     <div className="text-center py-12">
                       <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No product fields configured</h3>
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noProductFieldsConfigured')}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Add custom fields to collect additional product information
+                        {t('addCustomFieldsForProducts')}
                       </p>
                       <Button onClick={addProductField}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Field
+                        {t('addFirstField')}
                       </Button>
                     </div>
                   ) : (

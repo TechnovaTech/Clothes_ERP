@@ -90,9 +90,9 @@ export default function ExpensesPage() {
           date: new Date().toISOString().split('T')[0]
         })
         fetchExpenses()
-        showToast.success(editingExpense ? '✅ Expense updated successfully!' : '✅ Expense added successfully!')
+        showToast.success(editingExpense ? `✅ ${t('expenseUpdatedSuccess')}` : `✅ ${t('expenseAddedSuccess')}`)
       } else {
-        showToast.error('❌ Failed to save expense')
+        showToast.error(`❌ ${t('failedToSaveExpense')}`)
       }
     } catch (error) {
       console.error('Failed to save expense:', error)
@@ -121,9 +121,9 @@ export default function ExpensesPage() {
         setDeleteDialogOpen(false)
         setExpenseToDelete(null)
         fetchExpenses()
-        showToast.success('✅ Expense deleted successfully!')
+        showToast.success(`✅ ${t('expenseDeletedSuccess')}`)
       } else {
-        showToast.error('❌ Failed to delete expense')
+        showToast.error(`❌ ${t('failedToDeleteExpense')}`)
       }
     } catch (error) {
       console.error('Failed to delete expense:', error)
@@ -346,13 +346,13 @@ export default function ExpensesPage() {
                   {monthlyData.length === 0 ? (
                     <div className="text-center py-12">
                       <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No monthly data found</h3>
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noMonthlyDataFound')}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Start by adding your first expense to see monthly analysis
+                        {t('startByAddingFirstExpense')}
                       </p>
                       <Button onClick={() => setDialogOpen(true)}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Expense
+                        {t('addFirstExpense')}
                       </Button>
                     </div>
                   ) : (
@@ -403,13 +403,13 @@ export default function ExpensesPage() {
                   {topCategories.length === 0 ? (
                     <div className="text-center py-12">
                       <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No category data found</h3>
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noCategoryDataFound')}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Add expenses to see category-wise breakdown
+                        {t('addExpensesToSeeBreakdown')}
                       </p>
                       <Button onClick={() => setDialogOpen(true)}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Expense
+                        {t('addFirstExpense')}
                       </Button>
                     </div>
                   ) : (
@@ -448,13 +448,13 @@ export default function ExpensesPage() {
                   {!Array.isArray(expenses) || expenses.length === 0 ? (
                     <div className="text-center py-12">
                       <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No expenses found</h3>
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noExpensesFound')}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Start tracking your business expenses by adding your first expense record
+                        {t('startTrackingExpenses')}
                       </p>
                       <Button onClick={() => setDialogOpen(true)}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Expense
+                        {t('addFirstExpense')}
                       </Button>
                     </div>
                   ) : (

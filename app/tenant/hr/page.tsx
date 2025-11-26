@@ -136,13 +136,13 @@ export default function HRPage() {
         fetchEmployees(currentPage)
         setIsAddDialogOpen(false)
         resetForm()
-        showToast.success('Employee created successfully!')
+        showToast.success(`✅ ${t('employeeCreatedSuccess')}`)
       } else {
-        showToast.error('Failed to create employee')
+        showToast.error(`❌ ${t('failedToCreateEmployee')}`)
       }
     } catch (error) {
       console.error('Failed to create employee:', error)
-      showToast.error('Error creating employee')
+      showToast.error(`❌ ${t('errorCreatingEmployee')}`)
     }
   }
 
@@ -163,13 +163,13 @@ export default function HRPage() {
         fetchEmployees(currentPage)
         setIsEditDialogOpen(false)
         resetForm()
-        showToast.success('Employee updated successfully!')
+        showToast.success(`✅ ${t('employeeUpdatedSuccess')}`)
       } else {
-        showToast.error('Failed to update employee')
+        showToast.error(`❌ ${t('failedToUpdateEmployee')}`)
       }
     } catch (error) {
       console.error('Failed to update employee:', error)
-      showToast.error('Error updating employee')
+      showToast.error(`❌ ${t('errorUpdatingEmployee')}`)
     }
   }
 
@@ -189,13 +189,13 @@ export default function HRPage() {
         fetchEmployees(currentPage)
         setIsDeleteDialogOpen(false)
         setEmployeeToDelete(null)
-        showToast.success('Employee deleted successfully!')
+        showToast.success(`✅ ${t('employeeDeletedSuccess')}`)
       } else {
-        showToast.error('Failed to delete employee')
+        showToast.error(`❌ ${t('failedToDeleteEmployee')}`)
       }
     } catch (error) {
       console.error('Failed to delete employee:', error)
-      showToast.error('Error deleting employee')
+      showToast.error(`❌ ${t('errorDeletingEmployee')}`)
     }
   }
 
@@ -337,13 +337,13 @@ export default function HRPage() {
                 {selectedEmployees.length > 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete ({selectedEmployees.length})
+                    {t('delete')} ({selectedEmployees.length})
                   </Button>
                 )}
                 {selectedEmployees.length === 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsClearAllOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Clear All
+                    {t('clearAll')}
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={async () => {
@@ -356,18 +356,18 @@ export default function HRPage() {
                       a.href = url
                       a.download = `employees_${new Date().toISOString().split('T')[0]}.csv`
                       a.click()
-                      showToast.success('✅ Employees exported successfully!')
+                      showToast.success(`✅ ${t('employeesExportedSuccess')}`)
                     }
                   } catch (error) {
-                    showToast.error('❌ Failed to export employees')
+                    showToast.error(`❌ ${t('failedToExportEmployees')}`)
                   }
                 }}>
                   <Upload className="w-4 h-4 mr-2" />
-                  Export
+                  {t('export')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('employeeImportInput')?.click()} disabled={isImporting}>
                   <Download className="w-4 h-4 mr-2" />
-                  {isImporting ? 'Importing...' : 'Import'}
+                  {isImporting ? t('importing') : t('import')}
                 </Button>
                 <input
                   id="employeeImportInput"
@@ -387,14 +387,14 @@ export default function HRPage() {
                       })
                       const result = await response.json()
                       if (response.ok) {
-                        showToast.success(`✅ Imported ${result.imported} employees successfully!`)
+                        showToast.success(`✅ ${result.imported} ${t('employeesImportedSuccess')}`)
                         fetchEmployees(1)
                         setCurrentPage(1)
                       } else {
-                        showToast.error(result.error || '❌ Failed to import employees')
+                        showToast.error(result.error || `❌ ${t('failedToImportEmployees')}`)
                       }
                     } catch (error) {
-                      showToast.error('❌ Error importing employees')
+                      showToast.error(`❌ ${t('errorImportingEmployees')}`)
                     } finally {
                       setIsImporting(false)
                       e.target.value = ''
@@ -679,9 +679,9 @@ export default function HRPage() {
                 <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Delete Selected Employees</DialogTitle>
+                      <DialogTitle>{t('deleteEmployee')}</DialogTitle>
                       <DialogDescription>
-                        Are you sure you want to delete {selectedEmployees.length} employees? This action cannot be undone.
+                        {t('confirmDeleteEmployee')} {selectedEmployees.length} {t('employee')}? {t('actionCannotBeUndone')}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end space-x-2 pt-4">
@@ -689,7 +689,7 @@ export default function HRPage() {
                         setIsBulkDeleteOpen(false)
                         setSelectedEmployees([])
                       }}>
-                        Cancel
+                        {t('cancel')}
                       </Button>
                       <Button
                         variant="destructive"
@@ -700,16 +700,16 @@ export default function HRPage() {
                                 fetch(`/api/employees/${id}`, { method: 'DELETE' })
                               )
                             )
-                            showToast.success(`✅ Deleted ${selectedEmployees.length} employees`)
+                            showToast.success(`✅ ${selectedEmployees.length} ${t('employeesDeletedSuccess')}`)
                             setSelectedEmployees([])
                             fetchEmployees(currentPage)
                           } catch (error) {
-                            showToast.error('❌ Failed to delete employees')
+                            showToast.error(`❌ ${t('failedToDeleteEmployees')}`)
                           }
                           setIsBulkDeleteOpen(false)
                         }}
                       >
-                        Delete
+                        {t('delete')}
                       </Button>
                     </div>
                   </DialogContent>
@@ -721,33 +721,33 @@ export default function HRPage() {
                     <DialogHeader>
                       <DialogTitle className="flex items-center space-x-2">
                         <Trash2 className="w-5 h-5 text-red-500" />
-                        <span>Clear All Employees</span>
+                        <span>{t('clearAll')} {t('employee')}</span>
                       </DialogTitle>
                       <DialogDescription>
-                        Are you sure you want to delete <strong>ALL employees</strong>? This action cannot be undone!
+                        {t('confirmDeleteEmployee')} <strong>{t('totalEmployees')}</strong>? {t('actionCannotBeUndone')}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end space-x-2 pt-4">
                       <Button variant="outline" onClick={() => setIsClearAllOpen(false)}>
-                        Cancel
+                        {t('cancel')}
                       </Button>
                       <Button variant="destructive" onClick={async () => {
                         try {
                           const response = await fetch('/api/employees/clear', { method: 'DELETE' })
                           if (response.ok) {
-                            showToast.success('✅ All employees deleted!')
+                            showToast.success(`✅ ${t('allEmployeesCleared')}`)
                             setSelectedEmployees([])
                             fetchEmployees(1)
                             setCurrentPage(1)
                           } else {
-                            showToast.error('❌ Failed to clear employees')
+                            showToast.error(`❌ ${t('failedToClearEmployees')}`)
                           }
                         } catch (error) {
-                          showToast.error('❌ Error clearing employees')
+                          showToast.error(`❌ ${t('errorClearingEmployees')}`)
                         }
                         setIsClearAllOpen(false)
                       }}>
-                        Delete All
+                        {t('clearAll')}
                       </Button>
                     </div>
                   </DialogContent>
@@ -795,10 +795,10 @@ export default function HRPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="all">{t('allStatus')}</SelectItem>
+                  <SelectItem value="Active">{t('active')}</SelectItem>
+                  <SelectItem value="On Leave">{t('onLeave')}</SelectItem>
+                  <SelectItem value="Inactive">{t('inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -806,13 +806,13 @@ export default function HRPage() {
             {filteredEmployees.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No employees found</h3>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noEmployeesFound')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {employees.length === 0 ? 'Start by adding your first employee' : 'Try adjusting your search or filters'}
+                  {employees.length === 0 ? t('startByAddingFirstEmployee') : t('tryAdjustingSearchFilters')}
                 </p>
                 <Button onClick={() => setIsAddDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add First Employee
+                  {t('addFirstEmployee')}
                 </Button>
               </div>
             ) : (
@@ -832,7 +832,7 @@ export default function HRPage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead className="text-center w-16">Sr. No.</TableHead>
+                      <TableHead className="text-center w-16">{t('srNo')}</TableHead>
                       <TableHead className="text-center">{t('employee')}</TableHead>
                       <TableHead className="text-center">{t('id')}</TableHead>
                       <TableHead className="text-center">{t('contact')}</TableHead>
@@ -904,7 +904,7 @@ export default function HRPage() {
                                   })
                                   if (response.ok) {
                                     fetchEmployees(currentPage)
-                                    showToast.success('✅ Employee status updated successfully!')
+                                    showToast.success(`✅ ${t('employeeStatusUpdated')}`)
                                   }
                                 } catch (error) {
                                   console.error('Failed to update status:', error)
@@ -936,7 +936,7 @@ export default function HRPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} employees
+                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} {t('employee')}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -945,7 +945,7 @@ export default function HRPage() {
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    {t('previous')}
                   </Button>
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -977,7 +977,7 @@ export default function HRPage() {
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>

@@ -136,13 +136,13 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Image className="w-5 h-5" />
-              <span>Logo & Signature</span>
+              <span>{t('logoAndSignature')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label htmlFor="logo">Store Logo</Label>
+                <Label htmlFor="logo">{t('storeLogo')}</Label>
                 <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
                   <Input
                     id="logo"
@@ -156,7 +156,7 @@ export default function SettingsPage() {
                         reader.onload = (event) => {
                           const base64 = event.target?.result as string
                           setSettings({...settings, logo: base64})
-                          showToast.success('Logo uploaded successfully!')
+                          showToast.success(`✅ ${t('logoUploadedSuccess')}`)
                         }
                         reader.readAsDataURL(file)
                       }
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                         className="mt-2"
                         onClick={() => setSettings({...settings, logo: ''})}
                       >
-                        Remove
+                        {t('remove')}
                       </Button>
                     </div>
                   )}
@@ -179,7 +179,7 @@ export default function SettingsPage() {
               </div>
               
               <div className="space-y-3">
-                <Label htmlFor="signature">Signature</Label>
+                <Label htmlFor="signature">{t('signature')}</Label>
                 <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
                   <Input
                     id="signature"
@@ -193,7 +193,7 @@ export default function SettingsPage() {
                         reader.onload = (event) => {
                           const base64 = event.target?.result as string
                           setSettings({...settings, signature: base64})
-                          showToast.success('Signature uploaded successfully!')
+                          showToast.success(`✅ ${t('signatureUploadedSuccess')}`)
                         }
                         reader.readAsDataURL(file)
                       }
@@ -208,7 +208,7 @@ export default function SettingsPage() {
                         className="mt-2"
                         onClick={() => setSettings({...settings, signature: ''})}
                       >
-                        Remove
+                        {t('remove')}
                       </Button>
                     </div>
                   )}
@@ -399,65 +399,65 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Palette className="w-5 h-5" />
-              <span>Bill Design</span>
+              <span>{t('billDesign')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="billDesign">Select Bill Design</Label>
+              <Label htmlFor="billDesign">{t('selectBillDesign')}</Label>
               <select
                 id="billDesign"
                 value={settings.billDesign || 'classic'}
                 onChange={(e) => setSettings({...settings, billDesign: e.target.value})}
                 className="w-full p-2 border rounded-md"
               >
-                <option value="classic">Classic Invoice</option>
-                <option value="modern">Modern Minimal</option>
-                <option value="elegant">Elegant Professional</option>
-                <option value="compact">Compact Receipt</option>
-                <option value="taxinvoice">Professional Tax Invoice</option>
-                <option value="thermal">Thermal Receipt (Original)</option>
+                <option value="classic">{t('classicInvoice')}</option>
+                <option value="modern">{t('modernMinimal')}</option>
+                <option value="elegant">{t('elegantProfessional')}</option>
+                <option value="compact">{t('compactReceipt')}</option>
+                <option value="taxinvoice">{t('professionalTaxInvoice')}</option>
+                <option value="thermal">{t('thermalReceipt')}</option>
               </select>
               <p className="text-sm text-muted-foreground">
-                Choose a design template for your bills and invoices
+                {t('chooseBillDesignTemplate')}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'classic' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'classic'})}>
-                <div className="font-medium mb-1">Classic Invoice</div>
-                <div className="text-xs text-muted-foreground">Traditional layout with header and itemized list</div>
+                <div className="font-medium mb-1">{t('classicInvoice')}</div>
+                <div className="text-xs text-muted-foreground">{t('classicInvoiceDesc')}</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'modern' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'modern'})}>
-                <div className="font-medium mb-1">Modern Minimal</div>
-                <div className="text-xs text-muted-foreground">Clean and minimal design with focus on content</div>
+                <div className="font-medium mb-1">{t('modernMinimal')}</div>
+                <div className="text-xs text-muted-foreground">{t('modernMinimalDesc')}</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'elegant' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'elegant'})}>
-                <div className="font-medium mb-1">Elegant Professional</div>
-                <div className="text-xs text-muted-foreground">Sophisticated design with elegant typography</div>
+                <div className="font-medium mb-1">{t('elegantProfessional')}</div>
+                <div className="text-xs text-muted-foreground">{t('elegantProfessionalDesc')}</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'compact' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'compact'})}>
-                <div className="font-medium mb-1">Compact Receipt</div>
-                <div className="text-xs text-muted-foreground">Space-efficient thermal printer style</div>
+                <div className="font-medium mb-1">{t('compactReceipt')}</div>
+                <div className="text-xs text-muted-foreground">{t('compactReceiptDesc')}</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'taxinvoice' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'taxinvoice'})}>
-                <div className="font-medium mb-1">Professional Tax Invoice</div>
-                <div className="text-xs text-muted-foreground">Formal tax invoice with GST details and table layout</div>
+                <div className="font-medium mb-1">{t('professionalTaxInvoice')}</div>
+                <div className="text-xs text-muted-foreground">{t('professionalTaxInvoiceDesc')}</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'thermal' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`} onClick={() => setSettings({...settings, billDesign: 'thermal'})}>
-                <div className="font-medium mb-1">Thermal Receipt</div>
-                <div className="text-xs text-muted-foreground">Original thermal printer format with auto-print</div>
+                <div className="font-medium mb-1">{t('thermalReceipt')}</div>
+                <div className="text-xs text-muted-foreground">{t('thermalReceiptDesc')}</div>
               </div>
             </div>
             <Button 
@@ -466,7 +466,7 @@ export default function SettingsPage() {
               className="w-full mt-4"
             >
               <FileText className="w-4 h-4 mr-2" />
-              Preview Design
+              {t('previewDesign')}
             </Button>
           </CardContent>
         </Card>
@@ -492,7 +492,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cessRate">CESS Rate (%)</Label>
+                  <Label htmlFor="cessRate">{t('cessRate')}</Label>
                   <Input
                     id="cessRate"
                     type="number"

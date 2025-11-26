@@ -6,11 +6,9 @@ import { Providers } from './providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Retalians',
+  title: 'RetailOne',
   description: 'Retalians ERP Management System',
-  icons: {
-    icon: '/logo.png',
-  },
+  icons: {icon: '/logo.png',},
 }
 
 export default function RootLayout({

@@ -130,13 +130,13 @@ export default function LeavesPage() {
         fetchLeaves(currentPage)
         setIsAddDialogOpen(false)
         resetForm()
-        showToast.success('Leave request created successfully!')
+        showToast.success(`✅ ${t('leaveRequestCreated')}`)
       } else {
-        showToast.error('Failed to create leave request')
+        showToast.error(`❌ ${t('failedToCreateLeave')}`)
       }
     } catch (error) {
       console.error('Failed to create leave:', error)
-      showToast.error('Error creating leave request')
+      showToast.error(`❌ ${t('errorCreatingLeave')}`)
     }
   }
 
@@ -156,13 +156,13 @@ export default function LeavesPage() {
         fetchLeaves(currentPage)
         setIsDeleteDialogOpen(false)
         setLeaveToDelete(null)
-        showToast.success('Leave record deleted successfully!')
+        showToast.success(`✅ ${t('leaveRecordDeleted')}`)
       } else {
-        showToast.error('Failed to delete leave record')
+        showToast.error(`❌ ${t('failedToDeleteLeave')}`)
       }
     } catch (error) {
       console.error('Failed to delete leave:', error)
-      showToast.error('Error deleting leave record')
+      showToast.error(`❌ ${t('errorDeletingLeave')}`)
     }
   }
 
@@ -176,12 +176,12 @@ export default function LeavesPage() {
       })
       if (response.ok) {
         fetchLeaves(currentPage)
-        showToast.success(`Leave ${status.toLowerCase()} successfully!`)
+        showToast.success(`✅ ${t('leaveStatusUpdated').replace('{0}', status.toLowerCase())}`)
       } else {
-        showToast.error('Failed to update leave status')
+        showToast.error(`❌ ${t('failedToUpdateLeaveStatus')}`)
       }
     } catch (error) {
-      showToast.error('Error updating leave status')
+      showToast.error(`❌ ${t('errorUpdatingLeaveStatus')}`)
     } finally {
       setUpdatingLeaveId(null)
     }
@@ -292,13 +292,13 @@ export default function LeavesPage() {
                 {selectedLeaves.length > 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete ({selectedLeaves.length})
+                    {t('delete')} ({selectedLeaves.length})
                   </Button>
                 )}
                 {selectedLeaves.length === 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setIsClearAllOpen(true)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Clear All
+                    {t('clearAll')}
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={async () => {
@@ -311,18 +311,18 @@ export default function LeavesPage() {
                       a.href = url
                       a.download = `leaves_${new Date().toISOString().split('T')[0]}.csv`
                       a.click()
-                      showToast.success('✅ Leaves exported successfully!')
+                      showToast.success(`✅ ${t('leavesExportedSuccess')}`)
                     }
                   } catch (error) {
-                    showToast.error('❌ Failed to export leaves')
+                    showToast.error(`❌ ${t('failedToExportLeaves')}`)
                   }
                 }}>
                   <Download className="w-4 h-4 mr-2" />
-                  Export
+                  {t('export')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => document.getElementById('leaveImportInput')?.click()} disabled={isImporting}>
                   <Upload className="w-4 h-4 mr-2" />
-                  {isImporting ? 'Importing...' : 'Import'}
+                  {isImporting ? t('importing') : t('import')}
                 </Button>
                 <input
                   id="leaveImportInput"
@@ -342,13 +342,13 @@ export default function LeavesPage() {
                       })
                       const result = await response.json()
                       if (response.ok) {
-                        showToast.success(`✅ Imported ${result.imported} leaves successfully!`)
+                        showToast.success(`✅ ${result.imported} ${t('leavesImportedSuccess')}`)
                         fetchLeaves(currentPage)
                       } else {
-                        showToast.error(result.error || '❌ Failed to import leaves')
+                        showToast.error(result.error || `❌ ${t('failedToImportLeaves')}`)
                       }
                     } catch (error) {
-                      showToast.error('❌ Error importing leaves')
+                      showToast.error(`❌ ${t('errorImportingLeaves')}`)
                     } finally {
                       setIsImporting(false)
                       e.target.value = ''
@@ -547,7 +547,7 @@ export default function LeavesPage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead className="text-center w-16">Sr. No.</TableHead>
+                      <TableHead className="text-center w-16">{t('srNo')}</TableHead>
                       <TableHead className="text-center">{t('employee')}</TableHead>
                       <TableHead className="text-center">{t('leaveType')}</TableHead>
                       <TableHead className="text-center">{t('startDate')}</TableHead>
@@ -629,7 +629,7 @@ export default function LeavesPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} leaves
+                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} leaves
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -638,7 +638,7 @@ export default function LeavesPage() {
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    {t('previous')}
                   </Button>
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -670,7 +670,7 @@ export default function LeavesPage() {
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>
@@ -681,9 +681,9 @@ export default function LeavesPage() {
         <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Selected Leaves</DialogTitle>
+              <DialogTitle>{t('delete')} {t('leaveRecords')}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete {selectedLeaves.length} leave records? This action cannot be undone.
+                {t('confirmDeleteEmployee')} {selectedLeaves.length} leave records? {t('actionCannotBeUndone')}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end space-x-2 pt-4">
@@ -691,7 +691,7 @@ export default function LeavesPage() {
                 setIsBulkDeleteOpen(false)
                 setSelectedLeaves([])
               }}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="destructive"
@@ -702,17 +702,17 @@ export default function LeavesPage() {
                         fetch(`/api/leaves/${id}`, { method: 'DELETE' })
                       )
                     )
-                    showToast.success(`✅ Deleted ${selectedLeaves.length} leave records`)
+                    showToast.success(`✅ ${selectedLeaves.length} ${t('leaveRecordsDeleted')}`)
                     setSelectedLeaves([])
                     setCurrentPage(1)
                     fetchLeaves(1)
                   } catch (error) {
-                    showToast.error('❌ Failed to delete leave records')
+                    showToast.error(`❌ ${t('failedToDeleteLeaveRecords')}`)
                   }
                   setIsBulkDeleteOpen(false)
                 }}
               >
-                Delete
+                {t('delete')}
               </Button>
             </div>
           </DialogContent>
@@ -723,33 +723,33 @@ export default function LeavesPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <Trash2 className="w-5 h-5 text-red-500" />
-                <span>Clear All Leave Records</span>
+                <span>{t('clearAll')} {t('leaveRecords')}</span>
               </DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete <strong>ALL leave records</strong>? This action cannot be undone!
+                {t('confirmDeleteEmployee')} <strong>{t('leaveRecords')}</strong>? {t('actionCannotBeUndone')}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={() => setIsClearAllOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button variant="destructive" onClick={async () => {
                 try {
                   const response = await fetch('/api/leaves/clear', { method: 'DELETE' })
                   if (response.ok) {
-                    showToast.success('✅ All leave records cleared!')
+                    showToast.success(`✅ ${t('allLeaveRecordsCleared')}`)
                     setSelectedLeaves([])
                     setCurrentPage(1)
                     fetchLeaves(1)
                   } else {
-                    showToast.error('❌ Failed to clear leave records')
+                    showToast.error(`❌ ${t('failedToClearLeaveRecords')}`)
                   }
                 } catch (error) {
-                  showToast.error('❌ Error clearing leave records')
+                  showToast.error(`❌ ${t('errorClearingLeaveRecords')}`)
                 }
                 setIsClearAllOpen(false)
               }}>
-                Delete All
+                {t('clearAll')}
               </Button>
             </div>
           </DialogContent>

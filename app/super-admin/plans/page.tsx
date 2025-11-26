@@ -375,10 +375,10 @@ export default function PlansPage() {
                     />
                   </div>
 
-                  {/* Feature Access Control */}
+                  {/* Plan Features */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base font-medium">Feature Access Control</Label>
+                      <Label className="text-base font-medium">Plan Features</Label>
                       <div className="flex gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => applyFeatureTemplate('basic')}>Basic</Button>
                         <Button type="button" variant="outline" size="sm" onClick={() => applyFeatureTemplate('standard')}>Standard</Button>
@@ -493,10 +493,10 @@ export default function PlansPage() {
                     />
                   </div>
 
-                  {/* Feature Access Control */}
+                  {/* Plan Features */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base font-medium">Feature Access Control</Label>
+                      <Label className="text-base font-medium">Plan Features</Label>
                       <div className="flex gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => applyFeatureTemplate('basic')}>Basic</Button>
                         <Button type="button" variant="outline" size="sm" onClick={() => applyFeatureTemplate('standard')}>Standard</Button>
