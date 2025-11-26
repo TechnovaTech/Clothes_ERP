@@ -857,60 +857,21 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
 }
 
 export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Tax Invoice - ${bill.billNo}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; padding: 20px; background: white; }
-    .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; }
-    .header { border-bottom: 2px solid #000; padding: 15px; text-align: center; }
-    .company-name { font-size: 24px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
-    .company-address { font-size: 11px; line-height: 1.4; }
-    .invoice-type { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 2px solid #000; background: #f5f5f5; }
-    .invoice-type-left { font-weight: bold; font-size: 12px; }
-    .invoice-type-center { font-weight: bold; font-size: 16px; text-transform: uppercase; }
-    .invoice-type-right { font-weight: bold; font-size: 12px; }
-    .customer-section { display: flex; border-bottom: 2px solid #000; }
-    .customer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
-    .customer-right { width: 300px; padding: 15px; }
-    .customer-label { font-weight: bold; font-size: 12px; margin-bottom: 8px; }
-    .customer-info { font-size: 11px; line-height: 1.6; }
-    .invoice-details { display: flex; flex-direction: column; gap: 8px; }
-    .detail-row { display: flex; font-size: 11px; }
-    .detail-label { width: 100px; font-weight: bold; }
-    .detail-value { flex: 1; }
-    .items-table { width: 100%; border-collapse: collapse; }
-    .items-table th { background: #f5f5f5; border: 1px solid #000; padding: 8px; font-size: 11px; font-weight: bold; text-align: center; }
-    .items-table td { border: 1px solid #000; padding: 8px; font-size: 11px; }
-    .items-table .sr-no { width: 50px; text-align: center; }
-    .items-table .product-name { text-align: left; }
-    .items-table .hsn { width: 80px; text-align: center; }
-    .items-table .qty { width: 80px; text-align: right; }
-    .items-table .rate { width: 80px; text-align: right; }
-    .items-table .gst { width: 70px; text-align: center; }
-    .items-table .amount { width: 100px; text-align: right; }
-    .footer-section { display: flex; border-top: 2px solid #000; }
-    .footer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
-    .footer-right { width: 300px; padding: 15px; }
-    .gst-row { display: flex; justify-content: space-between; font-size: 11px; padding: 5px 0; border-bottom: 1px solid #ddd; }
-    .gst-label { font-weight: bold; }
-    .total-section { margin-top: 10px; }
-    .total-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; }
-    .grand-total { font-weight: bold; font-size: 14px; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
-    .amount-words { font-size: 11px; margin-top: 10px; font-style: italic; }
-    .terms { font-size: 10px; line-height: 1.5; margin-top: 10px; }
-    .terms-title { font-weight: bold; margin-bottom: 5px; }
-    .signature { text-align: right; margin-top: 30px; font-size: 11px; }
-  </style>
-</head>
-<body>
-  <div class="invoice">
+  const ITEMS_PER_PAGE = 15
+  const totalItems = bill.items.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  
+  let pagesHTML = ''
+  
+  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+    const startIdx = pageNum * ITEMS_PER_PAGE
+    const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems)
+    const pageItems = bill.items.slice(startIdx, endIdx)
+    const isLastPage = pageNum === totalPages - 1
+    const emptyRows = ITEMS_PER_PAGE - pageItems.length
+    
+    pagesHTML += `
+  <div class="invoice${pageNum > 0 ? ' page-break' : ''}">
     <div class="header">
       <div class="company-name">${settings.storeName}</div>
       <div class="company-address">
@@ -922,7 +883,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
     <div class="invoice-type">
       <div class="invoice-type-left">Debit Memo</div>
       <div class="invoice-type-center">TAX INVOICE</div>
-      <div class="invoice-type-right">Original</div>
+      <div class="invoice-type-right">Original ${totalPages > 1 ? `(Page ${pageNum + 1}/${totalPages})` : ''}</div>
     </div>
     
     <div class="customer-section">
@@ -961,9 +922,9 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
         </tr>
       </thead>
       <tbody>
-        ${bill.items.map((item, index) => `
+        ${pageItems.map((item, index) => `
           <tr>
-            <td class="sr-no">${index + 1}</td>
+            <td class="sr-no">${startIdx + index + 1}</td>
             <td class="product-name">${item.name}</td>
             <td class="hsn">-</td>
             <td class="qty">${item.quantity.toFixed(3)}</td>
@@ -972,7 +933,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
             <td class="amount">${item.total.toFixed(2)}</td>
           </tr>
         `).join('')}
-        ${Array(15 - bill.items.length).fill(0).map(() => `
+        ${isLastPage ? Array(emptyRows).fill(0).map(() => `
           <tr>
             <td class="sr-no">&nbsp;</td>
             <td class="product-name">&nbsp;</td>
@@ -982,10 +943,11 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
             <td class="gst">&nbsp;</td>
             <td class="amount">&nbsp;</td>
           </tr>
-        `).join('')}
+        `).join('') : ''}
       </tbody>
     </table>
     
+    ${isLastPage ? `
     <div class="footer-section">
       <div class="footer-left">
         <div class="gst-row">
@@ -1034,7 +996,69 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
         </div>
       </div>
     </div>
+    ` : `
+    <div style="text-align: right; padding: 15px; border-top: 2px solid #000; font-size: 11px; font-style: italic;">
+      Continued on next page...
+    </div>
+    `}
   </div>
+    `
+  }
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tax Invoice - ${bill.billNo}</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: white; }
+    .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; margin-bottom: 20px; }
+    .header { border-bottom: 2px solid #000; padding: 15px; text-align: center; }
+    .company-name { font-size: 24px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+    .company-address { font-size: 11px; line-height: 1.4; }
+    .invoice-type { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 2px solid #000; background: #f5f5f5; }
+    .invoice-type-left { font-weight: bold; font-size: 12px; }
+    .invoice-type-center { font-weight: bold; font-size: 16px; text-transform: uppercase; }
+    .invoice-type-right { font-weight: bold; font-size: 12px; }
+    .customer-section { display: flex; border-bottom: 2px solid #000; }
+    .customer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
+    .customer-right { width: 300px; padding: 15px; }
+    .customer-label { font-weight: bold; font-size: 12px; margin-bottom: 8px; }
+    .customer-info { font-size: 11px; line-height: 1.6; }
+    .invoice-details { display: flex; flex-direction: column; gap: 8px; }
+    .detail-row { display: flex; font-size: 11px; }
+    .detail-label { width: 100px; font-weight: bold; }
+    .detail-value { flex: 1; }
+    .items-table { width: 100%; border-collapse: collapse; }
+    .items-table th { background: #f5f5f5; border: 1px solid #000; padding: 8px; font-size: 11px; font-weight: bold; text-align: center; }
+    .items-table td { border: 1px solid #000; padding: 8px; font-size: 11px; }
+    .items-table .sr-no { width: 50px; text-align: center; }
+    .items-table .product-name { text-align: left; }
+    .items-table .hsn { width: 80px; text-align: center; }
+    .items-table .qty { width: 80px; text-align: right; }
+    .items-table .rate { width: 80px; text-align: right; }
+    .items-table .gst { width: 70px; text-align: center; }
+    .items-table .amount { width: 100px; text-align: right; }
+    .footer-section { display: flex; border-top: 2px solid #000; }
+    .footer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
+    .footer-right { width: 300px; padding: 15px; }
+    .gst-row { display: flex; justify-content: space-between; font-size: 11px; padding: 5px 0; border-bottom: 1px solid #ddd; }
+    .gst-label { font-weight: bold; }
+    .total-section { margin-top: 10px; }
+    .total-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; }
+    .grand-total { font-weight: bold; font-size: 14px; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+    .amount-words { font-size: 11px; margin-top: 10px; font-style: italic; }
+    .terms { font-size: 10px; line-height: 1.5; margin-top: 10px; }
+    .terms-title { font-weight: bold; margin-bottom: 5px; }
+    .signature { text-align: right; margin-top: 30px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  ${pagesHTML}
 </body>
 </html>
   `
