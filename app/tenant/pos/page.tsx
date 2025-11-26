@@ -993,225 +993,28 @@ export default function POSPage() {
 
       {/* Bill Modal */}
       <Dialog open={isBillModalOpen} onOpenChange={setIsBillModalOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('saleComplete')}</DialogTitle>
             <DialogDescription>{t('transactionCompleted')}</DialogDescription>
           </DialogHeader>
           {completedSale && completedSale.billNo && (
-            <div className="py-4 max-h-[70vh] overflow-y-auto">
-              {/* Bill Receipt */}
-              <div id="bill-receipt" className="bg-white text-black font-mono" style={{width: '100%', maxWidth: '300px', fontSize: '12px', lineHeight: '1.2', padding: '4px', boxSizing: 'border-box'}}>
-                {/* Store Header */}
-                <div className="text-center pb-3 mb-3" style={{borderBottom: '2px dashed #000'}}>
-                  <div style={{fontSize: '16px', fontWeight: 'bold', marginBottom: '4px'}}>{(completedSale.storeName || settings.storeName).toUpperCase()}</div>
-                  <div style={{fontSize: '10px', marginBottom: '2px'}}>{completedSale.address || settings.address || t('storeAddress')}</div>
-                  <div style={{fontSize: '10px', marginBottom: '2px'}}>{t('phone')}: {completedSale.phone || settings.phone || '+91-9876543210'}</div>
-                  <div style={{fontSize: '10px', marginBottom: '2px'}}>GST: {completedSale.gst || settings.gst || t('gstNumber')}</div>
-                  <div style={{fontSize: '10px'}}>{t('email')}: {completedSale.email || settings.email || 'store@email.com'}</div>
-                </div>
-                
-                {/* Bill Details */}
-                <div className="mb-3">
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px'}}>
-                    <span>{t('billNo')}: {completedSale.billNo}</span>
-                    <span>{formatDateToDDMMYYYY(completedSale.date)}</span>
-                  </div>
-                  <div style={{fontSize: '10px', marginBottom: '2px'}}>
-                    {t('time')}: {completedSale.date.toLocaleTimeString('en-IN', {hour12: true})}
-                  </div>
-                  <div style={{fontSize: '10px', marginBottom: '2px'}}>
-                    {t('cashier')}: Admin
-                  </div>
-                  {completedSale.customerName && (
-                    <div style={{marginTop: '8px', paddingTop: '4px', borderTop: '1px solid #ccc'}}>
-                      <div style={{fontSize: '10px', marginBottom: '2px'}}>{t('customer')}: {completedSale.customerName}</div>
-                      {completedSale.customerPhone && <div style={{fontSize: '10px'}}>{t('phone')}: {completedSale.customerPhone}</div>}
-                    </div>
-                  )}
-                </div>
-
-                {/* Items Header */}
-                <div style={{borderBottom: '1px dashed #000', paddingBottom: '4px', marginBottom: '4px'}}>
-                  <div style={{display: 'flex', fontSize: '8px', fontWeight: 'bold'}}>
-                    <span style={{width: '35%'}}>{t('item').toUpperCase()}</span>
-                    <span style={{width: '15%', textAlign: 'center'}}>{t('qty').toUpperCase()}</span>
-                    <span style={{width: '25%', textAlign: 'right'}}>{t('rate').toUpperCase()}</span>
-                    <span style={{width: '25%', textAlign: 'right'}}>{t('amount').toUpperCase()}</span>
-                  </div>
-                </div>
-
-                {/* Items List */}
-                <div className="mb-3">
-                  {completedSale.items.map((item: any, index: number) => (
-                    <div key={index} style={{marginBottom: '6px'}}>
-                      <div style={{fontSize: '8px', fontWeight: '500', marginBottom: '2px'}}>
-                        {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
-                      </div>
-                      <div style={{display: 'flex', fontSize: '8px'}}>
-                        <span style={{width: '35%'}}></span>
-                        <span style={{width: '15%', textAlign: 'center'}}>{item.quantity}</span>
-                        <span style={{width: '25%', textAlign: 'right', paddingRight: '10px'}}>₹{Number(item.price || 0).toFixed(2)}</span>
-                        <span style={{width: '25%', textAlign: 'right', fontWeight: '500'}}>₹{Number(item.total || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Totals Section */}
-                <div style={{borderTop: '1px dashed #000', paddingTop: '4px'}}>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px'}}>
-                    <span>{t('subtotal')}:</span>
-                    <span>₹{(completedSale.subtotal || 0).toFixed(2)}</span>
-                  </div>
-                  {completedSale.discount > 0 && (
-                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px', color: '#059669'}}>
-                      <span>{t('discount')} ({completedSale.discount}%):</span>
-                      <span>-₹{(completedSale.discountAmount || 0).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {(completedSale.includeTax !== false && (completedSale.taxRate || settings.taxRate) > 0) && (
-                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px'}}>
-                      <span>{t('tax')}:</span>
-                      <span>₹{(completedSale.tax || 0).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {(completedSale.includeCess !== false && (completedSale.cessRate || settings.cessRate) > 0) && (
-                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px'}}>
-                      <span>CESS:</span>
-                      <span>₹{(completedSale.cess || 0).toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  <div style={{borderTop: '1px solid #000', paddingTop: '4px', marginTop: '4px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold'}}>
-                      <span>{t('total').toUpperCase()}:</span>
-                      <span>₹{(completedSale.total || 0).toFixed(2)}</span>
-                    </div>
-                  </div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '4px'}}>
-                    <span>{t('paymentMode')}:</span>
-                    <span>{t('cash')}</span>
-                  </div>
-                </div>
-
-                {/* Terms & Conditions */}
-                {(completedSale.terms || settings.terms) && (
-                  <div className="mt-3 pt-2" style={{borderTop: '1px dashed #000'}}>
-                    <div style={{fontSize: '8px', fontWeight: '500', marginBottom: '2px'}}>{t('termsConditions')}:</div>
-                    <div style={{fontSize: '7px', lineHeight: '1.3'}}>
-                      {completedSale.terms || settings.terms}
-                    </div>
-                  </div>
-                )}
-
-                {/* Footer */}
-                <div className="text-center mt-4 pt-3" style={{borderTop: '2px dashed #000'}}>
-                  <div style={{fontSize: '10px', marginBottom: '2px', fontWeight: '500'}}>{t('thankYouShopping')}</div>
-                  <div style={{fontSize: '9px', marginBottom: '2px'}}>{t('visitAgain')}</div>
-                  <div style={{fontSize: '9px'}}>{t('forSupport')}: {completedSale.phone || settings.phone || '+91-9876543210'}</div>
-                  <div style={{marginTop: '8px', fontSize: '8px'}}>{t('poweredBy')}</div>
-                </div>
-              </div>
+            <div className="py-4">
+              {/* Bill Preview using selected design */}
+              <iframe 
+                src={`/api/bill-pdf/${completedSale._id || completedSale.id}`}
+                style={{width: '100%', height: '500px', border: '1px solid #ddd', borderRadius: '8px'}}
+                title="Bill Preview"
+              />
 
               {/* Action Buttons */}
-              <div className="flex space-x-2 mt-4 no-print">
+              <div className="flex space-x-2 mt-4">
                 <Button 
                   variant="outline" 
                   className="flex-1"
                   onClick={() => {
-                    // Hide action buttons during print
-                    const actionButtons = document.querySelector('.no-print') as HTMLElement
-                    if (actionButtons) actionButtons.style.display = 'none'
-                    
-                    const printContent = document.getElementById('bill-receipt')?.innerHTML
-                    const printWindow = window.open('', '_blank')
-                    if (printWindow && printContent) {
-                      // Remove tax and cess lines from print content if not included
-                      let modifiedPrintContent = printContent
-                      if (completedSale.includeTax === false || (completedSale.taxRate || settings.taxRate) === 0) {
-                        // Remove the tax line that contains "Tax" from the print content
-                        modifiedPrintContent = modifiedPrintContent
-                          ?.replace(/<div[^>]*>\s*<span>Tax[^<]*<\/span>\s*<span>[^<]*<\/span>\s*<\/div>/gi, '')
-                          ?.replace(/Tax[^\n]*\n?/gi, '')
-                      }
-                      if (completedSale.includeCess === false || (completedSale.cessRate || settings.cessRate) === 0) {
-                        // Remove the CESS line that contains "CESS" from the print content
-                        modifiedPrintContent = modifiedPrintContent
-                          ?.replace(/<div[^>]*>\s*<span>CESS[^<]*<\/span>\s*<span>[^<]*<\/span>\s*<\/div>/gi, '')
-                          ?.replace(/CESS[^\n]*\n?/gi, '')
-                      }
-                      
-                      printWindow.document.write(`
-                        <html>
-                          <head>
-                            <title>Fashion Store - Receipt</title>
-                            <style>
-                              * { 
-                                margin: 0; 
-                                padding: 0; 
-                                box-sizing: border-box; 
-                                color: #000000 !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                              }
-                              body { 
-                                font-family: 'Courier New', monospace; 
-                                margin: 0; 
-                                padding: 0;
-                                background: white !important;
-                                color: #000000 !important;
-                                line-height: 1.3;
-                                width: 100%;
-                                font-weight: bold !important;
-                              }
-                              @media print { 
-                                * {
-                                  color: #000000 !important;
-                                  background: transparent !important;
-                                  font-weight: bold !important;
-                                }
-                                body { 
-                                  margin: 0 !important; 
-                                  padding: 0 !important;
-                                  color: #000000 !important;
-                                  background: white !important;
-                                  font-weight: bold !important;
-                                }
-                                @page {
-                                  size: 80mm auto;
-                                  margin: 2mm !important;
-                                }
-                                .no-print { display: none !important; }
-                              }
-                              .receipt {
-                                width: 100%;
-                                max-width: 80mm;
-                                margin: 0;
-                                padding: 2mm;
-                                font-size: 14px;
-                                box-sizing: border-box;
-                                color: #000000 !important;
-                                font-weight: bold !important;
-                              }
-                              div, span, p {
-                                color: #000000 !important;
-                                font-weight: bold !important;
-                              }
-                            </style>
-                          </head>
-                          <body>
-                            <div class="receipt">${modifiedPrintContent}</div>
-                          </body>
-                        </html>
-                      `)
-                      printWindow.document.close()
-                      printWindow.print()
-                      printWindow.close()
-                    }
-                    
-                    // Show action buttons again after print
-                    if (actionButtons) actionButtons.style.display = 'flex'
+                    const billId = completedSale._id || completedSale.id
+                    window.open(`/api/bill-pdf/${billId}`, '_blank')
                   }}
                 >
                   <Printer className="w-4 h-4 mr-2" />

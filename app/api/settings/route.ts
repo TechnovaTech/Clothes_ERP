@@ -26,7 +26,8 @@ export async function GET() {
         deletePassword: 'admin123',
         fieldSettingsPassword: 'vivekVOra32*',
         discountMode: false,
-        billFormat: 'professional'
+        billFormat: 'professional',
+        billDesign: 'classic'
       })
     }
 
@@ -50,7 +51,8 @@ export async function GET() {
       discountMode: false,
       billFormat: 'professional',
       logo: '',
-      signature: ''
+      signature: '',
+      billDesign: 'classic'
     })
   } catch (error) {
     console.error('Settings fetch error:', error)
@@ -72,7 +74,8 @@ export async function GET() {
       discountMode: false,
       billFormat: 'professional',
       logo: '',
-      signature: ''
+      signature: '',
+      billDesign: 'classic'
     })
   }
 }
@@ -111,6 +114,7 @@ export async function PUT(request: NextRequest) {
           billFormat: body.billFormat || 'professional',
           logo: body.logo || '',
           signature: body.signature || '',
+          billDesign: body.billDesign || 'classic',
           updatedAt: new Date()
         }
       },

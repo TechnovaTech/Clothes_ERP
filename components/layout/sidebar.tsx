@@ -79,7 +79,6 @@ const getRetailNavItems = (t: (key: any) => string) => [
   
   // Configuration (Always accessible)
   { title: t("settings"), href: "/tenant/settings", icon: Settings, feature: "dashboard" as FeatureKey, group: "config" },
-  { title: "Template Builder", href: "/tenant/template-builder", icon: Palette, feature: "dashboard" as FeatureKey, group: "config" },
   { title: t("fieldSettings"), href: "/tenant/field-settings", icon: Settings, feature: "dashboard" as FeatureKey, group: "config" },
   { title: t("dropdownSettings"), href: "/tenant/dropdown-settings", icon: Settings, feature: "dashboard" as FeatureKey, group: "config" },
   

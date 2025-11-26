@@ -18,6 +18,7 @@ A comprehensive Enterprise Resource Planning (ERP) system built with Next.js for
 ### Advanced Features
 - **Dynamic Tax Calculation** - Configurable tax rates from settings
 - **Text Minus Mode** - Special pricing mode for discounts
+- **Multiple Bill Designs** - Choose from 4 professional bill templates
 - **Bill PDF Generation** - Professional invoice printing
 - **CSV Import/Export** - Bulk data operations
 - **Feature Guards** - Plan-based feature restrictions
@@ -125,6 +126,7 @@ A comprehensive Enterprise Resource Planning (ERP) system built with Next.js for
 - Customer selection
 - Discount application
 - Bill printing and WhatsApp sharing
+- 4 professional bill designs (Classic, Modern, Elegant, Compact)
 
 ### Dynamic Pricing
 - Configurable tax rates
@@ -168,6 +170,8 @@ The application is fully responsive and works seamlessly on:
 - Contact information
 - Tax rates and GST details
 - Bill numbering
+- Bill design selection (4 templates)
+- Logo and signature upload
 - Terms and conditions
 - WhatsApp integration
 
@@ -214,3 +218,4 @@ This codebase has been optimized for retail operations only:
 - Cleaned up unnecessary files and components
 - Streamlined navigation and layouts
 - Focused API routes for retail operations only
+- Replaced complex template builder with 4 fixed professional bill designs
