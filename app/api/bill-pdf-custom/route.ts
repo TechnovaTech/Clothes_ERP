@@ -64,11 +64,18 @@ export async function POST(request: NextRequest) {
     const fullHtml = generateBillHTML(billDesign, bill, storeSettings)
 
     // Launch puppeteer and generate PDF
-    const browser = await puppeteer.launch({ headless: true })
+    const launchOptions: any = {
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
+    }
+    const browser = await puppeteer.launch(launchOptions)
     const page = await browser.newPage()
     
     // Set the HTML content
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' })
+    await page.setContent(fullHtml, { waitUntil: 'load' })
     
     // Generate PDF buffer
     const pdfBuffer = await page.pdf({
