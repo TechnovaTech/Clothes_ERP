@@ -415,6 +415,7 @@ export default function SettingsPage() {
                 <option value="modern">Modern Minimal</option>
                 <option value="elegant">Elegant Professional</option>
                 <option value="compact">Compact Receipt</option>
+                <option value="taxinvoice">Professional Tax Invoice</option>
                 <option value="thermal">Thermal Receipt (Original)</option>
               </select>
               <p className="text-sm text-muted-foreground">
@@ -445,6 +446,12 @@ export default function SettingsPage() {
               }`} onClick={() => setSettings({...settings, billDesign: 'compact'})}>
                 <div className="font-medium mb-1">Compact Receipt</div>
                 <div className="text-xs text-muted-foreground">Space-efficient thermal printer style</div>
+              </div>
+              <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                settings.billDesign === 'taxinvoice' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              }`} onClick={() => setSettings({...settings, billDesign: 'taxinvoice'})}>
+                <div className="font-medium mb-1">Professional Tax Invoice</div>
+                <div className="text-xs text-muted-foreground">Formal tax invoice with GST details and table layout</div>
               </div>
               <div className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
                 settings.billDesign === 'thermal' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
