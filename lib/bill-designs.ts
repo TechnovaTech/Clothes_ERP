@@ -1012,8 +1012,13 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
   <meta charset="UTF-8">
   <title>Tax Invoice - ${bill.billNo}</title>
   <style>
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
+    @page { size: A4; margin: 20px; }
+    @media print { 
+      body { margin: 0; padding: 20px; } 
+      .page-break { page-break-before: always; margin-top: 20px; } 
+      .invoice { margin-bottom: 0; page-break-inside: avoid; }
+      .invoice:last-child { page-break-after: avoid; }
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; padding: 20px; background: white; }
     .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; margin-bottom: 20px; }

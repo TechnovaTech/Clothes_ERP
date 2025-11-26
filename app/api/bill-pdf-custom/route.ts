@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '0px',
-        right: '0px',
-        bottom: '0px',
-        left: '0px'
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
       }
     })
     
