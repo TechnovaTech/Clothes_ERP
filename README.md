@@ -205,6 +205,65 @@ For support and questions:
 - **v1.0.0** - Initial release with core ERP features
 - **v1.1.0** - Added dynamic tax calculation and text minus mode
 - **v1.2.0** - Enhanced bill printing and notification system
+- **v1.3.0** - Public API for subscription plans
+
+## 🌐 Public API
+
+Fashion ERP provides a public API to fetch subscription plans for external websites and applications.
+
+**API Endpoint:** `https://erp.fashionpos.space/api/public/plans`
+
+### Generate API Key
+
+1. Login as super-admin
+2. Go to `/super-admin/api-keys`
+3. Click "Generate New Key"
+4. Copy your API key
+
+**See:** [API_KEY_GENERATION_GUIDE.md](./API_KEY_GENERATION_GUIDE.md)
+
+### Quick Start
+
+```bash
+curl -X GET "https://erp.fashionpos.space/api/public/plans" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+### Documentation
+
+- 📖 [Complete API Documentation](./API_DOCUMENTATION.md) - Full reference with examples
+- ⚡ [Quick Start Guide](./API_QUICK_START.md) - Get started in 2 minutes
+- 🎯 [Public API Overview](./PUBLIC_API_README.md) - Use cases and integration examples
+- 🧪 [Live Demo](https://erp.fashionpos.space/api-demo.html) - Interactive API demo
+- 📦 [Postman Collection](./Fashion_ERP_API.postman_collection.json) - Import and test
+
+### Use Cases
+
+- Display pricing plans on marketing websites
+- Build custom pricing calculators
+- Integrate with third-party platforms
+- Mobile app integration
+- Partner portals
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "...",
+      "name": "Basic",
+      "price": 999,
+      "description": "Perfect for small retail stores",
+      "maxProducts": 1000,
+      "durationDays": 365,
+      "features": ["Inventory Management", "POS System"],
+      "allowedFeatures": ["dashboard", "inventory", "pos"]
+    }
+  ]
+}
+```
 
 ---
 

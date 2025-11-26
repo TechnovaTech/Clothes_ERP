@@ -243,7 +243,7 @@ export default function CustomersPage() {
               onChange={(e) => onChange(e.target.value)}
               placeholder="9876543210, 9123456789"
             />
-            <p className="text-xs text-muted-foreground mt-1">You can enter multiple phone numbers separated by commas</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('multiplePhoneNumbersHint')}</p>
           </div>
         )
       default:
@@ -277,7 +277,7 @@ export default function CustomersPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Fields</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('activeFields')}</CardTitle>
                 <Settings className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -287,7 +287,7 @@ export default function CustomersPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Required Fields</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('requiredFields')}</CardTitle>
                 <ShoppingBag className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -323,16 +323,16 @@ export default function CustomersPage() {
                         if (response.ok) {
                           const result = await response.json()
                           const message = result.skipped > 0 
-                            ? `✅ Imported ${result.count} customers (${result.skipped} skipped - duplicates)`
-                            : `✅ Successfully imported ${result.count} customers!`
+                            ? `✅ ${t('importedCustomers').replace('{0}', result.count).replace('{1}', result.skipped)}`
+                            : `✅ ${t('successfullyImportedCustomers').replace('{0}', result.count)}`
                           showToast.success(message)
                           fetchCustomers(currentPage)
                         } else {
                           const errorData = await response.json()
-                          showToast.error(`❌ ${errorData.error || 'Import failed. Please check your CSV file format.'}`)
+                          showToast.error(`❌ ${errorData.error || t('importFailed')}`)
                         }
                       } catch (error) {
-                        showToast.error('❌ Import error. Please try again.')
+                        showToast.error(`❌ ${t('importError')}`)
                       } finally {
                         e.target.value = ''
                       }
@@ -345,14 +345,14 @@ export default function CustomersPage() {
                     onClick={() => document.getElementById('customer-csv-upload')?.click()}
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Import CSV
+                    {t('importCSV')}
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => window.open('/api/customers/export', '_blank')}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Export CSV
+                    {t('exportCSV')}
                   </Button>
                   {selectedCustomers.length > 0 && (
                     <Button 
@@ -360,19 +360,19 @@ export default function CustomersPage() {
                       onClick={() => setIsBulkDeleteDialogOpen(true)}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Delete ({selectedCustomers.length})
+                      {t('delete')} ({selectedCustomers.length})
                     </Button>
                   )}
                   <Button 
                     variant="destructive"
                     onClick={() => setIsClearAllDialogOpen(true)}
                   >
-                    Clear All
+                    {t('clearAll')}
                   </Button>
                   <Button variant="outline" asChild>
                     <Link href="/tenant/field-settings">
                       <Settings className="w-4 h-4 mr-2" />
-                      Configure Fields
+                      {t('configureFields')}
                     </Link>
                   </Button>
                   <Button onClick={() => {
@@ -402,9 +402,9 @@ export default function CustomersPage() {
               {filteredCustomers.length === 0 ? (
                 <div className="text-center py-12">
                   <UserCheck className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No customers found</h3>
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noCustomersFound')}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {customers.length === 0 ? 'Start by adding your first customer' : 'Try adjusting your search or filters'}
+                    {customers.length === 0 ? t('startByAddingFirstCustomer') : t('tryAdjustingSearchFilters')}
                   </p>
                   <Button onClick={() => {
                     setEditingCustomer(null)
@@ -412,7 +412,7 @@ export default function CustomersPage() {
                     setIsCustomerDialogOpen(true)
                   }}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Add First Customer
+                    {t('addFirstCustomer')}
                   </Button>
                 </div>
               ) : (
@@ -434,12 +434,12 @@ export default function CustomersPage() {
                             className="cursor-pointer"
                           />
                         </TableHead>
-                        <TableHead className="text-center w-16">Sr. No.</TableHead>
+                        <TableHead className="text-center w-16">{t('srNo')}</TableHead>
                         {customerFields.map((field) => (
                           <TableHead key={field.name} className="text-center">{field.label}</TableHead>
                         ))}
-                        <TableHead className="text-center">Orders</TableHead>
-                        <TableHead className="text-center">Total Spent</TableHead>
+                        <TableHead className="text-center">{t('orders')}</TableHead>
+                        <TableHead className="text-center">{t('totalSpent')}</TableHead>
                         <TableHead className="text-center">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -502,6 +502,7 @@ export default function CustomersPage() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                 className="text-red-500 hover:text-red-700"
                                 onClick={() => {
                                   setCustomerToDelete(customer)
                                   setIsDeleteDialogOpen(true)
@@ -521,7 +522,7 @@ export default function CustomersPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} customers
+                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} {t('customers')}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -530,7 +531,7 @@ export default function CustomersPage() {
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    {t('previous')}
                   </Button>
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -562,7 +563,7 @@ export default function CustomersPage() {
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>
@@ -598,7 +599,7 @@ export default function CustomersPage() {
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    <span className="font-medium">Customer Since:</span> {formatDateToDDMMYYYY(selectedCustomer.createdAt)}
+                    <span className="font-medium">{t('customerSince')}:</span> {formatDateToDDMMYYYY(selectedCustomer.createdAt)}
                   </div>
                 </div>
               )}
@@ -630,7 +631,7 @@ export default function CustomersPage() {
                     const requiredFields = customerFields.filter(f => f.required)
                     for (const field of requiredFields) {
                       if (!customerFormData[field.name]?.trim()) {
-                        showToast.error(`${field.label} is required`)
+                        showToast.error(t('fieldRequired').replace('{0}', field.label))
                         return
                       }
                     }
@@ -645,25 +646,23 @@ export default function CustomersPage() {
                         body: JSON.stringify(customerFormData)
                       })
                       if (response.ok) {
-                        const action = editingCustomer ? 'updated' : 'created'
-                        showToast.success(`✅ Customer successfully ${action}!`)
+                        showToast.success(`✅ ${editingCustomer ? t('customerSuccessfullyUpdated') : t('customerSuccessfullyCreated')}`)
                         fetchCustomers(currentPage)
                         setIsCustomerDialogOpen(false)
                       } else {
                         const errorData = await response.json()
-                        const action = editingCustomer ? 'update' : 'create'
-                        showToast.error(`❌ Failed to ${action} customer: ${errorData.error || 'Unknown error'}`)
+                        const msg = editingCustomer ? t('failedToUpdateCustomer') : t('failedToCreateCustomer')
+                        showToast.error(`❌ ${msg.replace('{0}', errorData.error || 'Unknown error')}`)
                       }
                     } catch (error) {
                       console.error('Error saving customer:', error)
-                      const action = editingCustomer ? 'updating' : 'creating'
-                      showToast.error(`❌ Error ${action} customer. Please check your connection.`)
+                      showToast.error(`❌ ${editingCustomer ? t('errorUpdatingCustomer') : t('errorCreatingCustomer')}`)
                     } finally {
                       setSaving(false)
                     }
                   }}
                 >
-                  {saving ? 'Saving...' : (editingCustomer ? t('update') : t('create'))}
+                  {saving ? t('saving') : (editingCustomer ? t('update') : t('create'))}
                 </Button>
               </div>
             </DialogContent>
@@ -690,14 +689,14 @@ export default function CustomersPage() {
                           method: 'DELETE'
                         })
                         if (response.ok) {
-                          showToast.success(`✅ Customer "${customerToDelete.name}" deleted successfully!`)
+                          showToast.success(`✅ ${t('customerDeletedSuccess').replace('{0}', customerToDelete.name)}`)
                           fetchCustomers(currentPage)
                         } else {
-                          showToast.error('❌ Failed to delete customer. Please try again.')
+                          showToast.error(`❌ ${t('failedToDeleteCustomer')}`)
                         }
                       } catch (error) {
                         console.error('Delete customer error:', error)
-                        showToast.error('❌ Error deleting customer. Please check your connection.')
+                        showToast.error(`❌ ${t('errorDeletingCustomer')}`)
                       }
                       setIsDeleteDialogOpen(false)
                       setCustomerToDelete(null)
@@ -713,9 +712,9 @@ export default function CustomersPage() {
           <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete Selected Customers</DialogTitle>
+                <DialogTitle>{t('deleteSelectedCustomers')}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete {selectedCustomers.length} selected customers? This action cannot be undone.
+                  {t('confirmDeleteSelectedCustomers').replace('{0}', selectedCustomers.length.toString())}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end space-x-2 pt-4">
@@ -733,10 +732,10 @@ export default function CustomersPage() {
                     const failCount = results.length - successCount
                     
                     if (successCount > 0) {
-                      showToast.success(`✅ Successfully deleted ${successCount} customers!`)
+                      showToast.success(`✅ ${t('successfullyDeletedCustomers').replace('{0}', successCount.toString())}`)
                     }
                     if (failCount > 0) {
-                      showToast.error(`❌ Failed to delete ${failCount} customers`)
+                      showToast.error(`❌ ${t('failedToDeleteCustomers').replace('{0}', failCount.toString())}`)
                     }
                     
                     setSelectedCustomers([])
@@ -744,7 +743,7 @@ export default function CustomersPage() {
                     fetchCustomers(currentPage)
                   } catch (error) {
                     console.error('Bulk delete error:', error)
-                    showToast.error('❌ Error deleting customers. Please try again.')
+                    showToast.error(`❌ ${t('errorDeletingCustomers')}`)
                   }
                 }}>
                   {t('delete')}
@@ -758,10 +757,10 @@ export default function CustomersPage() {
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
-                  <span>Clear All Customers</span>
+                  <span>{t('clearAllCustomers')}</span>
                 </DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete <strong>ALL customers</strong>? This action cannot be undone and will permanently remove all customer data from your database!
+                  {t('confirmClearAllCustomers')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end space-x-2 pt-4">
@@ -776,19 +775,19 @@ export default function CustomersPage() {
                     
                     if (response.ok) {
                       const result = await response.json()
-                      showToast.success(`🗑️ Successfully cleared ${result.count} customers from database!`)
+                      showToast.success(`🗑️ ${t('successfullyClearedCustomers').replace('{0}', result.count.toString())}`)
                       fetchCustomers(1)
                       setCurrentPage(1)
                       setSelectedCustomers([])
                     } else {
-                      showToast.error('❌ Failed to clear customers. Please try again.')
+                      showToast.error(`❌ ${t('failedToClearCustomers')}`)
                     }
                   } catch (error) {
-                    showToast.error('❌ Error clearing customers. Please check your connection.')
+                    showToast.error(`❌ ${t('errorClearingCustomers')}`)
                   }
                   setIsClearAllDialogOpen(false)
                 }}>
-                  Clear All Customers
+                  {t('clearAllCustomers')}
                 </Button>
               </div>
             </DialogContent>

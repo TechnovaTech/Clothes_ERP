@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion ERP - Plans API Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .api-config {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .api-config h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .plan-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .plan-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .plan-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .plan-limits {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .plan-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #555;
+        }
+
+        .plan-features li:before {
+            content: "✓";
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+
+        .choose-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .choose-btn:hover {
+            background: #5568d3;
+        }
+
+        .code-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .code-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            font-size: 12px;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Fashion ERP Plans API</h1>
+            <p>Live API Demo - Fetch and Display Subscription Plans</p>
+        </div>
+
+        <div class="api-config">
+            <h2>API Configuration</h2>
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="apiKey" 
+                    placeholder="Enter your API Key (x-api-key)"
+                    value=""
+                >
+                <button onclick="fetchPlans()">Fetch Plans</button>
+            </div>
+            <small style="color: #666;">API Endpoint: https://erp.fashionpos.space/api/public/plans</small>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="loading" class="loading" style="display: none;">Loading plans...</div>
+        <div id="plans" class="plans-grid"></div>
+
+        <div class="code-section">
+            <h2>📝 API Request Code</h2>
+            <pre><code>// JavaScript Fetch Example
+const API_KEY = 'YOUR_API_KEY';
+
+fetch('https://erp.fashionpos.space/api/public/plans', {
+  method: 'GET',
+  headers: {
+    'x-api-key': API_KEY,
+    'Content-Type': 'application/json'
+  }
+})
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      console.log('Plans:', data.data);
+      // Display plans in your UI
+    }
+  })
+  .catch(error => console.error('Error:', error));</code></pre>
+        </div>
+    </div>
+
+    <script>
+        async function fetchPlans() {
+            const apiKey = document.getElementById('apiKey').value;
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const plansDiv = document.getElementById('plans');
+
+            // Clear previous results
+            errorDiv.style.display = 'none';
+            plansDiv.innerHTML = '';
+
+            if (!apiKey) {
+                errorDiv.textContent = 'Please enter your API key';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('https://erp.fashionpos.space/api/public/plans', {
+                    method: 'GET',
+                    headers: {
+                        'x-api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                loadingDiv.style.display = 'none';
+
+                if (result.success && result.data) {
+                    displayPlans(result.data);
+                } else {
+                    errorDiv.textContent = result.error || 'Failed to fetch plans';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.textContent = 'Network error: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function displayPlans(plans) {
+            const plansDiv = document.getElementById('plans');
+            
+            plans.forEach(plan => {
+                const card = document.createElement('div');
+                card.className = 'plan-card';
+                
+                const featuresHTML = plan.features && plan.features.length > 0
+                    ? plan.features.map(f => `<li>${f}</li>`).join('')
+                    : '<li>No features listed</li>';
+
+                const allowedFeaturesHTML = plan.allowedFeatures && plan.allowedFeatures.length > 0
+                    ? plan.allowedFeatures.slice(0, 5).map(f => `<span class="badge">${f}</span>`).join('')
+                    : '';
+
+                card.innerHTML = `
+                    <div class="plan-name">${plan.name}</div>
+                    <div class="plan-price">₹${plan.price.toLocaleString()}<span>/year</span></div>
+                    <div class="plan-description">${plan.description || 'No description available'}</div>
+                    <div class="plan-limits">
+                        📦 Up to ${plan.maxProducts.toLocaleString()} products
+                    </div>
+                    <ul class="plan-features">
+                        ${featuresHTML}
+                    </ul>
+                    <div style="margin-bottom: 15px;">
+                        ${allowedFeaturesHTML}
+                        ${plan.allowedFeatures && plan.allowedFeatures.length > 5 ? `<span class="badge">+${plan.allowedFeatures.length - 5} more</span>` : ''}
+                    </div>
+                    <button class="choose-btn" onclick="alert('Plan ID: ${plan.id}')">Choose ${plan.name}</button>
+                `;
+                
+                plansDiv.appendChild(card);
+            });
+        }
+
+        // Auto-load if API key is in URL (for testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiKeyParam = urlParams.get('apiKey');
+        if (apiKeyParam) {
+            document.getElementById('apiKey').value = apiKeyParam;
+            fetchPlans();
+        }
+    </script>
+</body>
+</html>

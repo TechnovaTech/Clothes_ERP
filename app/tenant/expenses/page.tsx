@@ -12,9 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Receipt, Calendar, TrendingDown, BarChart3 } from "lucide-react"
+import { Plus, Receipt, Calendar, TrendingDown, BarChart3, Edit, Trash2 } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
 import { useLanguage } from "@/lib/language-context"
+import { showToast } from "@/lib/toast"
 
 interface Expense {
   id: string
@@ -37,6 +38,9 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -66,14 +70,18 @@ export default function ExpensesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
+      const url = editingExpense ? `/api/expenses/${editingExpense.id}` : '/api/expenses'
+      const method = editingExpense ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       })
 
       if (response.ok) {
         setDialogOpen(false)
+        setEditingExpense(null)
         setFormData({
           title: '',
           amount: '',
@@ -82,9 +90,43 @@ export default function ExpensesPage() {
           date: new Date().toISOString().split('T')[0]
         })
         fetchExpenses()
+        showToast.success(editingExpense ? '✅ Expense updated successfully!' : '✅ Expense added successfully!')
+      } else {
+        showToast.error('❌ Failed to save expense')
       }
     } catch (error) {
-      console.error('Failed to create expense:', error)
+      console.error('Failed to save expense:', error)
+    }
+  }
+
+  const handleEdit = (expense: Expense) => {
+    setEditingExpense(expense)
+    setFormData({
+      title: expense.title,
+      amount: expense.amount.toString(),
+      category: expense.category,
+      description: expense.description,
+      date: expense.date.split('T')[0]
+    })
+    setDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!expenseToDelete) return
+    try {
+      const response = await fetch(`/api/expenses/${expenseToDelete.id}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        setDeleteDialogOpen(false)
+        setExpenseToDelete(null)
+        fetchExpenses()
+        showToast.success('✅ Expense deleted successfully!')
+      } else {
+        showToast.error('❌ Failed to delete expense')
+      }
+    } catch (error) {
+      console.error('Failed to delete expense:', error)
     }
   }
 
@@ -148,7 +190,19 @@ export default function ExpensesPage() {
               <h1 className="text-2xl font-bold">{t('expenseManagement')}</h1>
               <p className="text-muted-foreground">{t('trackManageExpenses')}</p>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open)
+              if (!open) {
+                setEditingExpense(null)
+                setFormData({
+                  title: '',
+                  amount: '',
+                  category: '',
+                  description: '',
+                  date: new Date().toISOString().split('T')[0]
+                })
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button size="lg">
                   <Plus className="w-4 h-4 mr-2" />
@@ -157,7 +211,7 @@ export default function ExpensesPage() {
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{t('addNewExpense')}</DialogTitle>
+                  <DialogTitle>{editingExpense ? t('editExpense') : t('addNewExpense')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -176,8 +230,8 @@ export default function ExpensesPage() {
                       <Input
                         id="amount"
                         type="number"
-                        step="0.01"
-                        placeholder="0.00"
+                        step="1"
+                        placeholder="0"
                         value={formData.amount}
                         onChange={(e) => setFormData({...formData, amount: e.target.value})}
                         required
@@ -221,7 +275,7 @@ export default function ExpensesPage() {
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
                       {t('cancel')}
                     </Button>
-                    <Button type="submit" className="flex-1">{t('addExpense')}</Button>
+                    <Button type="submit" className="flex-1">{editingExpense ? t('updateExpense') : t('addExpense')}</Button>
                   </div>
                 </form>
               </DialogContent>
@@ -412,6 +466,7 @@ export default function ExpensesPage() {
                           <TableHead>{t('amount')}</TableHead>
                           <TableHead>{t('date')}</TableHead>
                           <TableHead>{t('description')}</TableHead>
+                          <TableHead className="text-center">{t('actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -424,6 +479,19 @@ export default function ExpensesPage() {
                             <TableCell className="text-red-600 font-medium">₹{expense.amount.toLocaleString()}</TableCell>
                             <TableCell>{new Date(expense.date).toLocaleDateString('en-IN')}</TableCell>
                             <TableCell className="max-w-xs truncate">{expense.description || '-'}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center space-x-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => {
+                                  setExpenseToDelete(expense)
+                                  setDeleteDialogOpen(true)
+                                }}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -433,6 +501,27 @@ export default function ExpensesPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('deleteExpense')}</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p>{t('confirmDeleteExpense')} <strong>{expenseToDelete?.title}</strong>?</p>
+                <p className="text-sm text-muted-foreground mt-2">{t('actionCannotBeUndone')}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="flex-1">
+                  {t('cancel')}
+                </Button>
+                <Button variant="destructive" onClick={handleDelete} className="flex-1">
+                  {t('delete')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </FeatureGuard>
     </MainLayout>
