@@ -44,6 +44,8 @@ export function generateClassicDesign(bill: BillData, settings: StoreSettings): 
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; padding: 40px; background: white; }
     .invoice { max-width: 800px; margin: 0 auto; border: 2px solid #333; padding: 30px; }
@@ -179,6 +181,8 @@ export function generateModernDesign(bill: BillData, settings: StoreSettings): s
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f5f5f5; }
     .invoice { max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
@@ -313,6 +317,8 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Georgia', serif; padding: 40px; background: #fafafa; }
     .invoice { max-width: 800px; margin: 0 auto; background: white; border: 1px solid #d4af37; }
@@ -850,6 +856,214 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
   `
 }
 
+export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings): string {
+  const ITEMS_PER_PAGE = 15
+  const totalItems = bill.items.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  
+  let pagesHTML = ''
+  
+  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+    const startIdx = pageNum * ITEMS_PER_PAGE
+    const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems)
+    const pageItems = bill.items.slice(startIdx, endIdx)
+    const isLastPage = pageNum === totalPages - 1
+    const emptyRows = ITEMS_PER_PAGE - pageItems.length
+    
+    pagesHTML += `
+  <div class="invoice${pageNum > 0 ? ' page-break' : ''}">
+    <div class="header">
+      <div class="company-name">${settings.storeName}</div>
+      <div class="company-address">
+        ${settings.address}<br/>
+        ${settings.phone ? `Phone: ${settings.phone}` : ''} ${settings.email ? `| Email: ${settings.email}` : ''}
+      </div>
+    </div>
+    
+    <div class="invoice-type">
+      <div class="invoice-type-left">Debit Memo</div>
+      <div class="invoice-type-center">TAX INVOICE</div>
+      <div class="invoice-type-right">Original ${totalPages > 1 ? `(Page ${pageNum + 1}/${totalPages})` : ''}</div>
+    </div>
+    
+    <div class="customer-section">
+      <div class="customer-left">
+        <div class="customer-label">M/s.: ${bill.customerName}</div>
+        <div class="customer-info">
+          ${bill.customerPhone ? `Phone: ${bill.customerPhone}<br/>` : ''}
+          Place of Supply: ${settings.address || 'N/A'}<br/>
+          GSTIN No.: ${settings.gst || 'N/A'}
+        </div>
+      </div>
+      <div class="customer-right">
+        <div class="invoice-details">
+          <div class="detail-row">
+            <div class="detail-label">Invoice No.</div>
+            <div class="detail-value">: ${bill.billNo}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Date</div>
+            <div class="detail-value">: ${new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th class="sr-no">SrNo</th>
+          <th class="product-name">Product Name</th>
+          <th class="hsn">HSN/SAC</th>
+          <th class="qty">Qty</th>
+          <th class="rate">Rate</th>
+          <th class="gst">IGST %</th>
+          <th class="amount">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pageItems.map((item, index) => `
+          <tr>
+            <td class="sr-no">${startIdx + index + 1}</td>
+            <td class="product-name">${item.name}</td>
+            <td class="hsn">-</td>
+            <td class="qty">${item.quantity.toFixed(3)}</td>
+            <td class="rate">${item.price.toFixed(2)}</td>
+            <td class="gst">18.00</td>
+            <td class="amount">${item.total.toFixed(2)}</td>
+          </tr>
+        `).join('')}
+        ${isLastPage ? Array(emptyRows).fill(0).map(() => `
+          <tr>
+            <td class="sr-no">&nbsp;</td>
+            <td class="product-name">&nbsp;</td>
+            <td class="hsn">&nbsp;</td>
+            <td class="qty">&nbsp;</td>
+            <td class="rate">&nbsp;</td>
+            <td class="gst">&nbsp;</td>
+            <td class="amount">&nbsp;</td>
+          </tr>
+        `).join('') : ''}
+      </tbody>
+    </table>
+    
+    ${isLastPage ? `
+    <div class="footer-section">
+      <div class="footer-left">
+        <div class="gst-row">
+          <div class="gst-label">GSTIN No.: ${settings.gst || 'N/A'}</div>
+        </div>
+        <div class="amount-words">
+          <strong>Total GST:</strong> (In Words)<br/>
+          <strong>Bill Amount:</strong> (In Words)
+        </div>
+        <div class="terms">
+          <div class="terms-title">Terms & Condition:</div>
+          ${settings.terms || '1. Goods once sold will not be taken back.<br/>2. Interest @18% p.a. will be charged if payment is not made within due date.<br/>3. Our risk and responsibility ceases as soon as the goods leave our premises.<br/>4. Subject to jurisdiction only.'}
+        </div>
+      </div>
+      <div class="footer-right">
+        <div class="total-section">
+          <div class="total-row">
+            <span>Sub Total</span>
+            <span>${bill.subtotal.toFixed(2)}</span>
+          </div>
+          ${bill.discountAmount && bill.discountAmount > 0 ? `
+          <div class="total-row">
+            <span>Discount</span>
+            <span>-${bill.discountAmount.toFixed(2)}</span>
+          </div>
+          ` : ''}
+          <div class="total-row">
+            <span>Taxable Amount</span>
+            <span>${(bill.subtotal - (bill.discountAmount || 0)).toFixed(2)}</span>
+          </div>
+          ${bill.tax > 0 ? `
+          <div class="total-row">
+            <span>Integrated Tax 18.00%</span>
+            <span>${bill.tax.toFixed(2)}</span>
+          </div>
+          ` : ''}
+          <div class="total-row grand-total">
+            <span>Grand Total</span>
+            <span>₹${bill.total.toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="signature">
+          For, ${settings.storeName}<br/>
+          ${settings.signature ? `<img src="${settings.signature}" style="max-width: 150px; max-height: 50px; margin: 10px 0;" />` : '<br/><br/><br/>'}
+          (Authorised Signatory)
+        </div>
+      </div>
+    </div>
+    ` : `
+    <div style="text-align: right; padding: 15px; border-top: 2px solid #000; font-size: 11px; font-style: italic;">
+      Continued on next page...
+    </div>
+    `}
+  </div>
+    `
+  }
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tax Invoice - ${bill.billNo}</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: white; }
+    .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; margin-bottom: 20px; }
+    .header { border-bottom: 2px solid #000; padding: 15px; text-align: center; }
+    .company-name { font-size: 24px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+    .company-address { font-size: 11px; line-height: 1.4; }
+    .invoice-type { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 2px solid #000; background: #f5f5f5; }
+    .invoice-type-left { font-weight: bold; font-size: 12px; }
+    .invoice-type-center { font-weight: bold; font-size: 16px; text-transform: uppercase; }
+    .invoice-type-right { font-weight: bold; font-size: 12px; }
+    .customer-section { display: flex; border-bottom: 2px solid #000; }
+    .customer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
+    .customer-right { width: 300px; padding: 15px; }
+    .customer-label { font-weight: bold; font-size: 12px; margin-bottom: 8px; }
+    .customer-info { font-size: 11px; line-height: 1.6; }
+    .invoice-details { display: flex; flex-direction: column; gap: 8px; }
+    .detail-row { display: flex; font-size: 11px; }
+    .detail-label { width: 100px; font-weight: bold; }
+    .detail-value { flex: 1; }
+    .items-table { width: 100%; border-collapse: collapse; }
+    .items-table th { background: #f5f5f5; border: 1px solid #000; padding: 8px; font-size: 11px; font-weight: bold; text-align: center; }
+    .items-table td { border: 1px solid #000; padding: 8px; font-size: 11px; }
+    .items-table .sr-no { width: 50px; text-align: center; }
+    .items-table .product-name { text-align: left; }
+    .items-table .hsn { width: 80px; text-align: center; }
+    .items-table .qty { width: 80px; text-align: right; }
+    .items-table .rate { width: 80px; text-align: right; }
+    .items-table .gst { width: 70px; text-align: center; }
+    .items-table .amount { width: 100px; text-align: right; }
+    .footer-section { display: flex; border-top: 2px solid #000; }
+    .footer-left { flex: 1; padding: 15px; border-right: 2px solid #000; }
+    .footer-right { width: 300px; padding: 15px; }
+    .gst-row { display: flex; justify-content: space-between; font-size: 11px; padding: 5px 0; border-bottom: 1px solid #ddd; }
+    .gst-label { font-weight: bold; }
+    .total-section { margin-top: 10px; }
+    .total-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; }
+    .grand-total { font-weight: bold; font-size: 14px; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+    .amount-words { font-size: 11px; margin-top: 10px; font-style: italic; }
+    .terms { font-size: 10px; line-height: 1.5; margin-top: 10px; }
+    .terms-title { font-weight: bold; margin-bottom: 5px; }
+    .signature { text-align: right; margin-top: 30px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  ${pagesHTML}
+</body>
+</html>
+  `
+}
+
 export function generateBillHTML(design: string, bill: BillData, settings: StoreSettings): string {
   switch (design) {
     case 'modern':
@@ -860,6 +1074,8 @@ export function generateBillHTML(design: string, bill: BillData, settings: Store
       return generateCompactDesign(bill, settings)
     case 'thermal':
       return generateThermalDesign(bill, settings)
+    case 'taxinvoice':
+      return generateTaxInvoiceDesign(bill, settings)
     case 'classic':
     default:
       return generateClassicDesign(bill, settings)
