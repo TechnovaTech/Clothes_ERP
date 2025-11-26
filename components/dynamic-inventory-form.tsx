@@ -106,12 +106,38 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
 
   const updateFormData = (fieldName: string, value: any) => {
     const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_')
+    
+    // Store value directly
+    let processedValue = value
+    
     const newFormData = { 
       ...formData, 
-      [fieldKey]: value,
-      [fieldName]: value,
-      [fieldName.toLowerCase()]: value
+      [fieldKey]: processedValue,
+      [fieldName]: processedValue,
+      [fieldName.toLowerCase()]: processedValue
     }
+    
+    // Handle critical field mappings
+    if (fieldName.toLowerCase().includes('cost') && fieldName.toLowerCase().includes('price')) {
+      newFormData['costPrice'] = processedValue
+      newFormData['cost_price'] = processedValue
+      newFormData['Cost Price'] = processedValue
+    }
+    if (fieldName.toLowerCase() === 'stock') {
+      newFormData['stock'] = processedValue
+      newFormData['Stock'] = processedValue
+    }
+    if (fieldName.toLowerCase().includes('min') && fieldName.toLowerCase().includes('stock')) {
+      newFormData['minStock'] = processedValue
+      newFormData['min_stock'] = processedValue
+      newFormData['Min Stock'] = processedValue
+    }
+    // Handle date fields
+    if (fieldName.toLowerCase().includes('date')) {
+      newFormData[fieldName.toLowerCase().replace(/\s+/g, '_')] = processedValue
+      newFormData[fieldName] = processedValue
+    }
+    
     setFormData(newFormData)
   }
 
@@ -135,10 +161,12 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
         )
       
       case 'number':
+        const isDecimal = field.name.toLowerCase().includes('price') || field.name.toLowerCase().includes('cost')
         return (
           <Input
             type="number"
-            step="1"
+            step={isDecimal ? "0.01" : "1"}
+            min="0"
             value={fieldValue}
             onChange={(e) => updateFormData(field.name, e.target.value)}
             placeholder={`Enter ${field.name}`}
@@ -167,24 +195,32 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
         )
       
       case 'date':
-        // Convert dd-mm-yyyy to yyyy-mm-dd for input, and vice versa
-        const dateInputValue = fieldValue ? (
-          fieldValue.includes('-') && fieldValue.split('-').length === 3 && fieldValue.split('-')[0].length === 2
-            ? fieldValue.split('-').reverse().join('-') // Convert dd-mm-yyyy to yyyy-mm-dd
-            : fieldValue
-        ) : ''
+        // Convert dd-mm-yyyy to yyyy-mm-dd for date input
+        let dateInputValue = ''
+        if (fieldValue && fieldValue.includes('-')) {
+          const parts = fieldValue.split('-')
+          if (parts.length === 3 && parts[0].length === 2) {
+            // dd-mm-yyyy to yyyy-mm-dd
+            dateInputValue = `${parts[2]}-${parts[1]}-${parts[0]}`
+          } else if (parts.length === 3 && parts[0].length === 4) {
+            // Already yyyy-mm-dd
+            dateInputValue = fieldValue
+          }
+        }
         
         return (
           <Input
             type="date"
             value={dateInputValue}
             onChange={(e) => {
-              // Convert yyyy-mm-dd to dd-mm-yyyy for storage
               const inputDate = e.target.value
-              if (inputDate) {
+              if (inputDate && inputDate.length === 10) {
+                // Ensure full date yyyy-mm-dd, convert to dd-mm-yyyy
                 const [year, month, day] = inputDate.split('-')
-                const formattedDate = `${day}-${month}-${year}`
-                updateFormData(field.name, formattedDate)
+                if (year && month && day) {
+                  const formattedDate = `${day}-${month}-${year}`
+                  updateFormData(field.name, formattedDate)
+                }
               } else {
                 updateFormData(field.name, '')
               }

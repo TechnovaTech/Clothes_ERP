@@ -418,7 +418,11 @@ export default function InventoryPage() {
     Object.keys(item).forEach(key => {
       if (key !== '_id' && key !== 'id' && key !== 'tenantId' && key !== 'storeId' && key !== 'createdAt' && key !== 'updatedAt') {
         const value = (item as any)[key]
-        editFormData[key] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
+        let processedValue = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
+        
+        // Load value as is
+        
+        editFormData[key] = processedValue
       }
     })
     
@@ -447,9 +451,13 @@ export default function InventoryPage() {
         value = item.name || value
       }
       
-      editFormData[fieldKey] = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
-      editFormData[field.name] = editFormData[fieldKey]
-      editFormData[field.name.toLowerCase()] = editFormData[fieldKey]
+      let processedValue = Array.isArray(value) ? value.join(', ') : (value?.toString() || '')
+      
+      // Load date value as is
+      
+      editFormData[fieldKey] = processedValue
+      editFormData[field.name] = processedValue
+      editFormData[field.name.toLowerCase()] = processedValue
     })
     
     // Additional name mappings
@@ -1076,25 +1084,35 @@ export default function InventoryPage() {
                           
                           // Format date if it's a date field
                           if (isDate && value && value !== 'N/A') {
-                            // If already in dd-mm-yyyy format, use as is
-                            if (typeof value === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(value)) {
-                              displayValue = value
-                            } else {
-                              // Otherwise try to format it
-                              try {
-                                displayValue = formatDateToDDMMYYYY(new Date(value))
-                              } catch (e) {
-                                displayValue = value
+                            // Ensure full date is shown in dd-mm-yyyy format
+                            if (typeof value === 'string' && value.includes('-')) {
+                              const parts = value.split('-')
+                              if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+                                if (parts[0].length === 4) {
+                                  // yyyy-mm-dd to dd-mm-yyyy
+                                  displayValue = `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`
+                                } else if (parts[2].length === 4) {
+                                  // Already dd-mm-yyyy, ensure padding
+                                  displayValue = `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`
+                                } else {
+                                  displayValue = value
+                                }
+                              } else {
+                                displayValue = 'Invalid Date'
                               }
+                            } else {
+                              displayValue = value
                             }
+                          } else if (isDate && !value) {
+                            displayValue = 'N/A'
                           }
                           
                           return (
-                            <TableCell key={field.name} className="text-center max-w-[150px] p-2">
+                            <TableCell key={field.name} className={`text-center p-2 ${isDate ? 'min-w-[100px]' : 'max-w-[150px]'}`}>
                               {isBarcode && value ? (
                                 <BarcodeDisplay value={value} width={1.5} height={30} fontSize={10} />
                               ) : (
-                                <div className="break-words whitespace-normal text-sm">
+                                <div className={`text-sm ${isDate ? 'whitespace-nowrap' : 'break-words whitespace-normal'}`}>
                                   {displayValue}
                                 </div>
                               )}
