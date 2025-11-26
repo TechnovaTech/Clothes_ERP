@@ -1023,98 +1023,20 @@ export default function POSPage() {
                 <Button 
                   variant="outline"
                   className="flex-1"
-                  onClick={async () => {
+                  onClick={() => {
                     if (!completedSale.customerPhone) {
                       showToast.error(t('customerPhoneRequired'))
                       return
                     }
                     
-                    try {
-                      const billFormat = settings.billFormat || 'professional'
-                      let pdfLink
-                      if (billFormat === 'simple') {
-                        pdfLink = `${window.location.origin}/api/receipt-simple-public/${completedSale._id || completedSale.id}`
-                      } else if (billFormat === 'invoice') {
-                        pdfLink = `${window.location.origin}/api/public-receipt/${completedSale._id || completedSale.id}`
-                      } else {
-                        pdfLink = `${window.location.origin}/api/public-receipt/${completedSale._id || completedSale.id}`
-                      }
-                      
-                      const addressLines = settings.address ? settings.address.split(',').map(line => line.trim()) : []
-                      const logoDisplay = settings.logo || '🏪'
-                      
-                      const billMessage = `
-┌─────────────────────────────────────────┐
-│ *${(settings.storeName || 'STORE').toUpperCase().padEnd(25)}*     ${logoDisplay} │
-├─────────────────────────────────────────┤
-${addressLines.map(line => `│ 📍 ${line.padEnd(35)} │`).join('\n')}
-${settings.phone ? `│ 📞 ${settings.phone.padEnd(35)} │` : ''}
-${settings.email ? `│ 📧 ${settings.email.padEnd(35)} │` : ''}
-${settings.gst ? `│ 🏛️ GST: ${settings.gst.padEnd(31)} │` : ''}
-└─────────────────────────────────────────┘
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*📋 INVOICE DETAILS*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*Bill No:* ${completedSale.billNo}
-*Date:* ${formatDateToDDMMYYYY(completedSale.date)}
-*Time:* ${completedSale.date.toLocaleTimeString('en-IN', {hour12: true})}
-*Cashier:* ${completedSale.staffMember || 'Admin'}
-
-*👤 CUSTOMER DETAILS*
-*Name:* ${completedSale.customerName || 'Walk-in Customer'}
-${completedSale.customerPhone ? `*Phone:* ${completedSale.customerPhone}` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*🛒 ITEMS PURCHASED*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-\`\`\`
-| Item                | Qty | Rate   | Amount |
-|---------------------|-----|--------|--------|
-${completedSale.items.map((item: any) => {
-  const name = item.name.length > 18 ? item.name.substring(0, 18) + '..' : item.name.padEnd(19)
-  const qty = item.quantity.toString().padStart(3)
-  const rate = `₹${Number(item.price || 0).toFixed(2)}`.padStart(6)
-  const amount = `₹${Number(item.total || 0).toFixed(2)}`.padStart(6)
-  return `| ${name} | ${qty} | ${rate} | ${amount} |`
-}).join('\n')}
-\`\`\`
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*💰 PAYMENT SUMMARY*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*Subtotal:* ₹${(completedSale.subtotal || 0).toFixed(2)}
-${completedSale.discount > 0 ? `*Discount (${completedSale.discount}%):* -₹${(completedSale.discountAmount || 0).toFixed(2)}\n` : ''}${(completedSale.tax || 0) > 0 ? `*Tax:* ₹${(completedSale.tax || 0).toFixed(2)}\n` : ''}*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*
-*🎯 TOTAL: ₹${Number(completedSale.total || 0).toFixed(2)}*
-*💳 Payment:* ${completedSale.paymentMethod === 'cash' ? '💵 Cash' : '💳 Online'}
-
-📄 *Download Bill:* ${pdfLink}
-
-🙏 *Thank you for shopping!*
-✨ *Visit again soon!*
-
-💬 *Support:* ${settings.phone || '9427300816'}`
-
-                      // Send via WhatsApp microservice
-                      const response = await fetch('/api/send-bill', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          phone: completedSale.customerPhone.replace(/[^\d]/g, ''),
-                          message: billMessage
-                        })
-                      })
-                      
-                      if (response.ok) {
-                        showToast.success('Bill sent via WhatsApp successfully!')
-                      } else {
-                        const error = await response.json()
-                        showToast.error(`Failed to send: ${error.error || 'Unknown error'}`)
-                      }
-                    } catch (error) {
-                      showToast.error(t('failedToSendWhatsApp'))
-                      console.error('WhatsApp error:', error)
-                    }
+                    const billId = completedSale._id || completedSale.id
+                    const pdfLink = `${window.location.origin}/api/bill-pdf/${billId}`
+                    const phone = completedSale.customerPhone.replace(/[^\d]/g, '')
+                    const message = `Hi ${completedSale.customerName || 'Customer'},\n\nThank you for your purchase!\n\nBill No: ${completedSale.billNo}\nAmount: ₹${Number(completedSale.total || 0).toFixed(2)}\n\nView your bill: ${pdfLink}\n\n- ${settings.storeName}`
+                    
+                    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+                    window.open(whatsappUrl, '_blank')
+                    showToast.success('Opening WhatsApp...')
                   }}
                 >
                   <Smartphone className="w-4 h-4 mr-2" />
