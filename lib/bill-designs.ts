@@ -1,5 +1,46 @@
 // Fixed bill design templates
 
+function convertToWords(num: number): string {
+  if (num === 0) return 'Zero Rupees Only'
+  
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+  
+  const convertLessThanThousand = (n: number): string => {
+    if (n === 0) return ''
+    if (n < 10) return ones[n]
+    if (n < 20) return teens[n - 10]
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '')
+    return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertLessThanThousand(n % 100) : '')
+  }
+  
+  let intPart = Math.floor(num)
+  const decPart = Math.round((num - intPart) * 100)
+  
+  let result = ''
+  
+  if (intPart >= 10000000) {
+    result += convertLessThanThousand(Math.floor(intPart / 10000000)) + ' Crore '
+    intPart %= 10000000
+  }
+  if (intPart >= 100000) {
+    result += convertLessThanThousand(Math.floor(intPart / 100000)) + ' Lakh '
+    intPart %= 100000
+  }
+  if (intPart >= 1000) {
+    result += convertLessThanThousand(Math.floor(intPart / 1000)) + ' Thousand '
+    intPart %= 1000
+  }
+  if (intPart > 0) {
+    result += convertLessThanThousand(intPart)
+  }
+  
+  result = result.trim() + ' Rupees'
+  if (decPart > 0) result += ' and ' + convertLessThanThousand(decPart) + ' Paise'
+  return result + ' Only'
+}
+
 export interface BillData {
   billNo: string
   customerName: string
@@ -954,8 +995,8 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
           <div class="gst-label">GSTIN No.: ${settings.gst || 'N/A'}</div>
         </div>
         <div class="amount-words">
-          <strong>Total GST:</strong> (In Words)<br/>
-          <strong>Bill Amount:</strong> (In Words)
+          <strong>Total GST:</strong> ${convertToWords(bill.tax)}<br/>
+          <strong>Bill Amount:</strong> ${convertToWords(bill.total)}
         </div>
         <div class="terms">
           <div class="terms-title">Terms & Condition:</div>
