@@ -44,6 +44,8 @@ export function generateClassicDesign(bill: BillData, settings: StoreSettings): 
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; padding: 40px; background: white; }
     .invoice { max-width: 800px; margin: 0 auto; border: 2px solid #333; padding: 30px; }
@@ -179,6 +181,8 @@ export function generateModernDesign(bill: BillData, settings: StoreSettings): s
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f5f5f5; }
     .invoice { max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
@@ -313,6 +317,8 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Georgia', serif; padding: 40px; background: #fafafa; }
     .invoice { max-width: 800px; margin: 0 auto; background: white; border: 1px solid #d4af37; }
@@ -858,6 +864,8 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
   <meta charset="UTF-8">
   <title>Tax Invoice - ${bill.billNo}</title>
   <style>
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; padding: 20px; background: white; }
     .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; }
