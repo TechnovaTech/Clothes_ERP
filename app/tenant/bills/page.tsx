@@ -727,30 +727,9 @@ Contact: ${storePhone}`
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={async () => {
-                              try {
-                                const response = await fetch('/api/bill-pdf-custom', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ billData: bill })
-                                })
-                                
-                                if (response.ok) {
-                                  const pdfBlob = await response.blob()
-                                  const url = URL.createObjectURL(pdfBlob)
-                                  const a = document.createElement('a')
-                                  a.href = url
-                                  a.download = `invoice-${bill.billNo}.pdf`
-                                  document.body.appendChild(a)
-                                  a.click()
-                                  document.body.removeChild(a)
-                                  setTimeout(() => URL.revokeObjectURL(url), 1000)
-                                } else {
-                                  showToast.error('Failed to generate bill')
-                                }
-                              } catch (error) {
-                                showToast.error('Error generating bill')
-                              }
+                            onClick={() => {
+                              const billId = (bill as any)._id || bill.id
+                              window.open(`/api/bill-pdf/${billId}`, '_blank')
                             }}
                           >
                             <Download className="w-4 h-4" />
@@ -1108,30 +1087,9 @@ Contact: ${storePhone}`
                 {/* Actions */}
                 <div className="flex space-x-2">
                   <Button 
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/bill-pdf-custom', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ billData: selectedBill })
-                        })
-                        
-                        if (response.ok) {
-                          const pdfBlob = await response.blob()
-                          const url = URL.createObjectURL(pdfBlob)
-                          const a = document.createElement('a')
-                          a.href = url
-                          a.download = `invoice-${selectedBill.billNo}.pdf`
-                          document.body.appendChild(a)
-                          a.click()
-                          document.body.removeChild(a)
-                          setTimeout(() => URL.revokeObjectURL(url), 1000)
-                        } else {
-                          showToast.error('Failed to generate bill')
-                        }
-                      } catch (error) {
-                        showToast.error('Error generating bill')
-                      }
+                    onClick={() => {
+                      const billId = (selectedBill as any)._id || selectedBill.id
+                      window.open(`/api/bill-pdf/${billId}`, '_blank')
                     }}
                     className="flex-1"
                   >
