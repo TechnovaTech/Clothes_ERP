@@ -1041,10 +1041,10 @@ Contact: ${storePhone}`
                         <div className="flex-1">
                           <div className="font-medium">{item.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
+                            Qty: {item.quantity} × ₹{(Number(item.price) || 0).toFixed(2)}
                           </div>
                         </div>
-                        <div className="font-medium">₹{(item.total || 0).toFixed(2)}</div>
+                        <div className="font-medium">₹{(Number(item.total) || 0).toFixed(2)}</div>
                       </div>
                     ))}
                   </div>
