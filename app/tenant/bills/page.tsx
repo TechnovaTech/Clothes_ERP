@@ -286,12 +286,12 @@ export default function BillsPage() {
 *Time:* ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
 
 *ITEMS PURCHASED:*
-${bill.items.map(item => `• ${item.name} x${item.quantity} = Rs${(item.total || 0).toFixed(2)}`).join('\n')}
+${bill.items.map(item => `• ${item.name} x${item.quantity} = Rs${(Number(item.total) || 0).toFixed(2)}`).join('\n')}
 
-*Subtotal:* Rs${(bill.subtotal || 0).toFixed(2)}
-*Discount:* Rs${(bill.discount || 0).toFixed(2)}
-*Tax:* Rs${(bill.tax || 0).toFixed(2)}
-*TOTAL AMOUNT: Rs${(bill.total || 0).toFixed(2)}*
+*Subtotal:* Rs${(Number(bill.subtotal) || 0).toFixed(2)}
+*Discount:* Rs${(Number(bill.discount) || 0).toFixed(2)}
+*Tax:* Rs${(Number(bill.tax) || 0).toFixed(2)}
+*TOTAL AMOUNT: Rs${(Number(bill.total) || 0).toFixed(2)}*
 *Payment Method:* ${bill.paymentMethod}
 
 *View Your Receipt:*
@@ -327,11 +327,11 @@ Contact: ${storePhone}`
         'Customer Phone': bill.customerPhone || '',
         'Date': new Date(bill.createdAt).toLocaleDateString('en-IN'),
         'Time': new Date(bill.createdAt).toLocaleTimeString('en-IN'),
-        'Items': bill.items.map(item => `${item.name} (Qty: ${item.quantity}, Price: ${item.price}, Total: ${item.total})`).join(' | '),
-        'Subtotal': bill.subtotal,
-        'Discount': bill.discountAmount,
-        'Tax': bill.tax,
-        'Total': bill.total,
+        'Items': bill.items.map(item => `${item.name} (Qty: ${item.quantity}, Price: ${Number(item.price) || 0}, Total: ${Number(item.total) || 0})`).join(' | '),
+        'Subtotal': Number(bill.subtotal) || 0,
+        'Discount': Number(bill.discountAmount) || 0,
+        'Tax': Number(bill.tax) || 0,
+        'Total': Number(bill.total) || 0,
         'Payment Method': bill.paymentMethod,
         'Cashier': bill.cashier,
         'Store Address': bill.address,
@@ -522,14 +522,14 @@ Contact: ${storePhone}`
       
       bill.items.forEach(item => {
         ctx.font = '12px Arial'
-        ctx.fillText(`${item.name} x${item.quantity} = ₹${(item.total || 0).toFixed(2)}`, 20, yPos)
+        ctx.fillText(`${item.name} x${item.quantity} = ₹${(Number(item.total) || 0).toFixed(2)}`, 20, yPos)
         yPos += 20
       })
       
       // Total
       yPos += 20
       ctx.font = 'bold 14px Arial'
-      ctx.fillText(`TOTAL AMOUNT: ₹${(bill.total || 0).toFixed(2)}`, 20, yPos)
+      ctx.fillText(`TOTAL AMOUNT: ₹${(Number(bill.total) || 0).toFixed(2)}`, 20, yPos)
       yPos += 20
       ctx.font = '12px Arial'
       ctx.fillText(`Payment: ${bill.paymentMethod}`, 20, yPos)
