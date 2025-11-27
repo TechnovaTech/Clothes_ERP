@@ -101,6 +101,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Custom bill PDF error:', error)
-    return NextResponse.json({ error: 'Failed to generate custom bill' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : ''
+    console.error('PDF Error details:', { message: errorMessage, stack: errorStack })
+    return NextResponse.json({ 
+      error: 'Failed to generate custom bill', 
+      details: errorMessage 
+    }, { status: 500 })
   }
 }

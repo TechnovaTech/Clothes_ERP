@@ -9,11 +9,17 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.tenantId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - No tenant ID' }, { status: 401 })
     }
+    
+    console.log('Processing sale for tenant:', session.user.tenantId)
 
     const body = await request.json()
     const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState } = body
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'No items provided' }, { status: 400 })
+    }
     
     console.log('=== SALE REQUEST START ===')
     console.log('Tenant ID:', session.user.tenantId)
@@ -295,7 +301,13 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     console.error('POS sales error:', error)
-    return NextResponse.json({ error: 'Failed to process sale' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : ''
+    console.error('Error details:', { message: errorMessage, stack: errorStack })
+    return NextResponse.json({ 
+      error: 'Failed to process sale', 
+      details: errorMessage 
+    }, { status: 500 })
   }
 }
 

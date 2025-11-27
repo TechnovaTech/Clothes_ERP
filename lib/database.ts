@@ -26,33 +26,50 @@ export async function connectDB(): Promise<Db> {
 }
 
 export async function connectTenantDB(tenantId: string, tenantName?: string): Promise<Db> {
-  if (!client) {
-    client = new MongoClient(uri)
-    await client.connect()
-  }
-  if (tenantDbs[tenantId]) {
-    return tenantDbs[tenantId]
-  }
-  let name = tenantName
-  if (!name) {
-    const mainDb = await connectDB()
-    let query: any
-    try {
-      query = { _id: new ObjectId(tenantId) }
-    } catch {
-      query = { _id: tenantId }
+  try {
+    if (!tenantId) {
+      throw new Error('Tenant ID is required')
     }
-    const tenantDoc = await mainDb.collection('tenants').findOne(query)
-    name = (tenantDoc as any)?.name || tenantId
+    
+    if (!client) {
+      client = new MongoClient(uri)
+      await client.connect()
+    }
+    
+    if (tenantDbs[tenantId]) {
+      return tenantDbs[tenantId]
+    }
+    
+    let name = tenantName
+    if (!name) {
+      const mainDb = await connectDB()
+      let query: any
+      try {
+        query = { _id: new ObjectId(tenantId) }
+      } catch {
+        query = { _id: tenantId }
+      }
+      const tenantDoc = await mainDb.collection('tenants').findOne(query)
+      if (!tenantDoc) {
+        throw new Error(`Tenant not found: ${tenantId}`)
+      }
+      name = (tenantDoc as any)?.name || tenantId
+    }
+    
+    let safe = String(name).toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+    if (!safe) {
+      safe = 'tenant'
+    }
+    
+    const tenantDbName = `${dbName}_tenant_${safe}_${tenantId}`
+    const tenantDb = client.db(tenantDbName)
+    tenantDbs[tenantId] = tenantDb
+    console.log('Connected to tenant DB:', tenantDbName)
+    return tenantDb
+  } catch (error) {
+    console.error('Tenant DB connection error:', error)
+    throw error
   }
-  let safe = String(name).toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
-  if (!safe) {
-    safe = 'tenant'
-  }
-  const tenantDbName = `${dbName}_tenant_${safe}_${tenantId}`
-  const tenantDb = client.db(tenantDbName)
-  tenantDbs[tenantId] = tenantDb
-  return tenantDb
 }
 
 export async function getTenantsCollection(): Promise<Collection> {
