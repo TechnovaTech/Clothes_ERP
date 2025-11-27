@@ -1032,7 +1032,31 @@ export default function POSPage() {
                     const billId = completedSale._id || completedSale.id
                     const pdfLink = `${window.location.origin}/api/bill-pdf/${billId}`
                     const phone = completedSale.customerPhone.replace(/[^\d]/g, '')
-                    const message = `Hi ${completedSale.customerName || 'Customer'},\n\nThank you for your purchase!\n\nBill No: ${completedSale.billNo}\nAmount: ₹${Number(completedSale.total || 0).toFixed(2)}\n\nView your bill: ${pdfLink}\n\n- ${settings.storeName}`
+                    const message = `*${settings.storeName || 'STORE'}*
+
+*Bill No:* ${completedSale.billNo}
+*Customer:* ${completedSale.customerName || 'Walk-in Customer'}
+*Date:* ${new Date(completedSale.createdAt).toLocaleDateString('en-IN')}
+*Time:* ${new Date(completedSale.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+
+*ITEMS PURCHASED:*
+${completedSale.items.map((item: any) => `• ${item.name} x${item.quantity} = Rs${(Number(item.total) || 0).toFixed(2)}`).join('\n')}
+
+*Subtotal:* Rs${(Number(completedSale.subtotal) || 0).toFixed(2)}
+*Discount:* Rs${(Number(completedSale.discountAmount) || 0).toFixed(2)}
+*Tax:* Rs${(Number(completedSale.tax) || 0).toFixed(2)}
+*TOTAL AMOUNT: Rs${(Number(completedSale.total) || 0).toFixed(2)}*
+*Payment Method:* ${completedSale.paymentMethod || 'cash'}
+
+*View Your Receipt:*
+${pdfLink}
+
+thanks for shopping
+
+come again
+
+${settings.address || ''}
+Contact: ${settings.phone || ''}`
                     
                     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
                     window.open(whatsappUrl, '_blank')
