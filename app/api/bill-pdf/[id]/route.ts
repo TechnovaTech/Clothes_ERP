@@ -11,6 +11,7 @@ export async function GET(
 ) {
   try {
     const billId = params.id
+    console.log('Bill PDF request for ID:', billId)
     
     if (!billId) {
       return new NextResponse('Bill ID required', { status: 400 })
@@ -18,12 +19,16 @@ export async function GET(
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.tenantId) {
+      console.error('No tenant ID in session')
       return new NextResponse('Unauthorized', { status: 401 })
     }
+    
+    console.log('Tenant ID:', session.user.tenantId)
 
     // Fetch the actual bill from database
     const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
     const bill = await salesCollection.findOne({ _id: new ObjectId(billId) })
+    console.log('Bill found:', !!bill)
     
     if (!bill) {
       return new NextResponse('Bill not found', { status: 404 })
@@ -81,6 +86,8 @@ export async function GET(
 
   } catch (error) {
     console.error('Error generating bill PDF:', error)
-    return new NextResponse('Error generating bill', { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error details:', errorMessage)
+    return new NextResponse(`Error: ${errorMessage}`, { status: 500 })
   }
 }
