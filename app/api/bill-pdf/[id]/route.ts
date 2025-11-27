@@ -41,20 +41,25 @@ export async function GET(
     // Get selected bill design from settings (default to 'classic')
     const billDesign = (settings as any).billDesign || 'classic'
 
-    // Prepare bill data
+    // Prepare bill data with safe defaults
     const billData: BillData = {
-      billNo: bill.billNo,
+      billNo: bill.billNo || 'N/A',
       customerName: bill.customerName || 'Walk-in Customer',
-      customerPhone: bill.customerPhone,
-      items: bill.items,
-      subtotal: bill.subtotal,
-      discountAmount: bill.discountAmount,
-      tax: bill.tax,
-      total: bill.total,
+      customerPhone: bill.customerPhone || '',
+      items: (bill.items || []).map((item: any) => ({
+        name: item.name || 'Item',
+        quantity: Number(item.quantity) || 0,
+        price: Number(item.price) || 0,
+        total: Number(item.total) || 0
+      })),
+      subtotal: Number(bill.subtotal) || 0,
+      discountAmount: Number(bill.discountAmount) || 0,
+      tax: Number(bill.tax) || 0,
+      total: Number(bill.total) || 0,
       paymentMethod: bill.paymentMethod || 'Cash',
-      cashier: bill.staffMember || 'Admin',
-      createdAt: bill.createdAt,
-      storeName: (settings as any).storeName || '',
+      cashier: bill.staffMember || bill.cashier || 'Admin',
+      createdAt: bill.createdAt || new Date().toISOString(),
+      storeName: (settings as any).storeName || 'Store',
       address: (settings as any).address || '',
       phone: (settings as any).phone || '',
       email: (settings as any).email || '',
