@@ -82,180 +82,25 @@ export interface StoreSettings {
 }
 
 export function generateClassicDesign(bill: BillData, settings: StoreSettings): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Invoice - ${bill.billNo}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 0; } .page-break { page-break-before: always; } }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; padding: 40px; background: white; }
-    .invoice { max-width: 800px; margin: 0 auto; border: 2px solid #333; padding: 30px; }
-    .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
-    .logo { max-width: 120px; max-height: 80px; margin-bottom: 10px; }
-    .company-name { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 5px; }
-    .company-details { font-size: 12px; color: #666; line-height: 1.6; }
-    .invoice-info { display: flex; justify-content: space-between; margin-bottom: 30px; }
-    .invoice-info div { flex: 1; }
-    .invoice-title { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 10px; }
-    .info-label { font-weight: bold; color: #333; }
-    .info-row { margin: 5px 0; }
-    .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .items-table th { background: #333; color: white; padding: 12px; text-align: left; font-weight: bold; }
-    .items-table td { padding: 10px; border-bottom: 1px solid #ddd; }
-    .items-table tr:last-child td { border-bottom: 2px solid #333; }
-    .totals { margin-top: 20px; text-align: right; }
-    .totals-row { display: flex; justify-content: flex-end; padding: 8px 0; }
-    .totals-label { width: 150px; font-weight: bold; text-align: right; padding-right: 20px; }
-    .totals-value { width: 120px; text-align: right; }
-    .grand-total { font-size: 20px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center; }
-    .signature { margin-top: 60px; text-align: right; }
-    .signature img { max-width: 150px; max-height: 60px; }
-    .terms { font-size: 10px; color: #666; margin-top: 20px; text-align: left; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; }
-    .payment-info { margin-top: 10px; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="invoice">
-    <div class="header">
-      ${settings.logo ? `<img src="${settings.logo}" alt="Logo" class="logo" />` : ''}
-      <div class="company-name">${settings.storeName}</div>
-      <div class="company-details">
-        ${settings.address}<br/>
-        Phone: ${settings.phone} | Email: ${settings.email}<br/>
-        GST No: ${settings.gst}
-      </div>
-    </div>
-    
-    <div class="invoice-info">
-      <div>
-        <div class="invoice-title">INVOICE</div>
-        <div class="info-row"><span class="info-label">Invoice No:</span> ${bill.billNo}</div>
-        <div class="info-row"><span class="info-label">Date:</span> ${new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
-        <div class="info-row"><span class="info-label">Time:</span> ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
-        <div class="info-row"><span class="info-label">Cashier:</span> ${bill.cashier}</div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-weight: bold; margin-bottom: 5px;">BILL TO:</div>
-        <div>${bill.customerName}</div>
-        ${bill.customerPhone ? `<div>${bill.customerPhone}</div>` : ''}
-        <div class="payment-info">Payment: ${bill.paymentMethod}</div>
-      </div>
-    </div>
-    
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th style="width: 50px;">Sr.</th>
-          <th>Item Description</th>
-          <th style="width: 80px; text-align: center;">Qty</th>
-          <th style="width: 100px; text-align: right;">Rate</th>
-          <th style="width: 120px; text-align: right;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${bill.items.map((item, index) => `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${item.name}</td>
-            <td style="text-align: center;">${item.quantity}</td>
-            <td style="text-align: right;">₹${item.price.toFixed(2)}</td>
-            <td style="text-align: right;">₹${item.total.toFixed(2)}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-    
-    <div class="totals">
-      <div class="totals-row">
-        <div class="totals-label">Subtotal:</div>
-        <div class="totals-value">₹${bill.subtotal.toFixed(2)}</div>
-      </div>
-      ${bill.discountAmount && bill.discountAmount > 0 ? `
-      <div class="totals-row">
-        <div class="totals-label">Discount:</div>
-        <div class="totals-value">-₹${bill.discountAmount.toFixed(2)}</div>
-      </div>
-      ` : ''}
-      ${bill.tax > 0 ? `
-      <div class="totals-row">
-        <div class="totals-label">Tax:</div>
-        <div class="totals-value">₹${bill.tax.toFixed(2)}</div>
-      </div>
-      ` : ''}
-      <div class="totals-row grand-total">
-        <div class="totals-label">TOTAL AMOUNT:</div>
-        <div class="totals-value">₹${bill.total.toFixed(2)}</div>
-      </div>
-    </div>
-    
-    ${settings.signature ? `
-    <div class="signature">
-      <div style="margin-bottom: 10px;">Authorized Signature</div>
-      <img src="${settings.signature}" alt="Signature" />
-    </div>
-    ` : ''}
-    
-    ${settings.terms || bill.terms ? `
-    <div class="terms">
-      <strong>Terms & Conditions:</strong><br/>
-      ${settings.terms || bill.terms}
-    </div>
-    ` : ''}
-    
-    <div class="footer">
-      <div style="font-weight: bold; font-size: 16px;">Thank You For Your Business!</div>
-      <div style="margin-top: 10px; font-size: 12px;">For any queries, please contact: ${settings.phone}</div>
-      <div style="margin-top: 10px; font-size: 11px;"><strong>Exchange Policy:</strong> Items can be exchanged within 7 days with receipt</div>
-    </div>
-  </div>
-</body>
-</html>
-  `
+  return generateClassicDesignFixed(bill, settings)
 }
 
 export function generateModernDesign(bill: BillData, settings: StoreSettings): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Invoice - ${bill.billNo}</title>
-  <style>
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f5f5f5; }
-    .invoice { max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; }
-    .logo { max-width: 100px; max-height: 60px; margin-bottom: 15px; }
-    .company-name { font-size: 32px; font-weight: 300; letter-spacing: 2px; margin-bottom: 10px; }
-    .company-details { font-size: 13px; opacity: 0.9; line-height: 1.8; }
-    .content { padding: 40px; }
-    .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
-    .meta-section h3 { font-size: 12px; text-transform: uppercase; color: #667eea; margin-bottom: 10px; letter-spacing: 1px; }
-    .meta-section p { font-size: 14px; color: #333; margin: 5px 0; }
-    .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-    .items-table th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 12px; text-transform: uppercase; color: #667eea; font-weight: 600; letter-spacing: 1px; }
-    .items-table td { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; }
-    .totals { margin-top: 30px; }
-    .totals-row { display: flex; justify-content: flex-end; padding: 10px 0; font-size: 15px; }
-    .totals-label { width: 150px; text-align: right; padding-right: 30px; color: #666; }
-    .totals-value { width: 120px; text-align: right; font-weight: 500; }
-    .grand-total { background: #667eea; color: white; padding: 15px 0; margin-top: 10px; border-radius: 8px; font-size: 18px; font-weight: 600; }
-    .footer { margin-top: 50px; padding: 30px; background: #f8f9fa; text-align: center; border-radius: 8px; }
-    .signature { text-align: right; margin-top: 40px; }
-    .signature img { max-width: 150px; max-height: 60px; }
-    .terms { font-size: 11px; color: #666; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #667eea; }
-    .payment-info { margin-top: 10px; font-weight: 600; color: #667eea; }
-  </style>
-</head>
-<body>
-  <div class="invoice">
+  const ITEMS_PER_PAGE = 15
+  const totalItems = bill.items.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  
+  let pagesHTML = ''
+  
+  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+    const startIdx = pageNum * ITEMS_PER_PAGE
+    const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems)
+    const pageItems = bill.items.slice(startIdx, endIdx)
+    const isLastPage = pageNum === totalPages - 1
+    const emptyRows = ITEMS_PER_PAGE - pageItems.length
+    
+    pagesHTML += `
+  <div class="invoice${pageNum > 0 ? ' page-break' : ''}">
     <div class="header">
       ${settings.logo ? `<img src="${settings.logo}" alt="Logo" class="logo" />` : ''}
       <div class="company-name">${settings.storeName}</div>
@@ -287,24 +132,42 @@ export function generateModernDesign(bill: BillData, settings: StoreSettings): s
           <tr>
             <th style="width: 50px;">#</th>
             <th>Description</th>
+            <th style="width: 80px;">HSN</th>
             <th style="width: 80px; text-align: center;">Qty</th>
             <th style="width: 100px; text-align: right;">Rate</th>
+            <th style="width: 70px; text-align: center;">GST %</th>
             <th style="width: 120px; text-align: right;">Amount</th>
           </tr>
         </thead>
         <tbody>
-          ${bill.items.map((item, index) => `
+          ${pageItems.map((item, index) => {
+            const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
+            return `
             <tr>
-              <td>${index + 1}</td>
+              <td>${startIdx + index + 1}</td>
               <td>${item.name}</td>
+              <td style="text-align: center;">${item.hsn || '-'}</td>
               <td style="text-align: center;">${item.quantity}</td>
               <td style="text-align: right;">₹${item.price.toFixed(2)}</td>
+              <td style="text-align: center;">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>
               <td style="text-align: right;">₹${item.total.toFixed(2)}</td>
             </tr>
-          `).join('')}
+          `}).join('')}
+          ${isLastPage ? Array(emptyRows).fill(0).map(() => `
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+          `).join('') : ''}
         </tbody>
       </table>
       
+      ${isLastPage ? `
       <div class="totals">
         <div class="totals-row">
           <div class="totals-label">Subtotal</div>
@@ -348,13 +211,16 @@ export function generateModernDesign(bill: BillData, settings: StoreSettings): s
       <div style="font-size: 13px; color: #666;">For support: ${settings.phone} | ${settings.email}</div>
       <div style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Exchange Policy:</strong> Items can be exchanged within 7 days with receipt</div>
     </div>
+      ` : `
+      <div style="text-align: right; padding: 15px; border-top: 2px solid #667eea; font-size: 11px; font-style: italic; color: #667eea;">
+        Continued on next page...
+      </div>
+    </div>
+      `}
   </div>
-</body>
-</html>
-  `
-}
-
-export function generateElegantDesign(bill: BillData, settings: StoreSettings): string {
+    `
+  }
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -362,39 +228,57 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
   <meta charset="UTF-8">
   <title>Invoice - ${bill.billNo}</title>
   <style>
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 0; background: white; } .page-break { page-break-before: always; } }
+    @page { size: A4; margin: 20px; }
+    @media print { body { margin: 0; padding: 20px; background: white; } .page-break { page-break-before: always; margin-top: 20px; } .invoice { margin-bottom: 0; page-break-inside: avoid; } .invoice:last-child { page-break-after: avoid; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Georgia', serif; padding: 40px; background: #fafafa; }
-    .invoice { max-width: 800px; margin: 0 auto; background: white; border: 1px solid #d4af37; }
-    .header { background: #1a1a1a; color: #d4af37; padding: 40px; text-align: center; border-bottom: 3px solid #d4af37; }
-    .logo { max-width: 120px; max-height: 80px; margin-bottom: 15px; }
-    .company-name { font-size: 36px; font-weight: normal; letter-spacing: 3px; margin-bottom: 10px; }
-    .company-details { font-size: 13px; color: #ccc; line-height: 1.8; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f5f5f5; }
+    .invoice { max-width: 900px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; }
+    .logo { max-width: 100px; max-height: 60px; margin-bottom: 15px; }
+    .company-name { font-size: 32px; font-weight: 300; letter-spacing: 2px; margin-bottom: 10px; }
+    .company-details { font-size: 13px; opacity: 0.9; line-height: 1.8; }
     .content { padding: 40px; }
-    .invoice-header { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #d4af37; }
-    .invoice-title { font-size: 28px; color: #1a1a1a; font-weight: normal; letter-spacing: 2px; }
-    .invoice-details { text-align: right; }
-    .detail-row { margin: 8px 0; font-size: 14px; }
-    .detail-label { color: #666; margin-right: 10px; }
+    .invoice-meta { display: flex; justify-content: space-between; margin-bottom: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+    .meta-section h3 { font-size: 12px; text-transform: uppercase; color: #667eea; margin-bottom: 10px; letter-spacing: 1px; }
+    .meta-section p { font-size: 14px; color: #333; margin: 5px 0; }
     .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-    .items-table th { background: #1a1a1a; color: #d4af37; padding: 15px; text-align: left; font-weight: normal; letter-spacing: 1px; }
-    .items-table td { padding: 15px; border-bottom: 1px solid #eee; }
-    .items-table tbody tr:hover { background: #f9f9f9; }
-    .totals { margin-top: 40px; border-top: 2px solid #d4af37; padding-top: 20px; }
-    .totals-row { display: flex; justify-content: flex-end; padding: 12px 0; font-size: 16px; }
-    .totals-label { width: 180px; text-align: right; padding-right: 40px; color: #666; }
-    .totals-value { width: 140px; text-align: right; }
-    .grand-total { background: #1a1a1a; color: #d4af37; padding: 20px; margin-top: 15px; font-size: 20px; font-weight: bold; letter-spacing: 1px; }
-    .footer { margin-top: 60px; padding: 30px; background: #1a1a1a; color: #d4af37; text-align: center; }
-    .signature { text-align: right; margin: 50px 0; }
-    .signature img { max-width: 150px; max-height: 60px; border-top: 2px solid #d4af37; padding-top: 10px; }
-    .terms { font-size: 11px; color: #666; margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 3px solid #d4af37; }
-    .payment-info { margin-top: 10px; font-weight: bold; color: #d4af37; }
+    .items-table th { background: #f8f9fa; padding: 15px; text-align: left; font-size: 12px; text-transform: uppercase; color: #667eea; font-weight: 600; letter-spacing: 1px; }
+    .items-table td { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+    .totals { margin-top: 30px; }
+    .totals-row { display: flex; justify-content: flex-end; padding: 10px 0; font-size: 15px; }
+    .totals-label { width: 150px; text-align: right; padding-right: 30px; color: #666; }
+    .totals-value { width: 120px; text-align: right; font-weight: 500; }
+    .grand-total { background: #667eea; color: white; padding: 15px 0; margin-top: 10px; border-radius: 8px; font-size: 18px; font-weight: 600; }
+    .footer { margin-top: 50px; padding: 30px; background: #f8f9fa; text-align: center; border-radius: 8px; }
+    .signature { text-align: right; margin-top: 40px; }
+    .signature img { max-width: 150px; max-height: 60px; }
+    .terms { font-size: 11px; color: #666; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #667eea; }
+    .payment-info { margin-top: 10px; font-weight: 600; color: #667eea; }
   </style>
 </head>
 <body>
-  <div class="invoice">
+  ${pagesHTML}
+</body>
+</html>
+  `
+}
+
+export function generateElegantDesign(bill: BillData, settings: StoreSettings): string {
+  const ITEMS_PER_PAGE = 15
+  const totalItems = bill.items.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  
+  let pagesHTML = ''
+  
+  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+    const startIdx = pageNum * ITEMS_PER_PAGE
+    const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems)
+    const pageItems = bill.items.slice(startIdx, endIdx)
+    const isLastPage = pageNum === totalPages - 1
+    const emptyRows = ITEMS_PER_PAGE - pageItems.length
+    
+    pagesHTML += `
+  <div class="invoice${pageNum > 0 ? ' page-break' : ''}">
     <div class="header">
       ${settings.logo ? `<img src="${settings.logo}" alt="Logo" class="logo" />` : ''}
       <div class="company-name">${settings.storeName}</div>
@@ -429,24 +313,42 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
           <tr>
             <th style="width: 50px;">No.</th>
             <th>Item Description</th>
+            <th style="width: 80px;">HSN</th>
             <th style="width: 80px; text-align: center;">Quantity</th>
             <th style="width: 100px; text-align: right;">Rate</th>
+            <th style="width: 70px; text-align: center;">GST %</th>
             <th style="width: 120px; text-align: right;">Amount</th>
           </tr>
         </thead>
         <tbody>
-          ${bill.items.map((item, index) => `
+          ${pageItems.map((item, index) => {
+            const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
+            return `
             <tr>
-              <td>${index + 1}</td>
+              <td>${startIdx + index + 1}</td>
               <td>${item.name}</td>
+              <td style="text-align: center;">${item.hsn || '-'}</td>
               <td style="text-align: center;">${item.quantity}</td>
               <td style="text-align: right;">₹${item.price.toFixed(2)}</td>
+              <td style="text-align: center;">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>
               <td style="text-align: right;">₹${item.total.toFixed(2)}</td>
             </tr>
-          `).join('')}
+          `}).join('')}
+          ${isLastPage ? Array(emptyRows).fill(0).map(() => `
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+          `).join('') : ''}
         </tbody>
       </table>
       
+      ${isLastPage ? `
       <div class="totals">
         <div class="totals-row">
           <div class="totals-label">Subtotal:</div>
@@ -490,7 +392,56 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
       <div style="font-size: 12px; opacity: 0.8;">Contact: ${settings.phone} | ${settings.email}</div>
       <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;"><strong>Exchange Policy:</strong> Items can be exchanged within 7 days with receipt</div>
     </div>
+      ` : `
+      <div style="text-align: right; padding: 15px; border-top: 2px solid #d4af37; font-size: 11px; font-style: italic; color: #d4af37;">
+        Continued on next page...
+      </div>
+    </div>
+      `}
   </div>
+    `
+  }
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice - ${bill.billNo}</title>
+  <style>
+    @page { size: A4; margin: 20px; }
+    @media print { body { margin: 0; padding: 20px; background: white; } .page-break { page-break-before: always; margin-top: 20px; } .invoice { margin-bottom: 0; page-break-inside: avoid; } .invoice:last-child { page-break-after: avoid; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Georgia', serif; padding: 20px; background: #fafafa; }
+    .invoice { max-width: 900px; margin: 0 auto; background: white; border: 1px solid #d4af37; margin-bottom: 20px; }
+    .header { background: #1a1a1a; color: #d4af37; padding: 40px; text-align: center; border-bottom: 3px solid #d4af37; }
+    .logo { max-width: 120px; max-height: 80px; margin-bottom: 15px; }
+    .company-name { font-size: 36px; font-weight: normal; letter-spacing: 3px; margin-bottom: 10px; }
+    .company-details { font-size: 13px; color: #ccc; line-height: 1.8; }
+    .content { padding: 40px; }
+    .invoice-header { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #d4af37; }
+    .invoice-title { font-size: 28px; color: #1a1a1a; font-weight: normal; letter-spacing: 2px; }
+    .invoice-details { text-align: right; }
+    .detail-row { margin: 8px 0; font-size: 14px; }
+    .detail-label { color: #666; margin-right: 10px; }
+    .items-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+    .items-table th { background: #1a1a1a; color: #d4af37; padding: 15px; text-align: left; font-weight: normal; letter-spacing: 1px; }
+    .items-table td { padding: 15px; border-bottom: 1px solid #eee; }
+    .items-table tbody tr:hover { background: #f9f9f9; }
+    .totals { margin-top: 40px; border-top: 2px solid #d4af37; padding-top: 20px; }
+    .totals-row { display: flex; justify-content: flex-end; padding: 12px 0; font-size: 16px; }
+    .totals-label { width: 180px; text-align: right; padding-right: 40px; color: #666; }
+    .totals-value { width: 140px; text-align: right; }
+    .grand-total { background: #1a1a1a; color: #d4af37; padding: 20px; margin-top: 15px; font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+    .footer { margin-top: 60px; padding: 30px; background: #1a1a1a; color: #d4af37; text-align: center; }
+    .signature { text-align: right; margin: 50px 0; }
+    .signature img { max-width: 150px; max-height: 60px; border-top: 2px solid #d4af37; padding-top: 10px; }
+    .terms { font-size: 11px; color: #666; margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 3px solid #d4af37; }
+    .payment-info { margin-top: 10px; font-weight: bold; color: #d4af37; }
+  </style>
+</head>
+<body>
+  ${pagesHTML}
 </body>
 </html>
   `
@@ -1132,4 +1083,266 @@ export function generateBillHTML(design: string, bill: BillData, settings: Store
     default:
       return generateClassicDesign(bill, settings)
   }
+}
+// Classic design - fixed
+export function generateClassicDesignFixed(bill: any, settings: any): string {
+  const ITEMS_PER_PAGE = 18
+  const totalItems = bill.items.length
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
+  
+  let pagesHTML = ''
+  
+  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+    const startIdx = pageNum * ITEMS_PER_PAGE
+    const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems)
+    const pageItems = bill.items.slice(startIdx, endIdx)
+    const isLastPage = pageNum === totalPages - 1
+    
+    pagesHTML += `
+  <div class="invoice${pageNum > 0 ? ' page-break' : ''}">
+    <div class="header">
+      ${settings.logo ? `<img src="${settings.logo}" alt="Logo" class="logo" />` : ''}
+      <div class="company-name">${settings.storeName}</div>
+      <div class="company-details">
+        ${settings.address}<br/>
+        Phone: ${settings.phone} | Email: ${settings.email}<br/>
+        GST No: ${settings.gst}
+      </div>
+    </div>
+    
+    <div class="invoice-info">
+      <div>
+        <div class="invoice-title">INVOICE</div>
+        <div class="info-row"><span class="info-label">Invoice No:</span> ${bill.billNo}</div>
+        <div class="info-row"><span class="info-label">Date:</span> ${new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+        <div class="info-row"><span class="info-label">Time:</span> ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+        <div class="info-row"><span class="info-label">Cashier:</span> ${bill.cashier}</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: bold; margin-bottom: 5px;">BILL TO:</div>
+        <div>${bill.customerName}</div>
+        ${bill.customerPhone ? `<div>${bill.customerPhone}</div>` : ''}
+        <div class="payment-info">Payment: ${bill.paymentMethod}</div>
+      </div>
+    </div>
+    
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Sr.</th>
+          <th>Item Description</th>
+          <th style="width: 80px;">HSN</th>
+          <th style="width: 80px; text-align: center;">Qty</th>
+          <th style="width: 100px; text-align: right;">Rate</th>
+          <th style="width: 70px; text-align: center;">GST %</th>
+          <th style="width: 120px; text-align: right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pageItems.map((item: any, index: number) => {
+          const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
+          return `
+          <tr>
+            <td>${startIdx + index + 1}</td>
+            <td>${item.name}</td>
+            <td style="text-align: center;">${item.hsn || '-'}</td>
+            <td style="text-align: center;">${item.quantity}</td>
+            <td style="text-align: right;">₹${item.price.toFixed(2)}</td>
+            <td style="text-align: center;">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>
+            <td style="text-align: right;">₹${item.total.toFixed(2)}</td>
+          </tr>
+        `}).join('')}
+      </tbody>
+    </table>
+    
+    ${isLastPage ? `
+    <div class="totals">
+      <div class="totals-row">
+        <div class="totals-label">Subtotal:</div>
+        <div class="totals-value">₹${bill.subtotal.toFixed(2)}</div>
+      </div>
+      ${bill.discountAmount && bill.discountAmount > 0 ? `
+      <div class="totals-row">
+        <div class="totals-label">Discount:</div>
+        <div class="totals-value">-₹${bill.discountAmount.toFixed(2)}</div>
+      </div>
+      ` : ''}
+      ${bill.tax > 0 ? `
+      <div class="totals-row">
+        <div class="totals-label">Tax:</div>
+        <div class="totals-value">₹${bill.tax.toFixed(2)}</div>
+      </div>
+      ` : ''}
+      <div class="totals-row grand-total">
+        <div class="totals-label">TOTAL AMOUNT:</div>
+        <div class="totals-value">₹${bill.total.toFixed(2)}</div>
+      </div>
+    </div>
+    
+    ${settings.signature ? `
+    <div class="signature">
+      <div style="margin-bottom: 10px;">Authorized Signature</div>
+      <img src="${settings.signature}" alt="Signature" />
+    </div>
+    ` : ''}
+    
+    ${settings.terms || bill.terms ? `
+    <div class="terms">
+      <strong>Terms & Conditions:</strong><br/>
+      ${settings.terms || bill.terms}
+    </div>
+    ` : ''}
+    
+    <div class="footer">
+      <div style="font-weight: bold; font-size: 14px;">Thank You For Your Business!</div>
+      <div style="margin-top: 8px; font-size: 11px;">For any queries, please contact: ${settings.phone}</div>
+      <div style="margin-top: 8px; font-size: 10px;"><strong>Exchange Policy:</strong> Items can be exchanged within 7 days with receipt</div>
+    </div>
+    ` : `
+    <div style="text-align: right; padding: 10px; border-top: 2px solid #333; font-size: 11px; font-style: italic;">
+      Continued on next page... (Page ${pageNum + 1}/${totalPages})
+    </div>
+    `}
+  </div>
+    `
+  }
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice - ${bill.billNo}</title>
+  <style>
+    @page { size: A4; margin: 20px; }
+    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; margin-top: 20px; } .invoice { margin-bottom: 0; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: white; }
+    .invoice { max-width: 900px; margin: 0 auto; border: 2px solid #333; padding: 20px; margin-bottom: 20px; }
+    .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+    .logo { max-width: 120px; max-height: 80px; margin-bottom: 10px; }
+    .company-name { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 5px; }
+    .company-details { font-size: 10px; color: #666; line-height: 1.4; }
+    .invoice-info { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .invoice-info div { flex: 1; }
+    .invoice-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+    .info-label { font-weight: bold; color: #333; }
+    .info-row { margin: 3px 0; font-size: 11px; }
+    .items-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    .items-table th { background: #333; color: white; padding: 6px; text-align: left; font-weight: bold; font-size: 10px; }
+    .items-table td { padding: 6px; border-bottom: 1px solid #ddd; font-size: 10px; }
+    .items-table tr:last-child td { border-bottom: 2px solid #333; }
+    .totals { margin-top: 10px; text-align: right; }
+    .totals-row { display: flex; justify-content: flex-end; padding: 5px 0; font-size: 12px; }
+    .totals-label { width: 150px; font-weight: bold; text-align: right; padding-right: 20px; }
+    .totals-value { width: 120px; text-align: right; }
+    .grand-total { font-size: 16px; font-weight: bold; border-top: 2px solid #333; padding-top: 8px; margin-top: 8px; }
+    .footer { margin-top: 15px; padding-top: 10px; border-top: 2px solid #333; text-align: center; font-size: 11px; }
+    .signature { margin-top: 30px; text-align: right; }
+    .signature img { max-width: 150px; max-height: 60px; }
+    .terms { font-size: 10px; color: #666; margin-top: 20px; text-align: left; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; }
+    .payment-info { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="invoice">
+    <div class="header">
+      ${settings.logo ? `<img src="${settings.logo}" alt="Logo" class="logo" />` : ''}
+      <div class="company-name">${settings.storeName}</div>
+      <div class="company-details">
+        ${settings.address}<br/>
+        Phone: ${settings.phone} | Email: ${settings.email}<br/>
+        GST No: ${settings.gst}
+      </div>
+    </div>
+    
+    <div class="invoice-info">
+      <div>
+        <div class="invoice-title">INVOICE</div>
+        <div class="info-row"><span class="info-label">Invoice No:</span> ${bill.billNo}</div>
+        <div class="info-row"><span class="info-label">Date:</span> ${new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+        <div class="info-row"><span class="info-label">Time:</span> ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+        <div class="info-row"><span class="info-label">Cashier:</span> ${bill.cashier}</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: bold; margin-bottom: 5px;">BILL TO:</div>
+        <div>${bill.customerName}</div>
+        ${bill.customerPhone ? `<div>${bill.customerPhone}</div>` : ''}
+        <div class="payment-info">Payment: ${bill.paymentMethod}</div>
+      </div>
+    </div>
+    
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Sr.</th>
+          <th>Item Description</th>
+          <th style="width: 80px;">HSN</th>
+          <th style="width: 80px; text-align: center;">Qty</th>
+          <th style="width: 100px; text-align: right;">Rate</th>
+          <th style="width: 70px; text-align: center;">GST %</th>
+          <th style="width: 120px; text-align: right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bill.items.map((item: any, index: number) => {
+          const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
+          return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${item.name}</td>
+            <td style="text-align: center;">${item.hsn || '-'}</td>
+            <td style="text-align: center;">${item.quantity}</td>
+            <td style="text-align: right;">₹${item.price.toFixed(2)}</td>
+            <td style="text-align: center;">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>
+            <td style="text-align: right;">₹${item.total.toFixed(2)}</td>
+          </tr>
+        `}).join('')}
+      </tbody>
+    </table>
+    
+    <div class="totals">
+      <div class="totals-row">
+        <div class="totals-label">Subtotal:</div>
+        <div class="totals-value">₹${bill.subtotal.toFixed(2)}</div>
+      </div>
+      ${bill.discountAmount && bill.discountAmount > 0 ? `
+      <div class="totals-row">
+        <div class="totals-label">Discount:</div>
+        <div class="totals-value">-₹${bill.discountAmount.toFixed(2)}</div>
+      </div>
+      ` : ''}
+      ${bill.tax > 0 ? `
+      <div class="totals-row">
+        <div class="totals-label">Tax:</div>
+        <div class="totals-value">₹${bill.tax.toFixed(2)}</div>
+      </div>
+      ` : ''}
+      <div class="totals-row grand-total">
+        <div class="totals-label">TOTAL AMOUNT:</div>
+        <div class="totals-value">₹${bill.total.toFixed(2)}</div>
+      </div>
+    </div>
+    
+    ${settings.signature ? `
+    <div class="signature">
+      <div style="margin-bottom: 10px;">Authorized Signature</div>
+      <img src="${settings.signature}" alt="Signature" />
+    </div>
+    ` : ''}
+    
+    ${settings.terms || bill.terms ? `
+    <div class="terms">
+      <strong>Terms & Conditions:</strong><br/>
+      ${settings.terms || bill.terms}
+    </div>
+    ` : ''}
+    
+  </style>
+</head>
+<body>
+  ${pagesHTML}
+</body>
+</html>
+  `
 }
