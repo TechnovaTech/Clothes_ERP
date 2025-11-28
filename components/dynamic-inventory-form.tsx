@@ -178,14 +178,15 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
         const options = dropdownData[fieldKey] || dropdownData[field.name.toLowerCase()] || field.options || []
         return (
           <Select 
-            value={fieldValue} 
+            value={fieldValue || undefined} 
             onValueChange={(value) => updateFormData(field.name, value)}
+            required={field.required}
           >
             <SelectTrigger>
               <SelectValue placeholder={`Select ${field.name}`} />
             </SelectTrigger>
             <SelectContent>
-              {options.map((option) => (
+              {options.filter(opt => opt && opt.trim()).map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>

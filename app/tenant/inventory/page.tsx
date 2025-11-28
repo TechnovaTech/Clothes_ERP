@@ -812,22 +812,24 @@ export default function InventoryPage() {
                       <DialogTitle className="text-xl font-semibold">{language === 'en' ? 'Add New Product' : language === 'gu' ? 'નવું પ્રોડક્ટ ઉમેરો' : 'नया उत्पाद जोड़ें'}</DialogTitle>
                       <DialogDescription className="text-sm text-muted-foreground">{t('enterProductDetails')}</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto px-1 py-4">
-                      <div className="space-y-6">
-                        <div className="p-4 rounded-lg border">
-                          <h3 className="text-sm font-medium mb-3">{t('productInformation')}</h3>
-                          <DynamicInventoryForm formData={formData} setFormData={(data) => setFormData(prev => ({...prev, ...data}))} />
+                    <form onSubmit={(e) => { e.preventDefault(); createItem(); }} className="flex flex-col flex-1">
+                      <div className="flex-1 overflow-y-auto px-1 py-4">
+                        <div className="space-y-6">
+                          <div className="p-4 rounded-lg border">
+                            <h3 className="text-sm font-medium mb-3">{t('productInformation')}</h3>
+                            <DynamicInventoryForm formData={formData} setFormData={(data) => setFormData(prev => ({...prev, ...data}))} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex-shrink-0 flex justify-end space-x-3 pt-4 border-t bg-white">
-                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="px-6">
-                        {t('cancel')}
-                      </Button>
-                      <Button onClick={createItem} className="px-6 bg-black hover:bg-gray-800">
-                        {t('addProduct')}
-                      </Button>
-                    </div>
+                      <div className="flex-shrink-0 flex justify-end space-x-3 pt-4 border-t bg-white">
+                        <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)} className="px-6">
+                          {t('cancel')}
+                        </Button>
+                        <Button type="submit" className="px-6 bg-black hover:bg-gray-800">
+                          {t('addProduct')}
+                        </Button>
+                      </div>
+                    </form>
                   </DialogContent>
                 </Dialog>
 
@@ -837,24 +839,26 @@ export default function InventoryPage() {
                       <DialogTitle className="text-xl font-semibold">{language === 'en' ? 'Edit Product' : language === 'gu' ? 'પ્રોડક્ટ એડિટ કરો' : 'उत्पाद संपादित करें'}</DialogTitle>
                       <DialogDescription className="text-sm text-muted-foreground">{t('updateProductDetails')}</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto px-1 py-4">
-                      <div className="space-y-6">
-                        <div className="p-4 rounded-lg border">
-                          <h3 className="text-sm font-medium mb-3">{t('productInformation')}</h3>
-                          <DynamicInventoryForm formData={formData} setFormData={(data) => setFormData(prev => ({...prev, ...data}))} />
+                    <form onSubmit={(e) => { e.preventDefault(); updateItem(); }} className="flex flex-col flex-1">
+                      <div className="flex-1 overflow-y-auto px-1 py-4">
+                        <div className="space-y-6">
+                          <div className="p-4 rounded-lg border">
+                            <h3 className="text-sm font-medium mb-3">{t('productInformation')}</h3>
+                            <DynamicInventoryForm formData={formData} setFormData={(data) => setFormData(prev => ({...prev, ...data}))} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex-shrink-0 flex justify-end space-x-3 pt-4 border-t bg-white">
-                      <Button variant="outline" onClick={() => {
-                        setIsEditDialogOpen(false)
-                      }} className="px-6">
-                        {t('cancel')}
-                      </Button>
-                      <Button onClick={updateItem} className="px-6 bg-black hover:bg-gray-800">
-                        {t('updateProduct')}
-                      </Button>
-                    </div>
+                      <div className="flex-shrink-0 flex justify-end space-x-3 pt-4 border-t bg-white">
+                        <Button type="button" variant="outline" onClick={() => {
+                          setIsEditDialogOpen(false)
+                        }} className="px-6">
+                          {t('cancel')}
+                        </Button>
+                        <Button type="submit" className="px-6 bg-black hover:bg-gray-800">
+                          {t('updateProduct')}
+                        </Button>
+                      </div>
+                    </form>
                   </DialogContent>
                 </Dialog>
 
