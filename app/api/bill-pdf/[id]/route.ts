@@ -50,7 +50,8 @@ export async function GET(
         name: item.name || 'Item',
         quantity: Number(item.quantity) || 0,
         price: Number(item.price) || 0,
-        total: Number(item.total) || 0
+        total: Number(item.total) || 0,
+        gstRate: item.gstRate !== undefined ? Number(item.gstRate) : undefined
       })),
       subtotal: Number(bill.subtotal) || 0,
       discountAmount: Number(bill.discountAmount) || 0,
@@ -64,7 +65,9 @@ export async function GET(
       phone: (settings as any).phone || '',
       email: (settings as any).email || '',
       gst: (settings as any).gst || '',
-      terms: (settings as any).terms || ''
+      terms: (settings as any).terms || '',
+      taxRate: Number(bill.taxRate) || Number((settings as any).taxRate) || 0,
+      includeTax: bill.includeTax !== false
     }
 
     // Prepare store settings

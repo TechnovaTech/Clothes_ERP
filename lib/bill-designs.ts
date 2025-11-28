@@ -50,6 +50,7 @@ export interface BillData {
     quantity: number
     price: number
     total: number
+    gstRate?: number
   }>
   subtotal: number
   discountAmount?: number
@@ -64,6 +65,8 @@ export interface BillData {
   email: string
   gst: string
   terms?: string
+  taxRate?: number
+  includeTax?: boolean
 }
 
 export interface StoreSettings {
@@ -963,17 +966,19 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
         </tr>
       </thead>
       <tbody>
-        ${pageItems.map((item, index) => `
+        ${pageItems.map((item, index) => {
+          const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
+          return `
           <tr>
             <td class="sr-no">${startIdx + index + 1}</td>
             <td class="product-name">${item.name}</td>
             <td class="hsn">-</td>
             <td class="qty">${item.quantity.toFixed(3)}</td>
             <td class="rate">${item.price.toFixed(2)}</td>
-            <td class="gst">18.00</td>
+            <td class="gst">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>
             <td class="amount">${item.total.toFixed(2)}</td>
           </tr>
-        `).join('')}
+        `}).join('')}
         ${isLastPage ? Array(emptyRows).fill(0).map(() => `
           <tr>
             <td class="sr-no">&nbsp;</td>
@@ -1021,7 +1026,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
           </div>
           ${bill.tax > 0 ? `
           <div class="total-row">
-            <span>Integrated Tax 18.00%</span>
+            <span>Integrated Tax ${(bill.taxRate || 0).toFixed(2)}%</span>
             <span>${bill.tax.toFixed(2)}</span>
           </div>
           ` : ''}
