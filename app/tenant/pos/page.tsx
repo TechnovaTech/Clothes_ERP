@@ -685,9 +685,9 @@ export default function POSPage() {
                           <div className="mt-2 flex items-center space-x-2">
                             <Label className="text-xs">GST</Label>
                             <Select
-                              value={item.gstRate != null ? String(item.gstRate) : 'inherit'}
+                              value={item.gstRate !== undefined ? String(item.gstRate) : 'inherit'}
                               onValueChange={(val) => {
-                                setCart(cart.map(ci => ci.id === item.id ? { ...ci, gstRate: (val === 'inherit' ? undefined : Number(val)) } : ci))
+                                setCart([...cart.map(ci => ci.id === item.id ? { ...ci, gstRate: (val === 'inherit' ? undefined : Number(val)) } : ci)])
                               }}
                             >
                               <SelectTrigger className="h-7 w-28 text-xs" />
@@ -695,9 +695,9 @@ export default function POSPage() {
                                 <SelectItem value="inherit">Inherit</SelectItem>
                                 <SelectItem value="0">0%</SelectItem>
                                 <SelectItem value="5">5%</SelectItem>
-                                <SelectItem value="9">9%</SelectItem>
                                 <SelectItem value="12">12%</SelectItem>
                                 <SelectItem value="18">18%</SelectItem>
+                                <SelectItem value="28">28%</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
