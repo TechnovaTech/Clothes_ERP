@@ -84,8 +84,27 @@ export default function CustomersPage() {
     activeFields: 0,
     requiredFields: 0
   })
+  const [customerPurchaseHistory, setCustomerPurchaseHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [selectedBill, setSelectedBill] = useState<any>(null)
+  const [isBillDialogOpen, setIsBillDialogOpen] = useState(false)
+  const [isEditBillDialogOpen, setIsEditBillDialogOpen] = useState(false)
+  const [billEditData, setBillEditData] = useState<any>({})
+  const [availableProducts, setAvailableProducts] = useState<any[]>([])
 
   const { storeName, tenantId } = useStore()
+
+  const fetchAvailableProducts = async () => {
+    try {
+      const response = await fetch('/api/inventory')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableProducts(data.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error)
+    }
+  }
 
   const fetchCustomerFields = async () => {
     try {
@@ -143,10 +162,29 @@ export default function CustomersPage() {
     }
   }
 
+  const fetchCustomerPurchaseHistory = async (customerId: string) => {
+    setLoadingHistory(true)
+    try {
+      const response = await fetch(`/api/customers/${customerId}/purchase-history`)
+      if (response.ok) {
+        const data = await response.json()
+        setCustomerPurchaseHistory(data)
+      } else {
+        setCustomerPurchaseHistory([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch purchase history:', error)
+      setCustomerPurchaseHistory([])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   useEffect(() => {
     const initData = async () => {
       await fetchCustomerFields()
       await fetchCustomers(1)
+      await fetchAvailableProducts()
     }
     initData()
   }, [])
@@ -483,6 +521,7 @@ export default function CustomersPage() {
                                 size="sm"
                                 onClick={() => {
                                   setSelectedCustomer(customer)
+                                  fetchCustomerPurchaseHistory(customer.id)
                                   setIsViewDialogOpen(true)
                                 }}
                               >
@@ -572,7 +611,7 @@ export default function CustomersPage() {
           </Card>
 
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t('customerDetails')}</DialogTitle>
                 <DialogDescription>{t('viewCustomerInfo')}</DialogDescription>
@@ -597,9 +636,63 @@ export default function CustomersPage() {
                         })}
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className="space-y-2">
+                        <div className="text-sm">
+                          <span className="font-medium">{t('totalOrders')}:</span> {selectedCustomer.orderCount || 0}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">{t('totalSpent')}:</span> ₹{(selectedCustomer.totalSpent || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     <span className="font-medium">{t('customerSince')}:</span> {formatDateToDDMMYYYY(selectedCustomer.createdAt)}
+                  </div>
+                  
+                  {/* Purchase History Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">{t('purchaseHistory')}</h3>
+                    {loadingHistory ? (
+                      <div className="text-center py-8">
+                        <div className="text-sm text-muted-foreground">{t('loading')}</div>
+                      </div>
+                    ) : customerPurchaseHistory.length === 0 ? (
+                      <div className="text-center py-8">
+                        <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-sm text-muted-foreground">{t('noPurchasesYet')}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {customerPurchaseHistory.map((sale, index) => (
+                          <div key={sale.id || index} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <button 
+                                  className="font-medium text-blue-600 hover:text-blue-800 underline"
+                                  onClick={() => {
+                                    setSelectedBill(sale)
+                                    setIsBillDialogOpen(true)
+                                  }}
+                                >
+                                  {t('billNo')}: {sale.billNo}
+                                </button>
+                                <div className="text-sm text-muted-foreground">
+                                  {formatDateToDDMMYYYY(sale.createdAt)} • {sale.paymentMethod || 'Cash'}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold">₹{(sale.total || 0).toFixed(2)}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {sale.items?.length || 0} {t('items')}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -789,6 +882,417 @@ export default function CustomersPage() {
                 }}>
                   {t('clearAllCustomers')}
                 </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bill Details Dialog */}
+          <Dialog open={isBillDialogOpen} onOpenChange={setIsBillDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">{t('billDetails')}</DialogTitle>
+                <DialogDescription>Bill #{selectedBill?.billNo}</DialogDescription>
+              </DialogHeader>
+              {selectedBill && (
+                <div className="space-y-6 py-4">
+                  {/* Bill Header */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Bill Number</p>
+                        <p className="text-lg font-bold text-blue-600">#{selectedBill.billNo}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Date & Time</p>
+                        <p className="font-semibold">{formatDateToDDMMYYYY(selectedBill.createdAt)}</p>
+                        <p className="text-sm text-gray-500">{new Date(selectedBill.createdAt).toLocaleTimeString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Payment Method</p>
+                        <Badge variant="outline" className="mt-1">{selectedBill.paymentMethod || 'Cash'}</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer Information */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 text-gray-800">Customer Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Name</p>
+                        <p className="font-medium">{selectedBill.customerName || 'Walk-in Customer'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Phone</p>
+                        <p className="font-medium">{selectedBill.customerPhone || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Items Table */}
+                  <div>
+                    <h4 className="font-semibold mb-3 text-gray-800">Items Purchased</h4>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold">Item Name</TableHead>
+                            <TableHead className="text-center font-semibold">Qty</TableHead>
+                            <TableHead className="text-right font-semibold">Price</TableHead>
+                            <TableHead className="text-right font-semibold">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedBill.items?.map((item: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{item.name}</TableCell>
+                              <TableCell className="text-center">{item.quantity}</TableCell>
+                              <TableCell className="text-right">₹{(Number(item.price) || 0).toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-medium">₹{(Number(item.total) || 0).toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Bill Summary */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 text-gray-800">Bill Summary</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span className="font-medium">₹{(selectedBill.items?.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0) || 0).toFixed(2)}</span>
+                      </div>
+                      {(selectedBill.discount || 0) > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Discount:</span>
+                          <span className="font-medium">-₹{(selectedBill.discount || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+                      {(selectedBill.tax || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>Tax:</span>
+                          <span className="font-medium">₹{(selectedBill.tax || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total Amount:</span>
+                          <span className="text-blue-600">₹{(selectedBill.total || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
+                    <Button variant="outline" onClick={() => setIsBillDialogOpen(false)}>
+                      {t('close')}
+                    </Button>
+                    <Button onClick={() => {
+                      setBillEditData({
+                        customerName: selectedBill.customerName || '',
+                        customerPhone: selectedBill.customerPhone || '',
+                        items: selectedBill.items || [],
+                        discount: selectedBill.discount || 0,
+                        tax: selectedBill.tax || 0,
+                        paymentMethod: selectedBill.paymentMethod || 'Cash',
+                        total: selectedBill.total || 0
+                      })
+                      setIsBillDialogOpen(false)
+                      setIsEditBillDialogOpen(true)
+                    }}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      {t('editBill')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Bill Dialog */}
+          <Dialog open={isEditBillDialogOpen} onOpenChange={setIsEditBillDialogOpen}>
+            <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">{t('editBill')}</DialogTitle>
+                <DialogDescription>Edit Bill #{selectedBill?.billNo}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                {/* Customer Information */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-3">Customer Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Customer Name</Label>
+                      <Input 
+                        value={billEditData.customerName || ''}
+                        onChange={(e) => setBillEditData(prev => ({...prev, customerName: e.target.value}))}
+                        placeholder="Enter customer name"
+                      />
+                    </div>
+                    <div>
+                      <Label>Phone Number</Label>
+                      <Input 
+                        value={billEditData.customerPhone || ''}
+                        onChange={(e) => setBillEditData(prev => ({...prev, customerPhone: e.target.value}))}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label>Payment Method</Label>
+                      <select 
+                        className="w-full p-2 border rounded-md"
+                        value={billEditData.paymentMethod || 'Cash'}
+                        onChange={(e) => setBillEditData(prev => ({...prev, paymentMethod: e.target.value}))}
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Items Section */}
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-semibold">Items</h4>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        const newItems = [...(billEditData.items || []), { name: '', quantity: 1, price: 0, total: 0, productId: '' }]
+                        setBillEditData(prev => ({...prev, items: newItems}))
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead>Item Name</TableHead>
+                          <TableHead className="w-24">Quantity</TableHead>
+                          <TableHead className="w-32">Price (₹)</TableHead>
+                          <TableHead className="w-32">Total (₹)</TableHead>
+                          <TableHead className="w-16">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {billEditData.items?.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <select 
+                                className="w-full p-2 border rounded-md mb-1"
+                                value={item.productId || ''}
+                                onChange={(e) => {
+                                  const selectedProduct = availableProducts.find(p => p.id === e.target.value)
+                                  if (selectedProduct) {
+                                    const newItems = [...(billEditData.items || [])]
+                                    const qty = newItems[index].quantity || 1
+                                    newItems[index] = {
+                                      ...newItems[index], 
+                                      productId: selectedProduct.id,
+                                      name: selectedProduct.name,
+                                      price: Number(selectedProduct.price) || 0,
+                                      total: qty * (Number(selectedProduct.price) || 0)
+                                    }
+                                    setBillEditData(prev => ({...prev, items: newItems}))
+                                  }
+                                }}
+                              >
+                                <option value="">Select Product</option>
+                                {availableProducts.map(product => (
+                                  <option key={product.id} value={product.id}>
+                                    {product.name} - ₹{(Number(product.price) || 0).toFixed(2)}
+                                  </option>
+                                ))}
+                              </select>
+                              <Input 
+                                value={item.name || ''}
+                                onChange={(e) => {
+                                  const newItems = [...(billEditData.items || [])]
+                                  newItems[index] = {...newItems[index], name: e.target.value}
+                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                }}
+                                placeholder="Or enter custom item name"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                type="number"
+                                min="1"
+                                value={item.quantity || 1}
+                                onChange={(e) => {
+                                  const newItems = [...(billEditData.items || [])]
+                                  const qty = Number(e.target.value) || 1
+                                  const total = qty * (newItems[index].price || 0)
+                                  newItems[index] = {...newItems[index], quantity: qty, total: total}
+                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.price || 0}
+                                onChange={(e) => {
+                                  const newItems = [...(billEditData.items || [])]
+                                  const price = Number(e.target.value) || 0
+                                  const total = (newItems[index].quantity || 1) * price
+                                  newItems[index] = {...newItems[index], price: price, total: total}
+                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">₹{(Number(item.total) || 0).toFixed(2)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => {
+                                  const newItems = billEditData.items?.filter((_: any, i: number) => i !== index)
+                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* Bill Calculations */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-3">Bill Calculations</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Discount (₹)</Label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={billEditData.discount || 0}
+                        onChange={(e) => setBillEditData(prev => ({...prev, discount: Number(e.target.value) || 0}))}
+                        placeholder="Enter discount amount"
+                      />
+                    </div>
+                    <div>
+                      <Label>Tax (₹)</Label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={billEditData.tax || 0}
+                        onChange={(e) => setBillEditData(prev => ({...prev, tax: Number(e.target.value) || 0}))}
+                        placeholder="Enter tax amount"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Bill Summary */}
+                  <div className="mt-4 p-4 bg-white rounded border">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span className="font-medium">₹{(billEditData.items?.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0) || 0).toFixed(2)}</span>
+                      </div>
+                      {(billEditData.discount || 0) > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Discount:</span>
+                          <span className="font-medium">-₹{(billEditData.discount || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+                      {(billEditData.tax || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>Tax:</span>
+                          <span className="font-medium">₹{(billEditData.tax || 0).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Final Total:</span>
+                          <span className="text-blue-600">₹{(
+                            (billEditData.items?.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0) || 0) - 
+                            (billEditData.discount || 0) + 
+                            (billEditData.tax || 0)
+                          ).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setIsEditBillDialogOpen(false)}>
+                    {t('cancel')}
+                  </Button>
+                  <Button onClick={async () => {
+                    try {
+                      const finalTotal = (billEditData.items?.reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0) || 0) - (billEditData.discount || 0) + (billEditData.tax || 0)
+                      
+                      const response = await fetch(`/api/pos/sales/${selectedBill.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          customerName: billEditData.customerName,
+                          customerPhone: billEditData.customerPhone,
+                          paymentMethod: billEditData.paymentMethod,
+                          items: billEditData.items,
+                          discount: billEditData.discount || 0,
+                          tax: billEditData.tax || 0,
+                          total: finalTotal
+                        })
+                      })
+                      
+                      if (response.ok) {
+                        showToast.success('✅ Bill updated successfully!')
+                        setIsEditBillDialogOpen(false)
+                        fetchCustomerPurchaseHistory(selectedCustomer?.id || '')
+                        fetchCustomers(currentPage)
+                        // Update selectedCustomer total spent immediately
+                        if (selectedCustomer) {
+                          const totalDifference = finalTotal - (selectedBill?.total || 0)
+                          setSelectedCustomer(prev => prev ? {
+                            ...prev,
+                            totalSpent: (prev.totalSpent || 0) + totalDifference
+                          } : null)
+                        }
+                        // Update the selected bill for immediate view
+                        setSelectedBill(prev => prev ? {
+                          ...prev,
+                          customerName: billEditData.customerName,
+                          customerPhone: billEditData.customerPhone,
+                          paymentMethod: billEditData.paymentMethod,
+                          items: billEditData.items,
+                          discount: billEditData.discount || 0,
+                          tax: billEditData.tax || 0,
+                          total: finalTotal
+                        } : null)
+                      } else {
+                        const errorData = await response.json()
+                        showToast.error(`❌ Failed to update bill: ${errorData.error || 'Unknown error'}`)
+                      }
+                    } catch (error) {
+                      console.error('Error updating bill:', error)
+                      showToast.error('❌ Error updating bill')
+                    }
+                  }}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Update Bill
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

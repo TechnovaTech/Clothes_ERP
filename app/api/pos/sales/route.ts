@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
           { _id: existingCustomer._id },
           { 
             $inc: { 
-              totalSpent: parseFloat(total) || 0,
+              totalSpent: Number(total) || 0,
               orderCount: 1
             },
             $set: { 
@@ -283,7 +283,7 @@ export async function POST(request: NextRequest) {
           name: customerName,
           phone: customerPhone || null,
           orderCount: 1,
-          totalSpent: parseFloat(total) || 0,
+          totalSpent: Number(total) || 0,
           lastOrderDate: new Date(),
           tenantId: session.user.tenantId,
           createdAt: new Date(),

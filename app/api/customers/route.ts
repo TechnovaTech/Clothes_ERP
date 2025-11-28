@@ -18,14 +18,35 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
     const total = await customersCollection.countDocuments({})
     console.log(`Fetching customers: Total=${total}, Page=${page}, Limit=${limit}`)
     const customers = await customersCollection.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray()
     console.log(`Found ${customers.length} customers`)
     
-    const formattedCustomers = customers.map(customer => ({
-      ...customer,
-      id: customer._id.toString()
+    // Recalculate totalSpent from actual sales
+    const formattedCustomers = await Promise.all(customers.map(async (customer) => {
+      const query: any = { $or: [] }
+      if (customer.name) query.$or.push({ customerName: customer.name })
+      if (customer.phone) {
+        const phones = String(customer.phone).split(',').map((p: string) => p.trim())
+        phones.forEach((phone: string) => query.$or.push({ customerPhone: phone }))
+      }
+      
+      let actualTotal = 0
+      let actualCount = 0
+      if (query.$or.length > 0) {
+        const sales = await salesCollection.find(query).toArray()
+        actualTotal = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0)
+        actualCount = sales.length
+      }
+      
+      return {
+        ...customer,
+        id: customer._id.toString(),
+        totalSpent: actualTotal,
+        orderCount: actualCount
+      }
     }))
     
     return NextResponse.json({
@@ -84,8 +105,8 @@ export async function POST(request: NextRequest) {
     // Create new customer with dynamic fields
     const customer = {
       ...body, // Include all dynamic fields
-      orderCount: body.orderCount || 0,
-      totalSpent: 0,
+      orderCount: Number(body.orderCount) || 0,
+      totalSpent: Number(body.totalSpent) || 0,
       lastOrderDate: body.orderCount > 0 ? new Date() : null,
       tenantId: session.user.tenantId,
       createdAt: new Date(),
