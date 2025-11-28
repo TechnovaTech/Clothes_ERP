@@ -407,7 +407,15 @@ export default function POSPage() {
   const taxRatePercent = Number(gstRateOverride ? (billGstRate === '' ? settings.taxRate : billGstRate) : settings.taxRate) || 0
   const cessRatePercent = Number(settings.cessRate) || 0
   const discountAmount = (subtotal * discountPercent) / 100
-  const tax = includeTax ? (subtotal - discountAmount) * (taxRatePercent / 100) : 0
+  
+  // Calculate tax per item based on individual GST rates
+  const tax = includeTax ? cart.reduce((sum, item) => {
+    const itemGstRate = item.gstRate !== undefined ? item.gstRate : taxRatePercent
+    const itemSubtotal = Number(item.total) || 0
+    const itemDiscount = (itemSubtotal * discountPercent) / 100
+    return sum + ((itemSubtotal - itemDiscount) * (itemGstRate / 100))
+  }, 0) : 0
+  
   const cess = includeCess ? (subtotal - discountAmount) * (cessRatePercent / 100) : 0
   const total = subtotal - discountAmount + tax + cess
 
