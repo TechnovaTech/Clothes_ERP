@@ -682,11 +682,20 @@ export default function CustomersPage() {
                                   {formatDateToDDMMYYYY(sale.createdAt)} • {sale.paymentMethod || 'Cash'}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <div className="font-bold">₹{(sale.total || 0).toFixed(2)}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {sale.items?.length || 0} {t('items')}
+                              <div className="text-right flex items-center gap-3">
+                                <div>
+                                  <div className="font-bold">₹{(sale.total || 0).toFixed(2)}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {sale.items?.length || 0} {t('items')}
+                                  </div>
                                 </div>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => window.open(`/api/bill-pdf/${sale.id}`, '_blank')}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -988,6 +997,10 @@ export default function CustomersPage() {
                   <div className="flex justify-end space-x-2 pt-4 border-t">
                     <Button variant="outline" onClick={() => setIsBillDialogOpen(false)}>
                       {t('close')}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open(`/api/bill-pdf/${selectedBill.id}`, '_blank')}>
+                      <Download className="w-4 h-4 mr-2" />
+                      {t('download')}
                     </Button>
                     <Button onClick={() => {
                       setBillEditData({
