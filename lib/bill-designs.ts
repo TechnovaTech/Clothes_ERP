@@ -51,6 +51,7 @@ export interface BillData {
     price: number
     total: number
     gstRate?: number
+    hsn?: string
   }>
   subtotal: number
   discountAmount?: number
@@ -972,7 +973,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
           <tr>
             <td class="sr-no">${startIdx + index + 1}</td>
             <td class="product-name">${item.name}</td>
-            <td class="hsn">-</td>
+            <td class="hsn">${item.hsn || '-'}</td>
             <td class="qty">${item.quantity.toFixed(3)}</td>
             <td class="rate">${item.price.toFixed(2)}</td>
             <td class="gst">${bill.includeTax !== false ? itemGstRate.toFixed(2) : '0.00'}</td>

@@ -63,6 +63,7 @@ interface CartItem {
   quantity: number
   total: number
   gstRate?: number
+  hsn?: string
 }
 
 
@@ -334,6 +335,7 @@ export default function POSPage() {
           price: displayPrice,
           quantity: 1,
           total: displayPrice,
+          hsn: (product as any).hsn || (product as any).HSN || undefined
         },
       ])
     }
@@ -933,7 +935,8 @@ export default function POSPage() {
                                 price: item.price,
                                 quantity: item.quantity,
                                 total: item.total,
-                                gstRate: item.gstRate
+                                gstRate: item.gstRate,
+                                hsn: item.hsn
                               })),
                               customerName,
                               customerPhone,

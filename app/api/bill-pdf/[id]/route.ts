@@ -51,7 +51,8 @@ export async function GET(
         quantity: Number(item.quantity) || 0,
         price: Number(item.price) || 0,
         total: Number(item.total) || 0,
-        gstRate: item.gstRate !== undefined ? Number(item.gstRate) : undefined
+        gstRate: item.gstRate !== undefined ? Number(item.gstRate) : undefined,
+        hsn: item.hsn || undefined
       })),
       subtotal: Number(bill.subtotal) || 0,
       discountAmount: Number(bill.discountAmount) || 0,
