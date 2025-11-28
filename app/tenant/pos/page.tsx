@@ -692,7 +692,9 @@ export default function POSPage() {
                                 setCart([...cart.map(ci => ci.id === item.id ? { ...ci, gstRate: (val === 'inherit' ? undefined : Number(val)) } : ci)])
                               }}
                             >
-                              <SelectTrigger className="h-7 w-28 text-xs" />
+                              <SelectTrigger className="h-7 w-28 text-xs">
+                                <SelectValue placeholder="Select GST" />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="inherit">Inherit</SelectItem>
                                 <SelectItem value="0">0%</SelectItem>
