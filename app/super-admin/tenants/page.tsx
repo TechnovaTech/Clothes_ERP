@@ -87,14 +87,18 @@ function AssignPlanButton({ tenant, plans, onSuccess }: any) {
                 <SelectValue placeholder="Choose a plan..." />
               </SelectTrigger>
               <SelectContent className="max-h-60">
-                {plans.map((plan: any) => (
-                  <SelectItem key={plan._id || plan.id} value={plan._id || plan.id || ''}>
-                    <div className="flex items-center justify-between w-full">
-                      <span className="font-medium">{plan.name}</span>
-                      <span className="text-sm text-muted-foreground ml-4">₹{plan.price}/year</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {plans.map((plan: any) => {
+                  const planId = plan._id || plan.id
+                  if (!planId) return null
+                  return (
+                    <SelectItem key={planId} value={planId}>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-medium">{plan.name}</span>
+                        <span className="text-sm text-muted-foreground ml-4">₹{plan.price}/year</span>
+                      </div>
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -654,7 +658,7 @@ export default function TenantsPage() {
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           <SelectItem value="none">No Template</SelectItem>
-                          {businessTypes.map((type) => (
+                          {businessTypes.filter(type => type.id).map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
                             </SelectItem>
@@ -693,7 +697,7 @@ export default function TenantsPage() {
                             }
                           }}
                         />
-                        <Select value="" onValueChange={(value) => {
+                        <Select value={undefined} onValueChange={(value) => {
                           setFormData({ ...formData, referralCode: value })
                           validateReferralCode(value)
                         }}>
@@ -701,7 +705,7 @@ export default function TenantsPage() {
                             <SelectValue placeholder="Select Code" />
                           </SelectTrigger>
                           <SelectContent className="max-h-60">
-                            {availableReferralCodes.map((ref) => (
+                            {availableReferralCodes.filter(ref => ref.code).map((ref) => (
                               <SelectItem key={ref.code} value={ref.code}>
                                 {ref.name} ({ref.code})
                               </SelectItem>
@@ -797,7 +801,7 @@ export default function TenantsPage() {
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           <SelectItem value="none">No Template</SelectItem>
-                          {businessTypes.map((type) => (
+                          {businessTypes.filter(type => type.id).map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
                             </SelectItem>
@@ -849,7 +853,7 @@ export default function TenantsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Plans</SelectItem>
-                  {plans.map((plan) => (
+                  {plans.filter(plan => plan.name).map((plan) => (
                     <SelectItem key={plan._id || plan.id} value={plan.name.toLowerCase()}>
                       {plan.name}
                     </SelectItem>

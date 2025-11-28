@@ -101,8 +101,9 @@ export default function BusinessTypesPage() {
 
   const resetForm = () => {
     // Auto-add core fields when creating new business type
-    const coreFields = [
+    const coreFields: Field[] = [
       { name: 'name', type: 'text', required: true },
+      { name: 'hsn', type: 'text', required: false },
       { name: 'costPrice', type: 'number', required: true },
       { name: 'price', type: 'number', required: true },
       { name: 'stock', type: 'number', required: true },
