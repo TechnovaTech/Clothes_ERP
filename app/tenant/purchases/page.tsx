@@ -286,8 +286,8 @@ export default function PurchasesPage() {
         if (i === index) {
           const updatedItem = { ...item, [field]: value }
           // Always recalculate total when quantity or unitPrice changes
-          const qty = field === 'quantity' ? (parseFloat(value) || 0) : (parseFloat(item.quantity) || 0)
-          const price = field === 'unitPrice' ? (parseFloat(value) || 0) : (parseFloat(item.unitPrice) || 0)
+          const qty = field === 'quantity' ? (parseFloat(String(value)) || 0) : (parseFloat(String(item.quantity)) || 0)
+          const price = field === 'unitPrice' ? (parseFloat(String(value)) || 0) : (parseFloat(String(item.unitPrice)) || 0)
           updatedItem.total = qty * price
           return updatedItem
         }
@@ -944,11 +944,11 @@ export default function PurchasesPage() {
                 <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium text-muted-foreground mb-2">{t('noPurchaseOrdersFound')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {purchases.length === 0 ? t('startByCreatingFirstPurchaseOrder') : t('tryAdjustingSearchOrFilters')}
+                  {purchases.length === 0 ? t('startByCreatingFirstPurchaseOrder') : t('tryAdjustingSearchFilters')}
                 </p>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  {t('createFirstPurchaseOrder')}
+                  {t('newPurchaseOrder')}
                 </Button>
               </div>
             ) : (
@@ -1071,7 +1071,7 @@ export default function PurchasesPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                  {t('showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('to')} {Math.min(currentPage * itemsPerPage, totalItems)} {t('of')} {totalItems} purchases
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} purchases
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
