@@ -26,6 +26,12 @@ class _POSScreenState extends State<POSScreen> {
   String customerPhone = '';
   String customerAddress = '';
   String customerGst = '';
+  List<dynamic> customers = [];
+  bool customersLoading = false;
+  final TextEditingController customerNameController = TextEditingController();
+  final TextEditingController customerPhoneController = TextEditingController();
+  final TextEditingController customerAddressController = TextEditingController();
+  final TextEditingController customerGstController = TextEditingController();
   int step = 0;
 
   num asNum(dynamic v) {
@@ -66,6 +72,7 @@ class _POSScreenState extends State<POSScreen> {
     loadProducts();
     loadEmployees();
     loadSettings();
+    loadCustomers();
   }
 
   Future<void> loadProducts() async {
@@ -120,6 +127,37 @@ class _POSScreenState extends State<POSScreen> {
     } catch (_) {}
     if (!mounted) return;
     setState(() {});
+  }
+
+  Future<void> loadCustomers() async {
+    customersLoading = true;
+    try {
+      customers = await widget.client.getCustomersAll(limit: 1000);
+    } catch (_) {
+      customers = [];
+    }
+    customersLoading = false;
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  String _pickField(Map<String, dynamic> c, List<String> keys) {
+    for (final k in keys) {
+      final v = c[k];
+      if (v == null) continue;
+      final s = v.toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    // case-insensitive scan
+    for (final entry in c.entries) {
+      final key = entry.key.toString().toLowerCase();
+      final val = entry.value?.toString().trim() ?? '';
+      if (val.isEmpty) continue;
+      for (final k in keys) {
+        if (key == k.toLowerCase()) return val;
+      }
+    }
+    return '';
   }
 
   void addToCart(Map<String, dynamic> p) {
@@ -437,24 +475,80 @@ class _POSScreenState extends State<POSScreen> {
                 decoration: const InputDecoration(labelText: 'Staff', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Customer Name', border: OutlineInputBorder()),
-                onChanged: (v) { customerName = v; },
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: customerNameController,
+                    decoration: const InputDecoration(labelText: 'Customer Name', border: OutlineInputBorder()),
+                    onChanged: (v) { setState(() { customerName = v; }); },
+                  ),
+                  const SizedBox(height: 6),
+                  Builder(builder: (context) {
+                    final q = customerName.trim().toLowerCase();
+                    if (q.isEmpty) return const SizedBox.shrink();
+                    final matches = customers.where((raw) {
+                      final c = raw as Map<String, dynamic>;
+                      final name = (c['name'] ?? '').toString().toLowerCase();
+                      final phone = (c['phone'] ?? '').toString().toLowerCase();
+                      return name.contains(q) || phone.contains(q);
+                    }).take(5).toList();
+                    if (matches.isEmpty) return const SizedBox.shrink();
+                    return Card(
+                      margin: const EdgeInsets.only(top: 4),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: matches.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          final c = matches[i] as Map<String, dynamic>;
+                          final name = (c['name'] ?? '').toString();
+                          final phone = (c['phone'] ?? '').toString();
+                          final spent = (c['totalSpent'] ?? 0).toString();
+                          final orders = (c['orderCount'] ?? 0).toString();
+                          return ListTile(
+                            title: Text(name),
+                            subtitle: Text(phone.isNotEmpty ? '$phone • Orders $orders' : 'Orders $orders'),
+                            trailing: Text('₹ $spent'),
+                            onTap: () {
+                              customerName = name;
+                              customerPhone = phone.split(',').map((p) => p.trim()).firstWhere((p) => p.isNotEmpty, orElse: () => '');
+                              final address = _pickField(c, ['address', 'Address', 'addr', 'address1']);
+                              final gst = _pickField(c, ['gst', 'GST', 'gstNo', 'gstno', 'gst_number', 'gstNumber', 'GST No']);
+                              customerAddress = address;
+                              customerGst = gst;
+                              customerNameController.text = name;
+                              customerPhoneController.text = customerPhone;
+                              customerAddressController.text = customerAddress;
+                              customerGstController.text = customerGst;
+                              FocusScope.of(context).unfocus();
+                              setState(() {});
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                ],
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: customerPhoneController,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
                 onChanged: (v) { customerPhone = v; },
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: customerAddressController,
                 decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
                 maxLines: 2,
                 onChanged: (v) { customerAddress = v; },
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: customerGstController,
                 decoration: const InputDecoration(labelText: 'GST No.', border: OutlineInputBorder()),
                 onChanged: (v) { customerGst = v; },
               ),

@@ -103,6 +103,16 @@ class ApiClient {
     return (m['data'] as List).cast<dynamic>();
   }
 
+  Future<List<dynamic>> getCustomersAll({int limit = 1000}) async {
+    final r = await dio.get('/api/customers', queryParameters: {'limit': limit});
+    if (r.data is Map<String, dynamic>) {
+      final m = (r.data as Map<String, dynamic>);
+      final list = (m['data'] as List?);
+      if (list != null) return list.cast<dynamic>();
+    }
+    return [];
+  }
+
   Future<List<dynamic>> getCustomerPurchaseHistory(String customerId) async {
     final r = await dio.get('/api/customers/$customerId/purchase-history');
     if (r.data is List) {
