@@ -20,5 +20,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 flutter:
   uses-material-design: true
+  assets:
+    - android/app/src/logo.png
+
+flutter_icons:
+  android: true
+  ios: false
+  image_path: android/app/src/logo.png
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: android/app/src/logo.png
+  android: true
+  ios: false

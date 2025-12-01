@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const FlutterLogo(size: 72),
+                    _buildLogo(),
                     const SizedBox(height: 12),
                     const Text('Retailians', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 16),
@@ -138,6 +138,27 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: Image.asset(
+          'android/app/src/logo.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stack) {
+            return Container(
+              color: Colors.red,
+              alignment: Alignment.center,
+              child: const Text('R', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700)),
+            );
+          },
         ),
       ),
     );

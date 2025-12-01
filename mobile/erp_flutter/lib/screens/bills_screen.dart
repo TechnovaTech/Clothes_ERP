@@ -126,14 +126,7 @@ class _BillsScreenState extends State<BillsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer phone missing')));
       return;
     }
-    final id = bill['_id'] ?? bill['id'];
-    final t = (widget.auth?.tenantId as String?) ?? '';
-    final q = t.isNotEmpty ? '?tenantId=$t' : '';
-    final format = (settings['billFormat'] ?? 'professional').toString();
-    final base = format == 'simple'
-        ? '${widget.client.baseUrl}/api/receipt-simple/$id'
-        : '${widget.client.baseUrl}/api/receipt/$id';
-    final pdfLink = Uri.parse('$base$q').toString();
+    final url = await resolveBillUrl(bill);
     final storeName = (settings['storeName'] ?? 'STORE').toString();
     final msg = '*$storeName*\n\n'
         '*Bill No:* ${bill['billNo'] ?? ''}\n'
@@ -141,7 +134,7 @@ class _BillsScreenState extends State<BillsScreen> {
         '*Date:* ${bill['createdAt'] ?? ''}\n\n'
         '*TOTAL:* Rs${(bill['total'] ?? 0).toString()}\n'
         '*Payment:* ${bill['paymentMethod'] ?? 'cash'}\n\n'
-        'View Receipt: $pdfLink';
+        'Download Bill (PDF): ${url.toString()}';
     final wa = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(msg)}');
     await launchUrl(wa, mode: LaunchMode.externalApplication);
   }

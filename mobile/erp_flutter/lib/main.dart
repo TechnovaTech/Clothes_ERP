@@ -13,6 +13,7 @@ class ERPApp extends StatelessWidget {
     return MaterialApp(
       title: 'ERP',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
+      debugShowCheckedModeBanner: false,
       home: const LoginScreen(),
     );
   }
