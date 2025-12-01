@@ -103,6 +103,14 @@ class ApiClient {
     return (m['data'] as List).cast<dynamic>();
   }
 
+  Future<List<dynamic>> getCustomerPurchaseHistory(String customerId) async {
+    final r = await dio.get('/api/customers/$customerId/purchase-history');
+    if (r.data is List) {
+      return (r.data as List).cast<dynamic>();
+    }
+    return [];
+  }
+
   Future<Map<String, dynamic>> getPurchases({int page = 1, int limit = 20}) async {
     final r = await dio.get('/api/purchases', queryParameters: {'page': page, 'limit': limit});
     return (r.data as Map<String, dynamic>);
@@ -122,6 +130,14 @@ class ApiClient {
   Future<List<dynamic>> getAnalytics({required String type, int days = 30}) async {
     final r = await dio.get('/api/analytics', queryParameters: {'type': type, 'days': days});
     return (r.data as List).cast<dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30}) async {
+    final r = await dio.get('/api/analytics/summary', queryParameters: {'days': days});
+    if (r.data is Map<String, dynamic>) {
+      return (r.data as Map<String, dynamic>);
+    }
+    return {};
   }
 
   Future<Map<String, dynamic>> getSettings() async {

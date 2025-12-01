@@ -5,6 +5,7 @@ import 'package:erp_flutter/api_client.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class BillsScreen extends StatefulWidget {
   final ApiClient client;
@@ -22,6 +23,8 @@ class _BillsScreenState extends State<BillsScreen> {
   int totalPages = 1;
   bool loading = false;
   String? error;
+  final TextEditingController searchController = TextEditingController();
+  String searchTerm = '';
 
   @override
   void initState() {
@@ -147,68 +150,147 @@ class _BillsScreenState extends State<BillsScreen> {
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (error != null) return Center(child: Text(error!));
-    return CustomScrollView(
-      slivers: [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) {
-              final b = bills[i] as Map<String, dynamic>;
-              final title = 'Bill ${b['billNo'] ?? ''} • ₹ ${(b['total'] ?? 0).toString()}';
-              final subtitle = '${b['customerName'] ?? 'Walk-in Customer'}';
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: ListTile(
-                  title: Text(title),
-                  subtitle: Text(subtitle),
-                  trailing: SizedBox(
-                    height: 36,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.picture_as_pdf),
-                          onPressed: () => openPdf(b),
-                          iconSize: 20,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.send),
-                          onPressed: () => sendWhatsApp(b),
-                          iconSize: 20,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-            childCount: bills.length,
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: SafeArea(
-            top: false,
+    final theme = Theme.of(context);
+    final filtered = bills.where((raw) {
+      final b = raw as Map<String, dynamic>;
+      final billNo = (b['billNo'] ?? '').toString().toLowerCase();
+      final customer = (b['customerName'] ?? '').toString().toLowerCase();
+      final payment = (b['paymentMethod'] ?? '').toString().toLowerCase();
+      final q = searchTerm.toLowerCase().trim();
+      if (q.isEmpty) return true;
+      return billNo.contains(q) || customer.contains(q) || payment.contains(q);
+    }).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Page $page/$totalPages'),
-                  Row(children: [
-                    IconButton(onPressed: page > 1 ? () => load(page: page - 1) : null, icon: const Icon(Icons.chevron_left)),
-                    IconButton(onPressed: page < totalPages ? () => load(page: page + 1) : null, icon: const Icon(Icons.chevron_right)),
-                  ])
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: TextField(
+                controller: searchController,
+                onChanged: (v) => setState(() { searchTerm = v; }),
+                decoration: const InputDecoration(
+                  hintText: 'Search bills...',
+                  prefixIcon: Icon(Icons.search),
+                  border: InputBorder.none,
+                ),
               ),
             ),
           ),
         ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: filtered.length,
+            itemBuilder: (context, i) {
+              final b = filtered[i] as Map<String, dynamic>;
+              final billNo = (b['billNo'] ?? '').toString();
+              final customer = (b['customerName'] ?? 'Walk-in Customer').toString();
+              final total = (b['total'] ?? 0).toString();
+              final method = (b['paymentMethod'] ?? '').toString();
+              final dateStr = (b['createdAt'] ?? '').toString();
+              final mColor = _methodColor(method);
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [mColor.withOpacity(0.8), mColor.withOpacity(0.4)]),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: Text('Bill #$billNo', style: const TextStyle(fontWeight: FontWeight.w700))),
+                              Text('₹ $total', style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(child: Text(customer)),
+                              Text(dateStr),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: mColor.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.payments, size: 16, color: mColor),
+                                    const SizedBox(width: 6),
+                                    Text(method.toUpperCase(), style: TextStyle(color: mColor, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.picture_as_pdf),
+                                onPressed: () => openPdf(b),
+                                iconSize: 20,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              IconButton(
+                                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green),
+                                onPressed: () => sendWhatsApp(b),
+                                iconSize: 20,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Page $page/$totalPages'),
+                Row(children: [
+                  IconButton(onPressed: page > 1 ? () => load(page: page - 1) : null, icon: const Icon(Icons.chevron_left)),
+                  IconButton(onPressed: page < totalPages ? () => load(page: page + 1) : null, icon: const Icon(Icons.chevron_right)),
+                ])
+              ],
+            ),
+          ),
+        )
       ],
     );
+  }
+
+  Color _methodColor(String method) {
+    final m = method.toLowerCase();
+    if (m.contains('cash')) return Colors.green;
+    if (m.contains('upi')) return Colors.blue;
+    if (m.contains('card')) return Colors.purple;
+    return Colors.teal;
   }
 }

@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final pages = [
       POSScreen(client: widget.client),
       InventoryScreen(client: widget.client),
-      CustomersScreen(client: widget.client),
+      CustomersScreen(client: widget.client, auth: widget.auth),
       BillsScreen(client: widget.client, auth: widget.auth),
       PurchasesScreen(client: widget.client),
       AnalyticsScreen(client: widget.client),
