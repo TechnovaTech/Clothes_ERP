@@ -15,13 +15,16 @@ export async function GET(
       return new NextResponse('Bill ID required', { status: 400 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const tenantParam = searchParams.get('tenantId')
     const session = await getServerSession(authOptions)
-    if (!session?.user?.tenantId) {
+    const tenantId = session?.user?.tenantId || tenantParam
+    if (!tenantId) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
     // Fetch the actual bill from database
-    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
+    const salesCollection = await getTenantCollection(tenantId as string, 'sales')
     const bill = await salesCollection.findOne({ _id: new ObjectId(billId) })
     
     if (!bill) {
@@ -29,7 +32,7 @@ export async function GET(
     }
 
     // Fetch store settings
-    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
+    const settingsCollection = await getTenantCollection(tenantId as string, 'settings')
     const settings = await settingsCollection.findOne({}) || {}
 
     // Generate professional receipt HTML
