@@ -408,7 +408,7 @@ export default function HRPage() {
                       {t('addEmployee')}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{t('addNewEmployee')}</DialogTitle>
                       <DialogDescription>{t('enterEmployeeDetails')}</DialogDescription>
@@ -542,7 +542,7 @@ export default function HRPage() {
                 
                 {/* Edit Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{t('editEmployee')}</DialogTitle>
                       <DialogDescription>{t('updateEmployeeDetails')}</DialogDescription>

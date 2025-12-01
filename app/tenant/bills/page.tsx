@@ -1114,7 +1114,7 @@ Contact: ${storePhone}`
 
         {/* Edit Bill Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Bill - {selectedBill?.billNo}</DialogTitle>
             </DialogHeader>
