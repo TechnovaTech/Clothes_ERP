@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { Receipt, Search, Eye, Pencil, MessageCircle, Download, X, Upload, FileDown, Trash2, Plus } from "lucide-react"
 import { FeatureGuard } from "@/components/feature-guard"
+import { useStore } from "@/lib/store-context"
 import { showToast } from "@/lib/toast"
 import { useLanguage } from "@/lib/language-context"
 
@@ -38,6 +39,7 @@ interface Bill {
 
 export default function BillsPage() {
   const { t, language } = useLanguage()
+  const { tenantId } = useStore()
   const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -274,9 +276,10 @@ export default function BillsPage() {
 
     // Create receipt link based on settings
     const billFormat = settings.billFormat || 'professional'
-    const receiptLink = billFormat === 'simple' 
+    const receiptBase = billFormat === 'simple' 
       ? `${window.location.origin}/api/receipt-simple/${(bill as any)._id || bill.id}`
       : `${window.location.origin}/api/receipt/${(bill as any)._id || bill.id}`
+    const receiptLink = tenantId ? `${receiptBase}?tenantId=${tenantId}` : receiptBase
 
     const billMessage = `*${storeName.toUpperCase()}*
 
@@ -729,7 +732,8 @@ Contact: ${storePhone}`
                             size="sm" 
                             onClick={() => {
                               const billId = (bill as any)._id || bill.id
-                              window.open(`/api/bill-pdf/${billId}`, '_blank')
+                              const q = tenantId ? `?tenantId=${tenantId}` : ''
+                              window.open(`/api/bill-pdf/${billId}${q}`, '_blank')
                             }}
                           >
                             <Download className="w-4 h-4" />
@@ -1089,7 +1093,8 @@ Contact: ${storePhone}`
                   <Button 
                     onClick={() => {
                       const billId = (selectedBill as any)._id || selectedBill.id
-                      window.open(`/api/bill-pdf/${billId}`, '_blank')
+                      const q = tenantId ? `?tenantId=${tenantId}` : ''
+                      window.open(`/api/bill-pdf/${billId}${q}`, '_blank')
                     }}
                     className="flex-1"
                   >
