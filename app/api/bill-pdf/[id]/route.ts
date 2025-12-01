@@ -17,16 +17,19 @@ export async function GET(
       return new NextResponse('Bill ID required', { status: 400 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const tenantParam = searchParams.get('tenantId')
     const session = await getServerSession(authOptions)
-    if (!session?.user?.tenantId) {
-      console.error('No tenant ID in session')
+    const tenantId = session?.user?.tenantId || tenantParam
+    if (!tenantId) {
+      console.error('No tenant ID provided')
       return new NextResponse('Unauthorized', { status: 401 })
     }
     
-    console.log('Tenant ID:', session.user.tenantId)
+    console.log('Tenant ID:', tenantId)
 
     // Fetch the actual bill from database
-    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
+    const salesCollection = await getTenantCollection(tenantId as string, 'sales')
     const bill = await salesCollection.findOne({ _id: new ObjectId(billId) })
     console.log('Bill found:', !!bill)
     
@@ -35,7 +38,7 @@ export async function GET(
     }
 
     // Fetch store settings
-    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
+    const settingsCollection = await getTenantCollection(tenantId as string, 'settings')
     const settings = await settingsCollection.findOne({}) || {}
 
     // Get selected bill design from settings (default to 'classic')

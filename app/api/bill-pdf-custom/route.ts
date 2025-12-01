@@ -8,8 +8,11 @@ import puppeteer from 'puppeteer'
 // POST - Generate custom bill PDF using template
 export async function POST(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const tenantParam = searchParams.get('tenantId')
     const session = await getServerSession(authOptions)
-    if (!session?.user?.tenantId) {
+    const tenantId = session?.user?.tenantId || tenantParam
+    if (!tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get tenant settings
-    const settingsCollection = await getTenantCollection(session.user.tenantId, 'settings')
+    const settingsCollection = await getTenantCollection(tenantId as string, 'settings')
     const settings = await settingsCollection.findOne({})
 
     // Prepare bill data
