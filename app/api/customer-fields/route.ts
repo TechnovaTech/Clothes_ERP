@@ -20,7 +20,8 @@ export async function GET() {
       { name: 'name', label: 'Name', type: 'text', required: true, enabled: true },
       { name: 'phone', label: 'Phone Numbers', type: 'phone', required: false, enabled: true },
       { name: 'email', label: 'Email', type: 'email', required: false, enabled: true },
-      { name: 'address', label: 'Address', type: 'textarea', required: false, enabled: true }
+      { name: 'address', label: 'Address', type: 'textarea', required: false, enabled: true },
+      { name: 'gst', label: 'GST No.', type: 'text', required: false, enabled: true }
     ]
     
     let dynamicFields = []

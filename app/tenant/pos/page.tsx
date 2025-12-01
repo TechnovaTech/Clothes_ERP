@@ -94,6 +94,7 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState<string>("")
   const [customerPhone, setCustomerPhone] = useState<string>("")
   const [customerAddress, setCustomerAddress] = useState<string>("")
+  const [customerGst, setCustomerGst] = useState<string>("")
   const [discount, setDiscount] = useState(0)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isBillModalOpen, setIsBillModalOpen] = useState(false)
@@ -436,6 +437,7 @@ export default function POSPage() {
           customerName,
           customerPhone,
           customerAddress,
+          customerGst,
           timestamp: new Date(),
         },
       ])
@@ -444,6 +446,7 @@ export default function POSPage() {
       setCustomerName("")
       setCustomerPhone("")
       setCustomerAddress("")
+      setCustomerGst("")
     }
   }
 
@@ -453,6 +456,7 @@ export default function POSPage() {
     setCustomerName("")
     setCustomerPhone("")
     setCustomerAddress("")
+    setCustomerGst("")
   }
 
   return (
@@ -520,6 +524,15 @@ export default function POSPage() {
                   placeholder="Enter customer address" 
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
+                />
+              </div>
+              <div className="mt-4">
+                <Label htmlFor="customerGst">GST No.</Label>
+                <Input 
+                  id="customerGst" 
+                  placeholder="Enter customer GST number" 
+                  value={customerGst}
+                  onChange={(e) => setCustomerGst(e.target.value)}
                 />
               </div>
             </CardContent>
@@ -620,6 +633,7 @@ export default function POSPage() {
                         setCustomerName(bill.customerName || "")
                         setCustomerPhone(bill.customerPhone || "")
                         setCustomerAddress(bill.customerAddress || "")
+                        setCustomerGst(bill.customerGst || "")
                         setHeldBills(heldBills.filter((b) => b.id !== bill.id))
                       }}
                     >
@@ -908,7 +922,8 @@ export default function POSPage() {
                                 const customerData: any = {
                                   name: customerName.trim(),
                                   phone: customerPhone?.trim() || null,
-                                  address: customerAddress?.trim() || null
+                                  address: customerAddress?.trim() || null,
+                                  gst: customerGst?.trim() || null
                                 }
                                 
                                 const customerResponse = await fetch('/api/customers', {
@@ -937,6 +952,7 @@ export default function POSPage() {
                               customerName,
                               customerPhone,
                               customerAddress,
+                              customerGst,
                               subtotal,
                               discount,
                               discountAmount,

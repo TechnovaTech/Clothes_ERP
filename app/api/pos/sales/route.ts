@@ -114,6 +114,8 @@ export async function POST(request: NextRequest) {
       items: itemsArr,
       customerName: customerName || 'Walk-in Customer',
       customerPhone: customerPhone || null,
+      customerAddress: body.customerAddress || null,
+      customerGst: body.customerGst || null,
       subtotal: subtotal != null ? parseFloat(subtotal) : computedSubtotal,
       discount: parseFloat(discount) || 0,
       discountAmount: discountAmount != null ? parseFloat(discountAmount) : computedDiscount,

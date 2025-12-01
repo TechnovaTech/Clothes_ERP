@@ -45,6 +45,8 @@ export interface BillData {
   billNo: string
   customerName: string
   customerPhone?: string
+  customerAddress?: string
+  customerGst?: string
   items: Array<{
     name: string
     quantity: number
@@ -121,7 +123,9 @@ export function generateModernDesign(bill: BillData, settings: StoreSettings): s
         <div class="meta-section" style="text-align: right;">
           <h3>Bill To</h3>
           <p><strong>${bill.customerName}</strong></p>
-          ${bill.customerPhone ? `<p>${bill.customerPhone}</p>` : ''}
+          ${bill.customerPhone ? `<p>Phone No.: ${bill.customerPhone}</p>` : ''}
+          ${bill.customerAddress ? `<p>Address: ${bill.customerAddress}</p>` : ''}
+          ${bill.customerGst ? `<p>GST No.: ${bill.customerGst}</p>` : ''}
           <p class="payment-info">Payment: ${bill.paymentMethod}</p>
         </div>
       </div>
@@ -286,7 +290,9 @@ export function generateElegantDesign(bill: BillData, settings: StoreSettings): 
           <div style="margin-top: 15px; font-size: 14px; color: #666;">
             <div><strong>Bill To:</strong></div>
             <div style="margin-top: 5px;">${bill.customerName}</div>
-            ${bill.customerPhone ? `<div>${bill.customerPhone}</div>` : ''}
+            ${bill.customerPhone ? `<div>Phone No.: ${bill.customerPhone}</div>` : ''}
+            ${bill.customerAddress ? `<div>Address: ${bill.customerAddress}</div>` : ''}
+            ${bill.customerGst ? `<div>GST No.: ${bill.customerGst}</div>` : ''}
           </div>
         </div>
         <div class="invoice-details">
@@ -489,8 +495,20 @@ export function generateCompactDesign(bill: BillData, settings: StoreSettings): 
     </div>
     ${bill.customerPhone ? `
     <div class="info-row">
-      <span>Phone:</span>
+      <span>Phone No.:</span>
       <span>${bill.customerPhone}</span>
+    </div>
+    ` : ''}
+    ${bill.customerAddress ? `
+    <div class="info-row">
+      <span>Address:</span>
+      <span>${bill.customerAddress}</span>
+    </div>
+    ` : ''}
+    ${bill.customerGst ? `
+    <div class="info-row">
+      <span>GST No.:</span>
+      <span>${bill.customerGst}</span>
     </div>
     ` : ''}
     
@@ -739,8 +757,20 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
     ` : ''}
     ${bill.customerPhone ? `
     <div class="bill-info-row">
-      <span>Phone:</span>
+      <span>Phone No.:</span>
       <span>${bill.customerPhone}</span>
+    </div>
+    ` : ''}
+    ${bill.customerAddress ? `
+    <div class="bill-info-row">
+      <span>Address:</span>
+      <span>${bill.customerAddress}</span>
+    </div>
+    ` : ''}
+    ${bill.customerGst ? `
+    <div class="bill-info-row">
+      <span>GST No.:</span>
+      <span>${bill.customerGst}</span>
     </div>
     ` : ''}
   </div>
@@ -860,9 +890,10 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
       <div class="customer-left">
         <div class="customer-label">M/s.: ${bill.customerName}</div>
         <div class="customer-info">
-          ${bill.customerPhone ? `Phone: ${bill.customerPhone}<br/>` : ''}
-          Place of Supply: ${settings.address || 'N/A'}<br/>
-          GSTIN No.: ${settings.gst || 'N/A'}
+          ${bill.customerPhone ? `Phone No.: ${bill.customerPhone}<br/>` : ''}
+          ${bill.customerAddress ? `Address: ${bill.customerAddress}<br/>` : ''}
+          ${bill.customerGst ? `Customer GST No.: ${bill.customerGst}<br/>` : ''}
+          Store GST No.: ${settings.gst || 'N/A'}
         </div>
       </div>
       <div class="customer-right">
@@ -1092,10 +1123,12 @@ export function generateClassicDesignFixed(bill: any, settings: any): string {
         <div class="info-row"><span class="info-label">Time:</span> ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
         <div class="info-row"><span class="info-label">Cashier:</span> ${bill.cashier}</div>
       </div>
-      <div style="text-align: right;">
+      <div style="text-align: right; font-size: 11px;">
         <div style="font-weight: bold; margin-bottom: 5px;">BILL TO:</div>
         <div>${bill.customerName}</div>
-        ${bill.customerPhone ? `<div>${bill.customerPhone}</div>` : ''}
+        ${bill.customerPhone ? `<div>Phone No.: ${bill.customerPhone}</div>` : ''}
+        ${bill.customerAddress ? `<div>Address: ${bill.customerAddress}</div>` : ''}
+        ${bill.customerGst ? `<div>GST No.: ${bill.customerGst}</div>` : ''}
         <div class="payment-info">Payment: ${bill.paymentMethod}</div>
       </div>
     </div>

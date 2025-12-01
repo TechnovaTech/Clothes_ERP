@@ -46,6 +46,8 @@ export async function GET(
       billNo: bill.billNo || 'N/A',
       customerName: bill.customerName || 'Walk-in Customer',
       customerPhone: bill.customerPhone || '',
+      customerAddress: bill.customerAddress || '',
+      customerGst: bill.customerGst || '',
       items: (bill.items || []).map((item: any) => ({
         name: item.name || 'Item',
         quantity: Number(item.quantity) || 0,
