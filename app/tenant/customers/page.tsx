@@ -935,6 +935,12 @@ export default function CustomersPage() {
                         <p className="text-sm text-gray-600">Phone</p>
                         <p className="font-medium">{selectedBill.customerPhone || 'N/A'}</p>
                       </div>
+                      {selectedBill.customerAddress && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm text-gray-600">Address</p>
+                          <p className="font-medium">{selectedBill.customerAddress}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1000,12 +1006,13 @@ export default function CustomersPage() {
                     </Button>
                     <Button variant="outline" onClick={() => window.open(`/api/bill-pdf/${selectedBill.id}`, '_blank')}>
                       <Download className="w-4 h-4 mr-2" />
-                      {t('download')}
+                      Download
                     </Button>
                     <Button onClick={() => {
                       setBillEditData({
                         customerName: selectedBill.customerName || '',
                         customerPhone: selectedBill.customerPhone || '',
+                        customerAddress: selectedBill.customerAddress || '',
                         items: selectedBill.items || [],
                         discount: selectedBill.discount || 0,
                         tax: selectedBill.tax || 0,
@@ -1040,7 +1047,7 @@ export default function CustomersPage() {
                       <Label>Customer Name</Label>
                       <Input 
                         value={billEditData.customerName || ''}
-                        onChange={(e) => setBillEditData(prev => ({...prev, customerName: e.target.value}))}
+                        onChange={(e) => setBillEditData((prev: any) => ({...prev, customerName: e.target.value}))}
                         placeholder="Enter customer name"
                       />
                     </div>
@@ -1048,7 +1055,7 @@ export default function CustomersPage() {
                       <Label>Phone Number</Label>
                       <Input 
                         value={billEditData.customerPhone || ''}
-                        onChange={(e) => setBillEditData(prev => ({...prev, customerPhone: e.target.value}))}
+                        onChange={(e) => setBillEditData((prev: any) => ({...prev, customerPhone: e.target.value}))}
                         placeholder="Enter phone number"
                       />
                     </div>
@@ -1057,7 +1064,7 @@ export default function CustomersPage() {
                       <select 
                         className="w-full p-2 border rounded-md"
                         value={billEditData.paymentMethod || 'Cash'}
-                        onChange={(e) => setBillEditData(prev => ({...prev, paymentMethod: e.target.value}))}
+                        onChange={(e) => setBillEditData((prev: any) => ({...prev, paymentMethod: e.target.value}))}
                       >
                         <option value="Cash">Cash</option>
                         <option value="Card">Card</option>
@@ -1065,6 +1072,15 @@ export default function CustomersPage() {
                         <option value="Bank Transfer">Bank Transfer</option>
                       </select>
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label>Address</Label>
+                    <Textarea 
+                      value={billEditData.customerAddress || ''}
+                      onChange={(e) => setBillEditData((prev: any) => ({...prev, customerAddress: e.target.value}))}
+                      placeholder="Enter customer address"
+                      rows={2}
+                    />
                   </div>
                 </div>
                 
@@ -1076,7 +1092,7 @@ export default function CustomersPage() {
                       size="sm" 
                       onClick={() => {
                         const newItems = [...(billEditData.items || []), { name: '', quantity: 1, price: 0, total: 0, productId: '' }]
-                        setBillEditData(prev => ({...prev, items: newItems}))
+                        setBillEditData((prev: any) => ({...prev, items: newItems}))
                       }}
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -1113,7 +1129,7 @@ export default function CustomersPage() {
                                       price: Number(selectedProduct.price) || 0,
                                       total: qty * (Number(selectedProduct.price) || 0)
                                     }
-                                    setBillEditData(prev => ({...prev, items: newItems}))
+                                    setBillEditData((prev: any) => ({...prev, items: newItems}))
                                   }
                                 }}
                               >
@@ -1129,7 +1145,7 @@ export default function CustomersPage() {
                                 onChange={(e) => {
                                   const newItems = [...(billEditData.items || [])]
                                   newItems[index] = {...newItems[index], name: e.target.value}
-                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                  setBillEditData((prev: any) => ({...prev, items: newItems}))
                                 }}
                                 placeholder="Or enter custom item name"
                               />
@@ -1144,7 +1160,7 @@ export default function CustomersPage() {
                                   const qty = Number(e.target.value) || 1
                                   const total = qty * (newItems[index].price || 0)
                                   newItems[index] = {...newItems[index], quantity: qty, total: total}
-                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                  setBillEditData((prev: any) => ({...prev, items: newItems}))
                                 }}
                               />
                             </TableCell>
@@ -1159,7 +1175,7 @@ export default function CustomersPage() {
                                   const price = Number(e.target.value) || 0
                                   const total = (newItems[index].quantity || 1) * price
                                   newItems[index] = {...newItems[index], price: price, total: total}
-                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                  setBillEditData((prev: any) => ({...prev, items: newItems}))
                                 }}
                               />
                             </TableCell>
@@ -1173,7 +1189,7 @@ export default function CustomersPage() {
                                 className="text-red-500 hover:text-red-700"
                                 onClick={() => {
                                   const newItems = billEditData.items?.filter((_: any, i: number) => i !== index)
-                                  setBillEditData(prev => ({...prev, items: newItems}))
+                                  setBillEditData((prev: any) => ({...prev, items: newItems}))
                                 }}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1197,7 +1213,7 @@ export default function CustomersPage() {
                         min="0"
                         step="0.01"
                         value={billEditData.discount || 0}
-                        onChange={(e) => setBillEditData(prev => ({...prev, discount: Number(e.target.value) || 0}))}
+                        onChange={(e) => setBillEditData((prev: any) => ({...prev, discount: Number(e.target.value) || 0}))}
                         placeholder="Enter discount amount"
                       />
                     </div>
@@ -1208,7 +1224,7 @@ export default function CustomersPage() {
                         min="0"
                         step="0.01"
                         value={billEditData.tax || 0}
-                        onChange={(e) => setBillEditData(prev => ({...prev, tax: Number(e.target.value) || 0}))}
+                        onChange={(e) => setBillEditData((prev: any) => ({...prev, tax: Number(e.target.value) || 0}))}
                         placeholder="Enter tax amount"
                       />
                     </div>
@@ -1261,6 +1277,7 @@ export default function CustomersPage() {
                         body: JSON.stringify({
                           customerName: billEditData.customerName,
                           customerPhone: billEditData.customerPhone,
+                          customerAddress: billEditData.customerAddress,
                           paymentMethod: billEditData.paymentMethod,
                           items: billEditData.items,
                           discount: billEditData.discount || 0,
@@ -1277,7 +1294,7 @@ export default function CustomersPage() {
                         // Update selectedCustomer total spent immediately
                         if (selectedCustomer) {
                           const totalDifference = finalTotal - (selectedBill?.total || 0)
-                          setSelectedCustomer(prev => prev ? {
+                          setSelectedCustomer((prev: Customer | null) => prev ? {
                             ...prev,
                             totalSpent: (prev.totalSpent || 0) + totalDifference
                           } : null)
@@ -1287,6 +1304,7 @@ export default function CustomersPage() {
                           ...prev,
                           customerName: billEditData.customerName,
                           customerPhone: billEditData.customerPhone,
+                          customerAddress: billEditData.customerAddress,
                           paymentMethod: billEditData.paymentMethod,
                           items: billEditData.items,
                           discount: billEditData.discount || 0,

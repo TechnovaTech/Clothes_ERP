@@ -93,6 +93,7 @@ export default function POSPage() {
   })
   const [customerName, setCustomerName] = useState<string>("")
   const [customerPhone, setCustomerPhone] = useState<string>("")
+  const [customerAddress, setCustomerAddress] = useState<string>("")
   const [discount, setDiscount] = useState(0)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isBillModalOpen, setIsBillModalOpen] = useState(false)
@@ -434,6 +435,7 @@ export default function POSPage() {
           total,
           customerName,
           customerPhone,
+          customerAddress,
           timestamp: new Date(),
         },
       ])
@@ -441,6 +443,7 @@ export default function POSPage() {
       setDiscount(0)
       setCustomerName("")
       setCustomerPhone("")
+      setCustomerAddress("")
     }
   }
 
@@ -449,6 +452,7 @@ export default function POSPage() {
     setDiscount(0)
     setCustomerName("")
     setCustomerPhone("")
+    setCustomerAddress("")
   }
 
   return (
@@ -508,6 +512,15 @@ export default function POSPage() {
                     onChange={(e) => setCustomerPhone(e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="mt-4">
+                <Label htmlFor="customerAddress">Address</Label>
+                <Input 
+                  id="customerAddress" 
+                  placeholder="Enter customer address" 
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -606,6 +619,7 @@ export default function POSPage() {
                         setDiscount(bill.discount)
                         setCustomerName(bill.customerName || "")
                         setCustomerPhone(bill.customerPhone || "")
+                        setCustomerAddress(bill.customerAddress || "")
                         setHeldBills(heldBills.filter((b) => b.id !== bill.id))
                       }}
                     >
@@ -891,30 +905,10 @@ export default function POSPage() {
                             // Create/update customer first
                             if (customerName.trim()) {
                               try {
-                                // Get customer fields to map correctly
-                                const fieldsResponse = await fetch('/api/customer-fields')
-                                let customerData: any = {}
-                                
-                                if (fieldsResponse.ok) {
-                                  const fields = await fieldsResponse.json()
-                                  // Map name to the first name-like field
-                                  const nameField = fields.find((f: any) => 
-                                    f.name.toLowerCase().includes('name') && 
-                                    !f.name.toLowerCase().includes('id')
-                                  )
-                                  // Map phone to phone field
-                                  const phoneField = fields.find((f: any) => 
-                                    f.name.toLowerCase() === 'phone'
-                                  )
-                                  
-                                  if (nameField) customerData[nameField.name] = customerName.trim()
-                                  if (phoneField && customerPhone?.trim()) customerData[phoneField.name] = customerPhone.trim()
-                                } else {
-                                  // Fallback to phone field structure
-                                  customerData = {
-                                    name: customerName.trim(),
-                                    phone: customerPhone?.trim() || null
-                                  }
+                                const customerData: any = {
+                                  name: customerName.trim(),
+                                  phone: customerPhone?.trim() || null,
+                                  address: customerAddress?.trim() || null
                                 }
                                 
                                 const customerResponse = await fetch('/api/customers', {
@@ -942,6 +936,7 @@ export default function POSPage() {
                               })),
                               customerName,
                               customerPhone,
+                              customerAddress,
                               subtotal,
                               discount,
                               discountAmount,
