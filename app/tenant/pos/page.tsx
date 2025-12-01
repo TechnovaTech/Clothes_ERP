@@ -137,9 +137,11 @@ export default function POSPage() {
   // Fetch customers
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers')
+      const response = await fetch('/api/customers?limit=1000')
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.data || result || []
+        console.log('Customers loaded:', data.length)
         setCustomers(data)
       }
     } catch (error) {
@@ -500,12 +502,48 @@ export default function POSPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="customerName">{t('customerName')}</Label>
-                  <Input 
-                    id="customerName" 
-                    placeholder={t('enterCustomerName')} 
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input 
+                      id="customerName" 
+                      name="customer-name-field"
+                      placeholder={t('enterCustomerName')} 
+                      value={customerName}
+                      onChange={(e) => {
+                        setCustomerName(e.target.value)
+                        setShowCustomerSuggestions(e.target.value.length > 0)
+                      }}
+                      onFocus={() => setShowCustomerSuggestions(customerName.length > 0)}
+                      onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                      autoComplete="new-password"
+                    />
+                    {showCustomerSuggestions && customerName && Array.isArray(customers) && customers.length > 0 && (() => {
+                      const filtered = customers.filter(c => c.name?.toLowerCase().includes(customerName.toLowerCase()))
+                      console.log('Filtered customers:', filtered.length)
+                      return filtered.length > 0 ? (
+                      <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {filtered
+                          .slice(0, 10)
+                          .map(customer => (
+                            <div
+                              key={customer.id}
+                              className="px-4 py-2 hover:bg-accent cursor-pointer border-b border-border last:border-b-0 transition-colors"
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                setCustomerName(customer.name || '')
+                                setCustomerPhone(customer.phone || '')
+                                setCustomerAddress(customer.address || '')
+                                setCustomerGst(customer.gst || '')
+                                setShowCustomerSuggestions(false)
+                              }}
+                            >
+                              <div className="font-medium text-foreground">{customer.name}</div>
+                              {customer.phone && <div className="text-sm text-muted-foreground">{customer.phone}</div>}
+                            </div>
+                          ))}
+                      </div>
+                      ) : null
+                    })()}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="customerPhone">{t('phoneNumber')}</Label>
@@ -518,7 +556,7 @@ export default function POSPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <Label htmlFor="customerAddress">Address</Label>
+                <Label htmlFor="customerAddress"  className="pb-2">Address</Label>
                 <Input 
                   id="customerAddress" 
                   placeholder="Enter customer address" 
@@ -527,7 +565,7 @@ export default function POSPage() {
                 />
               </div>
               <div className="mt-4">
-                <Label htmlFor="customerGst">GST No.</Label>
+                <Label htmlFor="customerGst" className="pb-2">GST No.</Label>
                 <Input 
                   id="customerGst" 
                   placeholder="Enter customer GST number" 
