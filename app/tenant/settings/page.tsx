@@ -314,21 +314,7 @@ export default function SettingsPage() {
                 className="w-full p-2 border rounded-md h-16 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="billFormat">{t('billFormat')}</Label>
-              <select
-                id="billFormat"
-                value={settings.billFormat}
-                onChange={(e) => setSettings({...settings, billFormat: e.target.value})}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="professional">{t('professionalInvoiceFormat')}</option>
-                <option value="simple">{t('simpleReceiptFormat')}</option>
-              </select>
-              <p className="text-sm text-muted-foreground">
-                {t('chooseBillFormat')}
-              </p>
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="businessType">{t('businessTypeAssigned')}</Label>
               <Input
