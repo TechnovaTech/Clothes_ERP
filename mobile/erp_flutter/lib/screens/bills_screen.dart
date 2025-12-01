@@ -123,7 +123,14 @@ class _BillsScreenState extends State<BillsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer phone missing')));
       return;
     }
-    final pdfLink = (await resolveBillUrl(bill)).toString();
+    final id = bill['_id'] ?? bill['id'];
+    final t = (widget.auth?.tenantId as String?) ?? '';
+    final q = t.isNotEmpty ? '?tenantId=$t' : '';
+    final format = (settings['billFormat'] ?? 'professional').toString();
+    final base = format == 'simple'
+        ? '${widget.client.baseUrl}/api/receipt-simple/$id'
+        : '${widget.client.baseUrl}/api/receipt/$id';
+    final pdfLink = Uri.parse('$base$q').toString();
     final storeName = (settings['storeName'] ?? 'STORE').toString();
     final msg = '*$storeName*\n\n'
         '*Bill No:* ${bill['billNo'] ?? ''}\n'
