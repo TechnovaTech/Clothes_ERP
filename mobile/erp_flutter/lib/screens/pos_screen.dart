@@ -3,6 +3,7 @@ import 'package:erp_flutter/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class POSScreen extends StatefulWidget {
   final ApiClient client;
@@ -188,6 +189,65 @@ class _POSScreenState extends State<POSScreen> {
     customersLoading = false;
     if (!mounted) return;
     setState(() {});
+  }
+
+  Future<void> scanBarcode() async {
+    final code = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final controller = MobileScannerController(
+          detectionSpeed: DetectionSpeed.noDuplicates,
+          facing: CameraFacing.back,
+        );
+        return SafeArea(
+          child: Stack(
+            children: [
+              MobileScanner(
+                controller: controller,
+                onDetect: (capture) {
+                  final b = capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
+                  final raw = b?.rawValue ?? '';
+                  if (raw.isNotEmpty) {
+                    Navigator.pop(context, raw);
+                  }
+                },
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  label: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    if (code == null || code.isEmpty) return;
+    posSearchController.text = code;
+    query = code;
+    try {
+      final res = await widget.client.searchProducts(code);
+      if (res.isNotEmpty) {
+        if (res.length == 1 && res[0] is Map<String, dynamic>) {
+          addToCart(res[0] as Map<String, dynamic>);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to cart')));
+          setState(() {});
+          return;
+        }
+        setState(() { products = res; });
+        return;
+      }
+    } catch (_) {}
+    await loadProducts();
+    if (products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No product found')));
+    }
   }
 
   String _pickField(Map<String, dynamic> c, List<String> keys) {
@@ -906,19 +966,32 @@ class _POSScreenState extends State<POSScreen> {
                 icon: const Icon(Icons.shopping_cart),
                 label: Text('Cart (${cart.length})'),
               );
+              final scanButton = OutlinedButton.icon(
+                onPressed: scanBarcode,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Scan'),
+              );
               if (isNarrow) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     searchField,
                     const SizedBox(height: 8),
-                    Align(alignment: Alignment.centerRight, child: cartButton),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [scanButton, const SizedBox(width: 8), cartButton],
+                      ),
+                    ),
                   ],
                 );
               }
               return Row(
                 children: [
                   Expanded(child: searchField),
+                  const SizedBox(width: 8),
+                  scanButton,
                   const SizedBox(width: 8),
                   cartButton,
                 ],

@@ -16,6 +16,7 @@ dependencies:
   webview_flutter: ^4.10.0
   android_intent_plus: ^5.2.0
   font_awesome_flutter: ^10.7.0
+  mobile_scanner: ^3.5.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
