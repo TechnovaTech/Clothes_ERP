@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       setState(() {
-        error = 'Login failed';
+        error = auth.lastError ?? 'Login failed';
       });
     }
     setState(() {

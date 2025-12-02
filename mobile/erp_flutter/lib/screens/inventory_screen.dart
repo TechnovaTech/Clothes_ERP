@@ -19,6 +19,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
   String sortBy = 'name'; // name | stock | price
   int lowStockThreshold = 5;
 
+  int asInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    final s = v?.toString() ?? '';
+    final n = int.tryParse(s);
+    return n ?? 0;
+  }
+
+  num asNum(dynamic v) {
+    if (v is num) return v;
+    final s = v?.toString() ?? '';
+    final n = num.tryParse(s);
+    return n ?? 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,7 +75,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       if (q.isNotEmpty) {
         if (!(name.contains(q) || sku.contains(q) || category.contains(q))) return false;
       }
-      final stock = (it['stock'] ?? it['quantity'] ?? 0) as int;
+      final stock = asInt(it['stock'] ?? it['quantity'] ?? 0);
       if (filter == 'low' && !(stock > 0 && stock <= lowStockThreshold)) return false;
       if (filter == 'out' && stock > 0) return false;
       return true;
@@ -71,10 +86,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
       final y = b as Map<String, dynamic>;
       switch (sortBy) {
         case 'stock':
-          return ((y['stock'] ?? y['quantity'] ?? 0) as int)
-              .compareTo(((x['stock'] ?? x['quantity'] ?? 0) as int));
+          return asInt(y['stock'] ?? y['quantity'] ?? 0)
+              .compareTo(asInt(x['stock'] ?? x['quantity'] ?? 0));
         case 'price':
-          return ((y['price'] ?? 0) as num).compareTo(((x['price'] ?? 0) as num));
+          return asNum(y['price'] ?? 0).compareTo(asNum(x['price'] ?? 0));
         case 'name':
         default:
           return (x['name'] ?? '').toString().toLowerCase().compareTo((y['name'] ?? '').toString().toLowerCase());
@@ -145,9 +160,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
               final it = filtered[i] as Map<String, dynamic>;
               final name = (it['name'] ?? '').toString();
               final sku = (it['sku'] ?? '').toString();
-              final stock = (it['stock'] ?? it['quantity'] ?? 0) as int;
-              final price = (it['price'] ?? 0) as num;
-              final cost = (it['Cost Price'] ?? it['cost price'] ?? it['costPrice'] ?? it['costprice'] ?? 0) as num;
+              final stock = asInt(it['stock'] ?? it['quantity'] ?? 0);
+              final price = asNum(it['price'] ?? 0);
+              final cost = asNum(it['Cost Price'] ?? it['cost price'] ?? it['costPrice'] ?? it['costprice'] ?? 0);
               final category = (it['Category'] ?? it['category'] ?? '').toString();
               final margin = price > 0 && cost > 0 ? (((price - cost) / price) * 100) : 0;
               final sColor = _stockColor(stock);
