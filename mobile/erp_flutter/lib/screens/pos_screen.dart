@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:erp_flutter/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async';
 
 class POSScreen extends StatefulWidget {
   final ApiClient client;
@@ -35,6 +36,16 @@ class _POSScreenState extends State<POSScreen> {
   final TextEditingController customerAddressController = TextEditingController();
   final TextEditingController customerGstController = TextEditingController();
   int step = 0;
+  static const double _hPadding = 12;
+  static const double _vPadding = 8;
+  final TextEditingController posSearchController = TextEditingController();
+  Timer? _searchDebounce;
+
+  Color _stockColor(int stock) {
+    if (stock <= 0) return Colors.red;
+    if (stock <= 5) return Colors.orange;
+    return Colors.green;
+  }
 
   Future<void> _saveCart() async {
     try {
@@ -100,6 +111,17 @@ class _POSScreenState extends State<POSScreen> {
     loadSettings();
     loadCustomers();
     _loadCart();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    posSearchController.dispose();
+    customerNameController.dispose();
+    customerPhoneController.dispose();
+    customerAddressController.dispose();
+    customerGstController.dispose();
+    super.dispose();
   }
 
   Future<void> loadProducts() async {
@@ -312,6 +334,7 @@ class _POSScreenState extends State<POSScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
 
     Widget productList = loading
         ? const Center(child: CircularProgressIndicator())
@@ -331,7 +354,7 @@ class _POSScreenState extends State<POSScreen> {
                   final isWide = constraints.maxWidth > 520;
                   if (isWide) {
                     return GridView.builder(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(_hPadding),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
@@ -342,8 +365,9 @@ class _POSScreenState extends State<POSScreen> {
                       itemBuilder: (context, i) {
                         final p = products[i] as Map<String, dynamic>;
                         final name = p['name']?.toString() ?? '';
-                        final price = (p['price'] ?? 0).toString();
-                        final stock = (p['stock'] ?? 0).toString();
+                        final priceNum = asNum(p['price'] ?? 0);
+                        final stockInt = asInt(p['stock'] ?? p['quantity'] ?? 0);
+                        final sColor = _stockColor(stockInt);
                         return Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: Padding(
@@ -351,13 +375,29 @@ class _POSScreenState extends State<POSScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    Text('₹ $price', style: const TextStyle(color: Colors.black87)),
-                                    const SizedBox(width: 12),
-                                    Text('Stock $stock', style: const TextStyle(color: Colors.black54)),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+                                      child: Row(children: [
+                                        const Icon(Icons.currency_rupee, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(priceNum.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.w600)),
+                                      ]),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(color: sColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16)),
+                                      child: Row(children: [
+                                        Icon(Icons.inventory_2, size: 16, color: sColor),
+                                        const SizedBox(width: 4),
+                                        Text('Stock $stockInt', style: TextStyle(color: sColor, fontWeight: FontWeight.w600)),
+                                      ]),
+                                    ),
                                   ],
                                 ),
                                 const Spacer(),
@@ -378,11 +418,14 @@ class _POSScreenState extends State<POSScreen> {
                     );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(_hPadding),
                     itemCount: products.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final p = products[i] as Map<String, dynamic>;
+                      final priceNum = asNum(p['price'] ?? 0);
+                      final stockInt = asInt(p['stock'] ?? p['quantity'] ?? 0);
+                      final sColor = _stockColor(stockInt);
                       return Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: ListTile(
@@ -392,9 +435,17 @@ class _POSScreenState extends State<POSScreen> {
                             padding: const EdgeInsets.only(top: 6),
                             child: Row(
                               children: [
-                                Text('₹ ${(p['price'] ?? 0).toString()}', style: const TextStyle(color: Colors.black87)),
+                                Text('₹ ${priceNum.toStringAsFixed(0)}', style: const TextStyle(color: Colors.black87)),
                                 const SizedBox(width: 12),
-                                Text('Stock ${(p['stock'] ?? 0).toString()}', style: const TextStyle(color: Colors.black54)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(color: sColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                  child: Row(children: [
+                                    Icon(Icons.inventory_2, size: 14, color: sColor),
+                                    const SizedBox(width: 4),
+                                    Text('Stock $stockInt', style: TextStyle(color: sColor)),
+                                  ]),
+                                ),
                               ],
                             ),
                           ),
@@ -411,14 +462,18 @@ class _POSScreenState extends State<POSScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       children: [
         Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(_hPadding),
           child: Row(
             children: [
               OutlinedButton(onPressed: cart.isEmpty ? null : holdBill, child: const Text('Hold')),
               const SizedBox(width: 8),
               OutlinedButton(onPressed: cart.isEmpty ? null : clearCart, child: const Text('Clear')),
               const Spacer(),
-              Text('Items ${cart.length}')
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+                child: Text('Items ${cart.length}', style: TextStyle(color: scheme.onSurface)),
+              )
             ],
           ),
         ),
@@ -529,7 +584,7 @@ class _POSScreenState extends State<POSScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Subtotal'),
-                          Text('₹ $subtotal'),
+                          Text('₹ $subtotal', style: TextStyle(color: scheme.onSurface)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -559,7 +614,7 @@ class _POSScreenState extends State<POSScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Tax'),
-                          Text('₹ $taxAmount'),
+                          Text('₹ $taxAmount', style: TextStyle(color: scheme.onSurfaceVariant)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -567,7 +622,7 @@ class _POSScreenState extends State<POSScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Total'),
-                          Text('₹ $totalAmount', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          Text('₹ $totalAmount', style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary)),
                         ],
                       ),
                     ],
@@ -755,23 +810,30 @@ class _POSScreenState extends State<POSScreen> {
       child: Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(hintText: 'Search products', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-                  onChanged: (v) {
-                    query = v;
-                  },
-                  onSubmitted: (_) => loadProducts(),
+          padding: const EdgeInsets.all(_hPadding),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 480;
+              final searchField = TextField(
+                controller: posSearchController,
+                decoration: InputDecoration(
+                  hintText: 'Search products',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: IconButton(icon: const Icon(Icons.clear), onPressed: () {
+                    posSearchController.clear();
+                    setState(() { query = ''; });
+                    loadProducts();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(onPressed: loadProducts, child: const Text('Search'))
-              ,
-              const SizedBox(width: 8),
-              OutlinedButton(
+                onChanged: (v) {
+                  query = v;
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(const Duration(milliseconds: 300), () { loadProducts(); });
+                },
+                onSubmitted: (_) => loadProducts(),
+              );
+              final cartButton = FilledButton.icon(
                 onPressed: cart.isEmpty
                     ? null
                     : () async {
@@ -841,33 +903,89 @@ class _POSScreenState extends State<POSScreen> {
                           },
                         );
                       },
-                child: Text('Cart (${cart.length})'),
-              )
-            ],
+                icon: const Icon(Icons.shopping_cart),
+                label: Text('Cart (${cart.length})'),
+              );
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    searchField,
+                    const SizedBox(height: 8),
+                    Align(alignment: Alignment.centerRight, child: cartButton),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: searchField),
+                  const SizedBox(width: 8),
+                  cartButton,
+                ],
+              );
+            },
           ),
         ),
-        if (error != null) Padding(padding: const EdgeInsets.all(8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+        if (error != null) Padding(padding: const EdgeInsets.all(_hPadding), child: Text(error!, style: const TextStyle(color: Colors.red))),
         Expanded(child: step == 0 ? productList : details),
         if (step == 0)
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)]),
-              child: Row(
-                children: [
-                  OutlinedButton(onPressed: cart.isEmpty ? null : holdBill, child: const Text('Hold')),
-                  const SizedBox(width: 8),
-                  OutlinedButton(onPressed: cart.isEmpty ? null : clearCart, child: const Text('Clear')),
-                  const Spacer(),
-                  Flexible(child: Text('Subtotal ₹ $subtotal', overflow: TextOverflow.ellipsis)),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
+              padding: EdgeInsets.symmetric(horizontal: _hPadding, vertical: _vPadding + 2),
+              decoration: BoxDecoration(color: scheme.surface, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)]),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 420;
+                  final holdBtn = OutlinedButton.icon(
+                    onPressed: cart.isEmpty ? null : holdBill,
+                    icon: const Icon(Icons.pause_circle_outline),
+                    label: const Text('Hold'),
+                  );
+                  final clearBtn = OutlinedButton.icon(
+                    onPressed: cart.isEmpty ? null : clearCart,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: const Text('Clear'),
+                  );
+                  final subtotalChip = Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(18)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.currency_rupee, size: 16),
+                        const SizedBox(width: 4),
+                        Flexible(child: Text('$subtotal', overflow: TextOverflow.ellipsis)),
+                      ],
+                    ),
+                  );
+                  final nextBtn = FilledButton.icon(
                     onPressed: cart.isEmpty ? null : () { setState(() { step = 1; }); },
-                    style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
-                    child: const Text('Next'),
-                  ),
-                ],
+                    icon: const Icon(Icons.arrow_right_alt),
+                    label: const Text('Next'),
+                  );
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(children: [holdBtn, const SizedBox(width: 8), clearBtn]),
+                        const SizedBox(height: 8),
+                        Row(children: [Flexible(child: subtotalChip), const Spacer(), nextBtn]),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      holdBtn,
+                      const SizedBox(width: 8),
+                      clearBtn,
+                      const Spacer(),
+                      Flexible(child: subtotalChip),
+                      const SizedBox(width: 8),
+                      nextBtn,
+                    ],
+                  );
+                },
               ),
             ),
           )

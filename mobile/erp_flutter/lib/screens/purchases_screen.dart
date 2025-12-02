@@ -17,6 +17,15 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   String? error;
   final TextEditingController searchController = TextEditingController();
   String searchTerm = '';
+  String statusFilter = 'all';
+  static const double _hPadding = 12;
+  static const double _vPadding = 8;
+
+  num asNum(dynamic v) {
+    if (v is num) return v;
+    final s = v?.toString() ?? '';
+    return num.tryParse(s) ?? 0;
+  }
 
   @override
   void initState() {
@@ -62,25 +71,44 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       final status = (p['status'] ?? '').toString().toLowerCase();
       final items = (p['items'] as List?)?.map((i) => (i as Map<String, dynamic>)['name']?.toString().toLowerCase() ?? '').join(' ') ?? '';
       final q = searchTerm.toLowerCase().trim();
-      if (q.isEmpty) return true;
-      return po.contains(q) || supplier.contains(q) || status.contains(q) || items.contains(q);
+      final matchesSearch = q.isEmpty || po.contains(q) || supplier.contains(q) || status.contains(q) || items.contains(q);
+      final matchesStatus = statusFilter == 'all' || status.contains(statusFilter);
+      return matchesSearch && matchesStatus;
     }).toList();
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          padding: const EdgeInsets.fromLTRB(_hPadding, _vPadding, _hPadding, 0),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: TextField(
-                controller: searchController,
-                onChanged: (v) => setState(() { searchTerm = v; }),
-                decoration: const InputDecoration(
-                  hintText: 'Search purchases...',
-                  prefixIcon: Icon(Icons.search),
-                  border: InputBorder.none,
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (v) => setState(() { searchTerm = v; }),
+                      decoration: const InputDecoration(
+                        hintText: 'Search purchases...',
+                        prefixIcon: Icon(Icons.search),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: statusFilter,
+                    items: const [
+                      DropdownMenuItem(value: 'all', child: Text('All')),
+                      DropdownMenuItem(value: 'received', child: Text('Received')),
+                      DropdownMenuItem(value: 'ordered', child: Text('Ordered')),
+                      DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                      DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+                    ],
+                    onChanged: (v) => setState(() { statusFilter = v ?? 'all'; }),
+                  ),
+                ],
               ),
             ),
           ),
@@ -94,21 +122,15 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               final supplier = (p['supplierName'] ?? '').toString();
               final items = (p['items'] as List?)?.length ?? 0;
               final orderDate = formatDate(p['orderDate']);
-              final total = (p['total'] ?? 0).toString();
+              final total = asNum(p['total'] ?? 0).toStringAsFixed(0);
               final status = (p['status'] ?? '').toString();
               final sColor = _statusColor(status);
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: _hPadding, vertical: 8),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [sColor.withOpacity(0.8), sColor.withOpacity(0.4)]),
-                      ),
-                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Column(
@@ -120,7 +142,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: sColor.withOpacity(0.12),
+                                  color: sColor.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
@@ -133,14 +155,14 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(child: Text('Supplier: $supplier')),
                               Text('Items: $items'),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(child: Text('Order Date: $orderDate')),
@@ -183,4 +205,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     if (s.contains('cancel')) return Colors.red;
     return Colors.blueGrey;
   }
+
+  
 }
