@@ -890,10 +890,16 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
       <div class="customer-left">
         <div class="customer-label">M/s.: ${bill.customerName}</div>
         <div class="customer-info">
+<<<<<<< HEAD
           ${bill.customerPhone ? `Phone No.: ${bill.customerPhone}<br/>` : ''}
           ${bill.customerAddress ? `Address: ${bill.customerAddress}<br/>` : ''}
           ${bill.customerGst ? `Customer GST No.: ${bill.customerGst}<br/>` : ''}
           Store GST No.: ${settings.gst || 'N/A'}
+=======
+          ${bill.customerPhone ? `Phone: ${bill.customerPhone}<br/>` : ''}
+          Place of Supply: ${settings.address || 'N/A'}<br/>
+          GSTIN No.: ${settings.gst || 'N/A'}
+>>>>>>> origin/master
         </div>
       </div>
       <div class="customer-right">
@@ -923,6 +929,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
         </tr>
       </thead>
       <tbody>
+<<<<<<< HEAD
         ${pageItems.map((item, index) => {
           const itemGstRate = item.gstRate !== undefined ? item.gstRate : (bill.taxRate || 0)
           return `
@@ -936,6 +943,19 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
             <td class="amount">${item.total.toFixed(2)}</td>
           </tr>
         `}).join('')}
+=======
+        ${pageItems.map((item, index) => `
+          <tr>
+            <td class="sr-no">${startIdx + index + 1}</td>
+            <td class="product-name">${item.name}</td>
+            <td class="hsn">-</td>
+            <td class="qty">${item.quantity.toFixed(3)}</td>
+            <td class="rate">${item.price.toFixed(2)}</td>
+            <td class="gst">18.00</td>
+            <td class="amount">${item.total.toFixed(2)}</td>
+          </tr>
+        `).join('')}
+>>>>>>> origin/master
         ${isLastPage ? Array(emptyRows).fill(0).map(() => `
           <tr>
             <td class="sr-no">&nbsp;</td>
@@ -957,8 +977,13 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
           <div class="gst-label">GSTIN No.: ${settings.gst || 'N/A'}</div>
         </div>
         <div class="amount-words">
+<<<<<<< HEAD
           <strong>Total GST:</strong> ${convertToWords(bill.tax)}<br/>
           <strong>Bill Amount:</strong> ${convertToWords(bill.total)}
+=======
+          <strong>Total GST:</strong> (In Words)<br/>
+          <strong>Bill Amount:</strong> (In Words)
+>>>>>>> origin/master
         </div>
         <div class="terms">
           <div class="terms-title">Terms & Condition:</div>
@@ -983,7 +1008,11 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
           </div>
           ${bill.tax > 0 ? `
           <div class="total-row">
+<<<<<<< HEAD
             <span>Integrated Tax ${(bill.taxRate || 0).toFixed(2)}%</span>
+=======
+            <span>Integrated Tax 18.00%</span>
+>>>>>>> origin/master
             <span>${bill.tax.toFixed(2)}</span>
           </div>
           ` : ''}
@@ -1015,6 +1044,7 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
   <meta charset="UTF-8">
   <title>Tax Invoice - ${bill.billNo}</title>
   <style>
+<<<<<<< HEAD
     @page { size: A4; margin: 20px; }
     @media print { 
       body { margin: 0; padding: 20px; } 
@@ -1022,6 +1052,10 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
       .invoice { margin-bottom: 0; page-break-inside: avoid; }
       .invoice:last-child { page-break-after: avoid; }
     }
+=======
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 20px; } .page-break { page-break-before: always; } }
+>>>>>>> origin/master
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; padding: 20px; background: white; }
     .invoice { max-width: 900px; margin: 0 auto; border: 3px solid #000; margin-bottom: 20px; }
