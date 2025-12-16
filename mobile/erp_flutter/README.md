@@ -1,4 +1,4 @@
-# RetailOne Mobile App
+# Retailians Mobile App
 
 ## Menus
 
@@ -31,7 +31,7 @@
 
 ## Branding
 
-- App name set to RetailOne (Android/iOS)
+- App name set to Retailians (Android/iOS)
 - Global logo
   - Sidebar loads store logo from `baseUrl/logo.png` with asset fallback
   - Login screen uses bundled `android/app/src/logo.png`
