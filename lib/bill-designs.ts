@@ -592,10 +592,11 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       max-width: 300px; 
       margin: 0 auto; 
       padding: 8px; 
-      font-size: 10px; 
-      line-height: 1.2;
+      font-size: 11px; 
+      line-height: 1.3;
       background: white;
       color: black;
+      font-weight: bold;
     }
     .receipt-header {
       text-align: center;
@@ -604,19 +605,21 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       padding-bottom: 10px;
     }
     .store-name {
-      font-size: 14px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 3px;
     }
     .store-info {
-      font-size: 9px;
+      font-size: 10px;
       line-height: 1.3;
+      font-weight: 600;
     }
     .bill-info {
       margin: 8px 0;
-      font-size: 9px;
+      font-size: 10px;
+      font-weight: 600;
     }
     .bill-info-row {
       display: flex;
@@ -635,8 +638,8 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       display: grid;
       grid-template-columns: 2fr 0.8fr 1fr 1fr;
       gap: 2px;
-      font-weight: bold;
-      font-size: 8px;
+      font-weight: 900;
+      font-size: 9px;
       text-align: center;
       margin-bottom: 3px;
       padding: 3px 0;
@@ -646,12 +649,13 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       display: grid;
       grid-template-columns: 2fr 0.8fr 1fr 1fr;
       gap: 2px;
-      font-size: 8px;
+      font-size: 9px;
       margin: 2px 0;
       padding: 1px 0;
+      font-weight: 600;
     }
     .item-name {
-      font-weight: bold;
+      font-weight: 900;
       text-align: left;
     }
     .item-qty, .item-rate, .item-amount {
@@ -664,7 +668,8 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       display: flex;
       justify-content: space-between;
       margin: 2px 0;
-      font-size: 9px;
+      font-size: 10px;
+      font-weight: 700;
     }
     .subtotal-row {
       padding: 3px 0;
@@ -678,17 +683,18 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       color: #d00;
     }
     .final-total {
-      font-weight: bold;
-      font-size: 11px;
+      font-weight: 900;
+      font-size: 13px;
       padding: 4px 0;
-      border-top: 1px solid #000;
-      border-bottom: 1px solid #000;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
       margin: 4px 0;
     }
     .payment-info {
       margin: 6px 0;
       text-align: center;
-      font-size: 9px;
+      font-size: 10px;
+      font-weight: 700;
     }
     .footer {
       text-align: center;
@@ -697,8 +703,8 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       line-height: 1.3;
     }
     .thank-you {
-      font-weight: bold;
-      font-size: 10px;
+      font-weight: 900;
+      font-size: 11px;
       margin-bottom: 4px;
     }
     .terms {
@@ -839,7 +845,7 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
       <strong>Exchange Policy:</strong> Items can be exchanged within 7 days with receipt
     </div>
     <div class="powered-by">
-      Powered by Fashion ERP System
+      Powered by Retailians POS
     </div>
   </div>
   
