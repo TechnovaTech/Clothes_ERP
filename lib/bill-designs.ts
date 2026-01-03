@@ -60,6 +60,8 @@ export interface BillData {
   tax: number
   total: number
   paymentMethod: string
+  cashAmount?: number
+  onlineAmount?: number
   cashier: string
   createdAt: string
   storeName: string
@@ -863,7 +865,7 @@ export function generateThermalDesign(bill: BillData, settings: StoreSettings): 
 }
 
 export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings): string {
-  const ITEMS_PER_PAGE = 15
+  const ITEMS_PER_PAGE = bill.paymentMethod === 'split' ? 14 : 15
   const totalItems = bill.items.length
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
   
@@ -1002,6 +1004,16 @@ export function generateTaxInvoiceDesign(bill: BillData, settings: StoreSettings
             <span>Grand Total</span>
             <span>₹${bill.total.toFixed(2)}</span>
           </div>
+          ${bill.paymentMethod === 'split' ? `
+          <div class="total-row" style="font-size: 11px;">
+            <span>Cash Amount</span>
+            <span>₹${(bill.cashAmount || 0).toFixed(2)}</span>
+          </div>
+          <div class="total-row" style="font-size: 11px;">
+            <span>Online Amount</span>
+            <span>₹${(bill.onlineAmount || 0).toFixed(2)}</span>
+          </div>
+          ` : ''}
         </div>
         <div class="signature">
           For, ${settings.storeName}<br/>

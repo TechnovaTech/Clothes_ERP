@@ -64,6 +64,8 @@ export async function GET(
       tax: Number(bill.tax) || 0,
       total: Number(bill.total) || 0,
       paymentMethod: bill.paymentMethod || 'Cash',
+      cashAmount: Number(bill.cashAmount) || 0,
+      onlineAmount: Number(bill.onlineAmount) || 0,
       cashier: bill.staffMember || bill.cashier || 'Admin',
       createdAt: bill.createdAt || new Date().toISOString(),
       storeName: (settings as any).storeName || 'Store',
