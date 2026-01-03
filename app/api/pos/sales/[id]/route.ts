@@ -78,3 +78,30 @@ export async function PUT(
     return NextResponse.json({ error: 'Failed to update sale' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.tenantId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const saleId = params.id
+    const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
+
+    const result = await salesCollection.deleteOne({ _id: new ObjectId(saleId) })
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, message: 'Bill deleted successfully' })
+  } catch (error) {
+    console.error('Failed to delete bill:', error)
+    return NextResponse.json({ error: 'Failed to delete bill' }, { status: 500 })
+  }
+}

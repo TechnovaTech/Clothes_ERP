@@ -95,12 +95,15 @@ export default function POSPage() {
   const [customerPhone, setCustomerPhone] = useState<string>("")
   const [customerAddress, setCustomerAddress] = useState<string>("")
   const [customerGst, setCustomerGst] = useState<string>("")
+  const [billDate, setBillDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [discount, setDiscount] = useState(0)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isBillModalOpen, setIsBillModalOpen] = useState(false)
   const [heldBills, setHeldBills] = useState<any[]>([])
   const [completedSale, setCompletedSale] = useState<any>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash')
+  const [cashAmount, setCashAmount] = useState<number>(0)
+  const [onlineAmount, setOnlineAmount] = useState<number>(0)
   const [customers, setCustomers] = useState<any[]>([])
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -459,6 +462,7 @@ export default function POSPage() {
     setCustomerPhone("")
     setCustomerAddress("")
     setCustomerGst("")
+    setBillDate(new Date().toISOString().split('T')[0])
   }
 
   return (
@@ -483,7 +487,16 @@ export default function POSPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="billDate">Bill Date</Label>
+                  <Input
+                    id="billDate"
+                    type="date"
+                    value={billDate}
+                    onChange={(e) => setBillDate(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="staffSelect">{t('staffMember')}</Label>
                   <Select value={selectedStaff} onValueChange={setSelectedStaff}>
@@ -909,7 +922,11 @@ export default function POSPage() {
 
               <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full" disabled={cart.length === 0}>
+                  <Button className="w-full" disabled={cart.length === 0} onClick={() => {
+                    setCashAmount(0)
+                    setOnlineAmount(0)
+                    setSelectedPaymentMethod('cash')
+                  }}>
                     <CreditCard className="w-4 h-4 mr-2" />
                     {t('processPayment')}
                   </Button>
@@ -925,11 +942,15 @@ export default function POSPage() {
                       <p className="text-sm text-muted-foreground">{t('totalAmount')}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <Button 
                         variant={selectedPaymentMethod === 'cash' ? 'default' : 'outline'} 
                         className="flex flex-col items-center p-6 h-20"
-                        onClick={() => setSelectedPaymentMethod('cash')}
+                        onClick={() => {
+                          setSelectedPaymentMethod('cash')
+                          setCashAmount(total)
+                          setOnlineAmount(0)
+                        }}
                       >
                         <Banknote className="w-8 h-8 mb-2" />
                         <span className="text-sm font-medium">{t('cash')}</span>
@@ -937,23 +958,82 @@ export default function POSPage() {
                       <Button 
                         variant={selectedPaymentMethod === 'online' ? 'default' : 'outline'} 
                         className="flex flex-col items-center p-6 h-20"
-                        onClick={() => setSelectedPaymentMethod('online')}
+                        onClick={() => {
+                          setSelectedPaymentMethod('online')
+                          setCashAmount(0)
+                          setOnlineAmount(total)
+                        }}
                       >
                         <Smartphone className="w-8 h-8 mb-2" />
                         <span className="text-sm font-medium">{t('online')}</span>
                       </Button>
+                      <Button 
+                        variant={selectedPaymentMethod === 'split' ? 'default' : 'outline'} 
+                        className="flex flex-col items-center p-6 h-20"
+                        onClick={() => {
+                          setSelectedPaymentMethod('split')
+                          setCashAmount(0)
+                          setOnlineAmount(0)
+                        }}
+                      >
+                        <CreditCard className="w-8 h-8 mb-2" />
+                        <span className="text-sm font-medium">Split</span>
+                      </Button>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="amountReceived">{t('amountReceived')}</Label>
-                      <Input id="amountReceived" type="number" placeholder={total.toFixed(2)} />
-                    </div>
+                    {selectedPaymentMethod === 'split' && (
+                      <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                        <div className="space-y-2">
+                          <Label htmlFor="cashAmount">Cash Amount</Label>
+                          <Input 
+                            id="cashAmount" 
+                            type="number" 
+                            value={cashAmount || ''}
+                            onChange={(e) => {
+                              const cash = Number(e.target.value) || 0
+                              setCashAmount(cash)
+                              setOnlineAmount(Math.max(0, total - cash))
+                            }}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="onlineAmount">Online Amount</Label>
+                          <Input 
+                            id="onlineAmount" 
+                            type="number" 
+                            value={onlineAmount || ''}
+                            onChange={(e) => {
+                              const online = Number(e.target.value) || 0
+                              setOnlineAmount(online)
+                              setCashAmount(Math.max(0, total - online))
+                            }}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="flex justify-between text-sm font-medium pt-2 border-t">
+                          <span>Remaining:</span>
+                          <span className={total - cashAmount - onlineAmount > 0.01 ? 'text-red-500' : 'text-green-600'}>
+                            ₹ {Math.max(0, total - cashAmount - onlineAmount).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex space-x-2">
                       <Button
                         className="flex-1"
+                        disabled={selectedPaymentMethod === 'split' && (cashAmount + onlineAmount < total - 0.01)}
                         onClick={async () => {
                           try {
+                            // Validate split payment
+                            if (selectedPaymentMethod === 'split') {
+                              if (cashAmount + onlineAmount < total - 0.01) {
+                                showToast.error('Payment amount is less than total!')
+                                return
+                              }
+                            }
+
                             // Create/update customer first
                             if (customerName.trim()) {
                               try {
@@ -998,6 +1078,8 @@ export default function POSPage() {
                               cess,
                               total,
                               paymentMethod: selectedPaymentMethod,
+                              cashAmount: selectedPaymentMethod === 'cash' ? total : (selectedPaymentMethod === 'split' ? cashAmount : 0),
+                              onlineAmount: selectedPaymentMethod === 'online' ? total : (selectedPaymentMethod === 'split' ? onlineAmount : 0),
                               taxRate: includeTax ? (gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : settings.taxRate) : 0,
                               cessRate: includeCess ? settings.cessRate : 0,
                               storeName: settings.storeName,
@@ -1005,7 +1087,8 @@ export default function POSPage() {
                               includeTax,
                               includeCess,
                               gstRateOverride,
-                              billGstRate: gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : undefined
+                              billGstRate: gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : undefined,
+                              billDate: billDate ? new Date(billDate) : new Date()
                             }
                             
                             const response = await fetch('/api/pos/sales', {

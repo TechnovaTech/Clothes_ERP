@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     console.log('Processing sale for tenant:', session.user.tenantId)
 
     const body = await request.json()
-    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState } = body
+    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, cashAmount, onlineAmount, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState, billDate } = body
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 })
@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
     
     // Generate sequential bill number
     const currentCounter = storeSettings.billCounter || 1
-    const series = storeSettings.billPrefix || 'BILL'
+    const series = storeSettings.billPrefix || ''
     const number = currentCounter.toString().padStart(3, '0')
-    const billNo = `${series}-${number}`
+    const billNo = series ? `${series}-${number}` : number
     
     // Increment counter for next bill
     await settingsCollection.updateOne(
@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
       cess: parseFloat(cess) || taxBreakup.cess || 0,
       total: total != null ? parseFloat(total) : ((subtotal != null ? parseFloat(subtotal) : computedSubtotal) + (tax != null ? parseFloat(tax) : taxBreakup.gstAmount || 0) + (cess != null ? parseFloat(cess) : taxBreakup.cess || 0)),
       paymentMethod: paymentMethod || 'cash',
+      cashAmount: cashAmount ? parseFloat(cashAmount) : (paymentMethod === 'cash' ? (total != null ? parseFloat(total) : 0) : 0),
+      onlineAmount: onlineAmount ? parseFloat(onlineAmount) : (paymentMethod === 'online' ? (total != null ? parseFloat(total) : 0) : 0),
       storeName: storeName || storeSettings.storeName || 'Store',
       address: storeSettings.address || '',
       phone: storeSettings.phone || '',
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
       includeCess: includeCess !== undefined ? includeCess : true,
       taxBreakup,
       taxMode,
-      createdAt: new Date(),
+      createdAt: billDate ? new Date(billDate) : new Date(),
       updatedAt: new Date()
     }
 
