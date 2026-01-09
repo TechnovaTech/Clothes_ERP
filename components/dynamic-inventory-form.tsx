@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { Package } from "lucide-react"
 import JsBarcode from "jsbarcode"
 import { formatDateToDDMMYYYY, parseDDMMYYYYToDate } from "@/lib/date-utils"
@@ -74,12 +75,15 @@ function BarcodeField({ fieldKey, fieldValue, updateFormData, field }: any) {
 export function DynamicInventoryForm({ formData, setFormData }: DynamicInventoryFormProps) {
   const [fields, setFields] = useState<Field[]>([])
   const [dropdownData, setDropdownData] = useState<Record<string, string[]>>({})
+  const [settings, setSettings] = useState({ taxRate: 0, discountMode: false })
+  const [basePriceInput, setBasePriceInput] = useState('')
 
   const fetchTenantFields = async () => {
     try {
-      const [fieldsResponse, dropdownResponse] = await Promise.all([
+      const [fieldsResponse, dropdownResponse, settingsResponse] = await Promise.all([
         fetch('/api/tenant-product-fields'),
-        fetch('/api/dropdown-data')
+        fetch('/api/dropdown-data'),
+        fetch('/api/settings')
       ])
       
       if (fieldsResponse.ok) {
@@ -96,6 +100,11 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
       } else {
         console.error('Failed to fetch dropdown data')
         setDropdownData({})
+      }
+      
+      if (settingsResponse.ok) {
+        const settingsData = await settingsResponse.json()
+        setSettings({ taxRate: settingsData.taxRate ?? 0, discountMode: settingsData.discountMode || false })
       }
     } catch (error) {
       console.error('Failed to fetch tenant fields:', error)
@@ -162,6 +171,58 @@ export function DynamicInventoryForm({ formData, setFormData }: DynamicInventory
       
       case 'number':
         const isDecimal = field.name.toLowerCase().includes('price') || field.name.toLowerCase().includes('cost')
+        const isPriceField = field.name.toLowerCase() === 'price' || field.name.toLowerCase() === 'selling price'
+        
+        if (isPriceField && settings.discountMode) {
+          // Text Minus Mode: User enters base price, system SUBTRACTS tax% to get final price
+          const savedFinalPrice = parseFloat(fieldValue) || 0
+          const calculatedBase = savedFinalPrice > 0 ? savedFinalPrice / (1 - settings.taxRate / 100) : 0
+          const displayValue = basePriceInput || (savedFinalPrice > 0 ? calculatedBase.toFixed(2) : '')
+          const basePrice = parseFloat(displayValue) || 0
+          const discountAmount = basePrice * settings.taxRate / 100
+          const finalPrice = basePrice - discountAmount
+          
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={displayValue}
+                  onChange={(e) => {
+                    setBasePriceInput(e.target.value)
+                    const base = parseFloat(e.target.value) || 0
+                    const final = base - (base * settings.taxRate / 100)
+                    updateFormData(field.name, final.toFixed(2))
+                  }}
+                  onBlur={() => setBasePriceInput('')}
+                  placeholder="Enter base price"
+                  required={field.required}
+                  className="flex-1"
+                />
+                <Badge variant="secondary" className="whitespace-nowrap">Text Minus</Badge>
+              </div>
+              {basePrice > 0 && (
+                <div className="text-xs space-y-1 p-2 bg-orange-50 rounded border border-orange-200">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Base Price:</span>
+                    <span className="font-medium">₹{basePrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Minus ({settings.taxRate}%):</span>
+                    <span className="font-medium text-red-600">-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-orange-300 pt-1">
+                    <span className="font-semibold">Final Price (Saved):</span>
+                    <span className="font-bold text-orange-600">₹{finalPrice.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        }
+        
         return (
           <Input
             type="number"
