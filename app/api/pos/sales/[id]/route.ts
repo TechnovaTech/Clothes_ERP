@@ -17,7 +17,7 @@ export async function PUT(
 
     const saleId = params.id
     const body = await request.json()
-    const { customerName, customerPhone, paymentMethod, items, discount, tax, total } = body
+    const { customerName, customerPhone, paymentMethod, items, discount, tax, total, billNo, series, number, subtotal, discountAmount, cashier, storeName, address, phone, email, gst, terms } = body
 
     const salesCollection = await getTenantCollection(session.user.tenantId, 'sales')
     const customersCollection = await getTenantCollection(session.user.tenantId, 'customers')
@@ -37,13 +37,25 @@ export async function PUT(
       { _id: new ObjectId(saleId) },
       {
         $set: {
+          billNo: billNo || originalSale.billNo,
+          series: series !== undefined ? series : originalSale.series,
+          number: number !== undefined ? number : originalSale.number,
           customerName: customerName || 'Walk-in Customer',
           customerPhone: customerPhone || null,
           paymentMethod: paymentMethod || 'Cash',
           items: items || [],
+          subtotal: Number(subtotal) || originalSale.subtotal || 0,
           discount: Number(discount) || 0,
+          discountAmount: Number(discountAmount) || 0,
           tax: Number(tax) || 0,
           total: newTotal,
+          cashier: cashier || originalSale.cashier,
+          storeName: storeName || originalSale.storeName,
+          address: address || originalSale.address,
+          phone: phone || originalSale.phone,
+          email: email || originalSale.email,
+          gst: gst || originalSale.gst,
+          terms: terms || originalSale.terms,
           updatedAt: new Date()
         }
       }

@@ -122,6 +122,8 @@ export default function POSPage() {
   const [billGstRate, setBillGstRate] = useState<number | ''>('')
   const [whatsappStatus, setWhatsappStatus] = useState<any>(null)
   const [qrCode, setQrCode] = useState<string>('')
+  const [customBillNumber, setCustomBillNumber] = useState<string>('')
+  const [billPrefix, setBillPrefix] = useState<string>('')
 
 
   // Fetch settings
@@ -131,6 +133,14 @@ export default function POSPage() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
+        // Set next bill number and prefix
+        if (!customBillNumber) {
+          const counter = (data.billCounter || 1).toString().padStart(3, '0')
+          setCustomBillNumber(counter)
+        }
+        if (!billPrefix) {
+          setBillPrefix(data.billPrefix || '')
+        }
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error)
@@ -499,6 +509,10 @@ export default function POSPage() {
     setCustomerAddress("")
     setCustomerGst("")
     setBillDate(new Date().toISOString().split('T')[0])
+    // Reset to next bill number from settings
+    const counter = ((settings as any).billCounter || 1).toString().padStart(3, '0')
+    setCustomBillNumber(counter)
+    setBillPrefix((settings as any).billPrefix || '')
   }
 
   return (
@@ -524,6 +538,26 @@ export default function POSPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="billPrefix">Bill Prefix</Label>
+                  <Input
+                    id="billPrefix"
+                    type="text"
+                    value={billPrefix}
+                    onChange={(e) => setBillPrefix(e.target.value)}
+                    placeholder="Prefix"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="billNumber">Bill Number</Label>
+                  <Input
+                    id="billNumber"
+                    type="text"
+                    value={customBillNumber}
+                    onChange={(e) => setCustomBillNumber(e.target.value)}
+                    placeholder="Number"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="billDate">Bill Date</Label>
                   <Input
@@ -1124,7 +1158,9 @@ export default function POSPage() {
                               includeCess,
                               gstRateOverride,
                               billGstRate: gstRateOverride ? (billGstRate === '' ? settings.taxRate : Number(billGstRate)) : undefined,
-                              billDate: billDate ? new Date(billDate) : new Date()
+                              billDate: billDate ? new Date(billDate) : new Date(),
+                              customBillNumber: customBillNumber || undefined,
+                              billPrefix: billPrefix || undefined
                             }
                             
                             const response = await fetch('/api/pos/sales', {
@@ -1143,6 +1179,7 @@ export default function POSPage() {
                               setIsPaymentDialogOpen(false)
                               setIsBillModalOpen(true)
                               fetchProducts()
+                              fetchSettings() // Refresh settings to get updated counter
                               showToast.success(language === 'en' ? 'Sale completed successfully!' : language === 'gu' ? 'વેચાણ સફળતાપૂર્વક પૂર્ણ થયું!' : 'बिक्री सफलतापूर्वक पूर्ण हुई!')
                             } else {
                               const errorData = await response.json()

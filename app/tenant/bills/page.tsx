@@ -156,6 +156,9 @@ export default function BillsPage() {
   const openEditModal = (bill: Bill) => {
     setSelectedBill(bill)
     setEditForm({
+      billNo: bill.billNo || '',
+      series: (bill as any).series || '',
+      number: (bill as any).number || '',
       customerName: bill.customerName || '',
       customerPhone: bill.customerPhone || '',
       paymentMethod: bill.paymentMethod || 'cash',
@@ -1124,6 +1127,32 @@ Contact: ${storePhone}`
               <DialogTitle>Edit Bill - {selectedBill?.billNo}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Bill Prefix</Label>
+                  <Input
+                    value={editForm.series || ''}
+                    onChange={(e) => {
+                      const series = e.target.value
+                      const number = editForm.number || ''
+                      const billNo = series && number ? `${series}-${number}` : (series || number)
+                      setEditForm({ ...editForm, series, billNo })
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Bill Number</Label>
+                  <Input
+                    value={editForm.number || ''}
+                    onChange={(e) => {
+                      const number = e.target.value
+                      const series = editForm.series || ''
+                      const billNo = series && number ? `${series}-${number}` : (series || number)
+                      setEditForm({ ...editForm, number, billNo })
+                    }}
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Customer Name</Label>

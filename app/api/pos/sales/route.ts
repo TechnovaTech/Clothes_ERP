@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     console.log('Processing sale for tenant:', session.user.tenantId)
 
     const body = await request.json()
-    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, cashAmount, onlineAmount, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState, billDate } = body
+    const { items, customerName, customerPhone, subtotal, discount, discountAmount, tax, cess, total, paymentMethod, cashAmount, onlineAmount, taxRate, billGstRate, gstRateOverride, cessRate, storeName, staffMember, includeTax, includeCess, customerState, taxMode: bodyTaxMode, storeState: bodyStoreState, billDate, customBillNumber, billPrefix } = body
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 })
@@ -34,17 +34,23 @@ export async function POST(request: NextRequest) {
     const storeSettings: any = await settingsCollection.findOne({}) || { storeName: 'Store', taxRate: 10, cessRate: 0 }
     
     // Generate sequential bill number
-    const currentCounter = storeSettings.billCounter || 1
-    const series = storeSettings.billPrefix || ''
-    const number = currentCounter.toString().padStart(3, '0')
-    const billNo = series ? `${series}-${number}` : number
-    
-    // Increment counter for next bill
-    await settingsCollection.updateOne(
-      {},
-      { $inc: { billCounter: 1 } },
-      { upsert: true }
-    )
+    let billNo
+    if (customBillNumber && customBillNumber.trim()) {
+      const prefix = billPrefix && billPrefix.trim() ? billPrefix.trim() : ''
+      billNo = prefix ? `${prefix}-${customBillNumber.trim()}` : customBillNumber.trim()
+    } else {
+      const currentCounter = storeSettings.billCounter || 1
+      const series = storeSettings.billPrefix || ''
+      const number = currentCounter.toString().padStart(3, '0')
+      billNo = series ? `${series}-${number}` : number
+      
+      // Increment counter for next bill
+      await settingsCollection.updateOne(
+        {},
+        { $inc: { billCounter: 1 } },
+        { upsert: true }
+      )
+    }
 
     // Compute tax breakup from items
     const itemsArr = Array.isArray(items) ? items : []
@@ -109,8 +115,8 @@ export async function POST(request: NextRequest) {
     // Create sale record with all data
     const sale = {
       billNo,
-      series,
-      number,
+      series: (customBillNumber && billPrefix) ? billPrefix.trim() : (storeSettings.billPrefix || ''),
+      number: customBillNumber ? customBillNumber.trim() : (currentCounter?.toString().padStart(3, '0') || ''),
       items: itemsArr,
       customerName: customerName || 'Walk-in Customer',
       customerPhone: customerPhone || null,
