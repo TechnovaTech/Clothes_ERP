@@ -111,6 +111,7 @@ export async function PUT(request: NextRequest) {
           deletePassword: body.deletePassword || 'admin123',
           fieldSettingsPassword: body.fieldSettingsPassword || 'vivekVOra32*',
           discountMode: body.discountMode === true || body.discountMode === 'true',
+          posPriceMode: body.posPriceMode || 'original',
           billFormat: body.billFormat || 'professional',
           logo: body.logo || '',
           signature: body.signature || '',

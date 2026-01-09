@@ -37,6 +37,7 @@ export default function SettingsPage() {
     whatsappMessage: '',
     deletePassword: '',
     discountMode: false,
+    posPriceMode: 'original',
     billFormat: 'professional',
     businessType: 'none',
     logo: '',
@@ -505,6 +506,49 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   {t('textMinusModeDescription')}
                 </p>
+                
+                {settings.discountMode && (
+                  <div className="mt-4 p-4 border rounded-lg bg-blue-50 space-y-3">
+                    <Label className="font-semibold">POS Price Mode</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="originalPrice"
+                          name="posPriceMode"
+                          value="original"
+                          checked={settings.posPriceMode === 'original'}
+                          onChange={(e) => setSettings({...settings, posPriceMode: e.target.value})}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="originalPrice" className="cursor-pointer">
+                          Use Original Price in POS
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Example: Original ₹6000 → POS shows ₹6000, then applies 18% tax in bill
+                      </p>
+                      
+                      <div className="flex items-center space-x-2 mt-3">
+                        <input
+                          type="radio"
+                          id="finalPrice"
+                          name="posPriceMode"
+                          value="final"
+                          checked={settings.posPriceMode === 'final'}
+                          onChange={(e) => setSettings({...settings, posPriceMode: e.target.value})}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="finalPrice" className="cursor-pointer">
+                          Use Final Price in POS
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Example: Original ₹6000 → Final ₹4920 → POS shows ₹4920, then applies 18% tax in bill
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

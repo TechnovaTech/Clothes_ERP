@@ -299,7 +299,6 @@ export default function POSPage() {
     const existingItem = cart.find((item) => item.id === product.id)
     const currentCartQty = existingItem ? existingItem.quantity : 0
     
-    // Check stock availability
     if (currentStock <= 0) {
       showToast.error(`${t('outOfStock')}: ${product.name || 'Product'}`)
       return
@@ -310,8 +309,11 @@ export default function POSPage() {
       return
     }
     
-    const displayPrice = product.price
-    // Get product name from configured fields or fallback to productname
+    let displayPrice = product.price
+    if ((settings as any).discountMode && (settings as any).posPriceMode === 'original') {
+      displayPrice = product.price / (1 - settings.taxRate / 100)
+    }
+    
     let productName = 'Unnamed Product'
     if (tenantFields.length === 0) {
       productName = (product as any).productname || product.name || 'Unnamed Product'
