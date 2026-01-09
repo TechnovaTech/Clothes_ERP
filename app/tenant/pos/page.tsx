@@ -310,6 +310,7 @@ export default function POSPage() {
     }
     
     let displayPrice = product.price
+    let savedPrice = product.price
     if ((settings as any).discountMode && (settings as any).posPriceMode === 'original') {
       displayPrice = product.price / (1 - settings.taxRate / 100)
     }
@@ -331,7 +332,7 @@ export default function POSPage() {
       setCart(
         cart.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * displayPrice }
+            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * (item as any).savedPrice || savedPrice }
             : item,
         ),
       )
@@ -343,9 +344,10 @@ export default function POSPage() {
           name: productName,
           price: displayPrice,
           quantity: 1,
-          total: displayPrice,
-          hsn: (product as any).hsn || (product as any).HSN || undefined
-        },
+          total: savedPrice,
+          hsn: (product as any).hsn || (product as any).HSN || undefined,
+          savedPrice: savedPrice
+        } as any,
       ])
     }
   }
@@ -413,22 +415,54 @@ export default function POSPage() {
     setCart(cart.filter((item) => item.id !== id))
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
+  const isOriginalPriceMode = (settings as any).discountMode && (settings as any).posPriceMode === 'original'
+  
+  const subtotal = cart.reduce((sum, item) => {
+    if (isOriginalPriceMode) {
+      return sum + (item.quantity * Number((item as any).savedPrice || item.price))
+    }
+    return sum + (Number(item.total) || 0)
+  }, 0)
+  
   const discountPercent = Number(discount) || 0
   const taxRatePercent = Number(gstRateOverride ? (billGstRate === '' ? settings.taxRate : billGstRate) : settings.taxRate) || 0
   const cessRatePercent = Number(settings.cessRate) || 0
-  const discountAmount = (subtotal * discountPercent) / 100
   
-  // Calculate tax per item based on individual GST rates
-  const tax = includeTax ? cart.reduce((sum, item) => {
-    const itemGstRate = item.gstRate !== undefined ? item.gstRate : taxRatePercent
-    const itemSubtotal = Number(item.total) || 0
-    const itemDiscount = (itemSubtotal * discountPercent) / 100
-    return sum + ((itemSubtotal - itemDiscount) * (itemGstRate / 100))
-  }, 0) : 0
+  let discountAmount = 0
+  let taxableAmount = subtotal
   
-  const cess = includeCess ? (subtotal - discountAmount) * (cessRatePercent / 100) : 0
-  const total = subtotal - discountAmount + tax + cess
+  if ((settings as any).discountMode) {
+    discountAmount = (subtotal * discountPercent) / 100
+    taxableAmount = subtotal - discountAmount
+  } else {
+    discountAmount = (subtotal * discountPercent) / 100
+    taxableAmount = subtotal
+  }
+  
+  const tax = includeTax ? (() => {
+    if (isOriginalPriceMode) {
+      return cart.reduce((sum, item) => {
+        const savedPrice = (item as any).savedPrice || item.price
+        if (gstRateOverride) {
+          const originalPrice = item.price
+          const taxPerUnit = (originalPrice * taxRatePercent) / 100
+          return sum + (taxPerUnit * item.quantity)
+        }
+        const originalPrice = savedPrice / (1 - settings.taxRate / 100)
+        const taxPerUnit = originalPrice - savedPrice
+        return sum + (taxPerUnit * item.quantity)
+      }, 0)
+    }
+    return cart.reduce((sum, item) => {
+      const itemGstRate = item.gstRate !== undefined ? item.gstRate : taxRatePercent
+      const itemSubtotal = Number(item.total) || 0
+      const itemDiscount = (settings as any).discountMode ? (itemSubtotal * discountPercent) / 100 : 0
+      return sum + ((itemSubtotal - itemDiscount) * (itemGstRate / 100))
+    }, 0)
+  })() : 0
+  
+  const cess = includeCess ? (taxableAmount) * (cessRatePercent / 100) : 0
+  const total = isOriginalPriceMode ? (subtotal + tax + cess) : ((settings as any).discountMode ? (taxableAmount + tax + cess) : (subtotal - discountAmount + tax + cess))
 
   const holdBill = () => {
     if (cart.length > 0) {

@@ -526,7 +526,7 @@ export default function SettingsPage() {
                         </Label>
                       </div>
                       <p className="text-xs text-muted-foreground ml-6">
-                        Example: Original ₹6000 → POS shows ₹6000, then applies 18% tax in bill
+                        Example: Saved ₹4920 → POS shows ₹6000, tax calculated on ₹6000 (18%)
                       </p>
                       
                       <div className="flex items-center space-x-2 mt-3">
@@ -544,7 +544,7 @@ export default function SettingsPage() {
                         </Label>
                       </div>
                       <p className="text-xs text-muted-foreground ml-6">
-                        Example: Original ₹6000 → Final ₹4920 → POS shows ₹4920, then applies 18% tax in bill
+                        Example: Saved ₹4920 → POS shows ₹4920, tax calculated on ₹4920 (18%)
                       </p>
                     </div>
                   </div>
