@@ -59,6 +59,7 @@ export default function BillsPage() {
   const [customerFields, setCustomerFields] = useState<any[]>([])
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
+  const [selectedMonth, setSelectedMonth] = useState('')
   const recalcTotals = (form: any) => {
     const items = Array.isArray(form.items) ? form.items : []
     const subtotal = items.reduce((sum: number, it: any) => sum + ((parseFloat(it.price) || 0) * (parseInt(it.quantity) || 0)), 0)
@@ -109,11 +110,17 @@ export default function BillsPage() {
     fetchBills(currentPage)
   }, [currentPage])
 
-  const filteredBills = bills.filter(bill =>
-    bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (bill.customerPhone && bill.customerPhone.includes(searchTerm))
-  )
+  const filteredBills = bills.filter(bill => {
+    const matchesSearch = bill.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bill.customerPhone && bill.customerPhone.includes(searchTerm))
+    
+    if (!selectedMonth) return matchesSearch
+    
+    const billDate = new Date(bill.createdAt)
+    const billMonth = `${billDate.getFullYear()}-${String(billDate.getMonth() + 1).padStart(2, '0')}`
+    return matchesSearch && billMonth === selectedMonth
+  })
 
   const viewBill = async (bill: Bill) => {
     setSelectedBill(bill)
@@ -584,6 +591,58 @@ Contact: ${storePhone}`
                 <span>{t('allBills')} ({bills.length})</span>
               </CardTitle>
               <div className="flex items-center space-x-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="h-9 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="">All Months</option>
+                  {Array.from(new Set(bills.map(b => {
+                    const d = new Date(b.createdAt)
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                  }))).sort().reverse().map(month => (
+                    <option key={month} value={month}>
+                      {new Date(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                    </option>
+                  ))}
+                </select>
+                {selectedMonth && (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        showToast.success('Generating PDF...')
+                        const monthBills = filteredBills.map(b => (b as any)._id || b.id)
+                        const response = await fetch('/api/bills-bulk-pdf', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ billIds: monthBills })
+                        })
+                        if (response.ok) {
+                          const blob = await response.blob()
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          const monthName = new Date(selectedMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+                          a.download = `bills-${monthName.replace(' ', '-')}.pdf`
+                          document.body.appendChild(a)
+                          a.click()
+                          document.body.removeChild(a)
+                          URL.revokeObjectURL(url)
+                          showToast.success(`✅ ${monthBills.length} bills downloaded!`)
+                        } else {
+                          showToast.error('❌ Failed to generate PDF')
+                        }
+                      } catch (error) {
+                        showToast.error('❌ Error generating PDF')
+                      }
+                    }}
+                    variant="default"
+                    size="sm"
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Download Month PDF
+                  </Button>
+                )}
                 {selectedBills.length > 0 && (
                   <>
                     <Button 
