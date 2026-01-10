@@ -610,15 +610,36 @@ Contact: ${storePhone}`
                   <Button
                     onClick={async () => {
                       try {
-                        showToast.success('Generating PDF...')
-                        const monthBills = filteredBills.map(b => (b as any)._id || b.id)
-                        const response = await fetch('/api/bills-bulk-pdf', {
+                        showToast.success('Fetching all bills from month...')
+                        // Fetch ALL bills from database (not just paginated ones)
+                        const response = await fetch('/api/pos/sales?limit=999999')
+                        if (!response.ok) {
+                          showToast.error('Failed to fetch bills')
+                          return
+                        }
+                        const result = await response.json()
+                        const allBills = result.data || result || []
+                        
+                        // Filter bills by selected month
+                        const monthBills = allBills.filter((b: Bill) => {
+                          const billDate = new Date(b.createdAt)
+                          const billMonth = `${billDate.getFullYear()}-${String(billDate.getMonth() + 1).padStart(2, '0')}`
+                          return billMonth === selectedMonth
+                        }).map((b: Bill) => (b as any)._id || b.id)
+                        
+                        if (monthBills.length === 0) {
+                          showToast.error('No bills found for selected month')
+                          return
+                        }
+                        
+                        showToast.success(`Generating PDF for ${monthBills.length} bills...`)
+                        const pdfResponse = await fetch('/api/bills-bulk-pdf', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ billIds: monthBills })
                         })
-                        if (response.ok) {
-                          const blob = await response.blob()
+                        if (pdfResponse.ok) {
+                          const blob = await pdfResponse.blob()
                           const url = URL.createObjectURL(blob)
                           const a = document.createElement('a')
                           a.href = url
