@@ -585,17 +585,52 @@ Contact: ${storePhone}`
               </CardTitle>
               <div className="flex items-center space-x-2">
                 {selectedBills.length > 0 && (
-                  <Button 
-                    onClick={() => {
-                      setBillToDelete(null)
-                      setIsPasswordModalOpen(true)
-                    }} 
-                    variant="destructive" 
-                    size="sm"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete ({selectedBills.length})
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          showToast.success('Generating PDF...')
+                          const response = await fetch('/api/bills-bulk-pdf', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ billIds: selectedBills })
+                          })
+                          if (response.ok) {
+                            const blob = await response.blob()
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = `bills-${new Date().toISOString().split('T')[0]}.pdf`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            URL.revokeObjectURL(url)
+                            showToast.success(`✅ ${selectedBills.length} bills downloaded as PDF!`)
+                          } else {
+                            showToast.error('❌ Failed to generate PDF')
+                          }
+                        } catch (error) {
+                          showToast.error('❌ Error generating PDF')
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Download PDF ({selectedBills.length})
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setBillToDelete(null)
+                        setIsPasswordModalOpen(true)
+                      }} 
+                      variant="destructive" 
+                      size="sm"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete ({selectedBills.length})
+                    </Button>
+                  </>
                 )}
                 <Button 
                   onClick={() => setIsClearAllModalOpen(true)}
@@ -666,7 +701,7 @@ Contact: ${storePhone}`
                     </TableHead>
                     <TableHead className="text-center w-16">Sr. No.</TableHead>
                     <TableHead className="text-center">{t('billNo')}</TableHead>
-                    <TableHead className="text-center">{t('customer')}</TableHead>
+                    <TableHead className="text-center">Customer</TableHead>
                     <TableHead className="text-center">{t('items')}</TableHead>
                     <TableHead className="text-center">GST Rate</TableHead>
                     <TableHead className="text-center">GST Amount</TableHead>
