@@ -333,6 +333,17 @@ Contact: ${storePhone}`
       const result = await response.json()
       const allBills = result.data || result || []
 
+      // Get period from bills
+      const dates = allBills.map((b: Bill) => new Date(b.createdAt))
+      const minDate = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : new Date()
+      const maxDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : new Date()
+      const periodText = `${minDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })} - ${maxDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`
+      const currentYear = new Date().getFullYear()
+
+      // Get tenant info from settings or first bill
+      const tenantGST = settings.gst || (allBills[0]?.gst) || ''
+      const tenantStoreName = settings.storeName || (allBills[0]?.storeName) || ''
+
       const csvData = allBills.map((bill: Bill) => ({
         'Bill No': bill.billNo,
         'Store Name': bill.storeName,
@@ -355,13 +366,28 @@ Contact: ${storePhone}`
       }))
 
       const headers = Object.keys(csvData[0] || {})
-      const csv = [
+      
+      // Build CSV with GST headers at top
+      const csvLines = [
+        // GST Information Headers
+        `"Period","${periodText}"`,
+        `""`,
+        `"1. GSTIN","${tenantGST}"`,
+        `"2.a Legal name of the registered person.","${tenantStoreName}"`,
+        `"2.b Trade name, if any",""`,
+        `"3.a Aggregate turnover of the preceeding Financial Year",""`,
+        `"3.b Aggregate turnover, April to June ${currentYear}",""`,
+        `""`,
+        `""`,
+        // Data headers and rows
         headers.join(','),
         ...csvData.map((row: any) => headers.map(header => {
           const value = row[header]
           return `"${String(value).replace(/"/g, '""')}"`
         }).join(','))
-      ].join('\n')
+      ]
+      
+      const csv = csvLines.join('\n')
 
       const blob = new Blob([csv], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
